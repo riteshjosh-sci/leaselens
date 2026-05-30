@@ -1,0 +1,128 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+:root {
+  --ink:        #0f0f0d;
+  --ink-mid:    #3a3a36;
+  --ink-light:  #7a7a74;
+  --rule:       #e2e0da;
+  --rule-soft:  #d4ddd8;
+  --paper:      #f0f5f2;
+  --white:      #f7fbf8;
+  --accent:     #1a3a2a;
+  --accent-mid: #2a5c42;
+  --gold:       #b8975a;
+  --gold-light: #f5f0e8;
+  --risk-h:     #8b2020;
+  --risk-h-bg:  #fdf2f2;
+  --risk-m:     #7a5010;
+  --risk-m-bg:  #fdf8f0;
+  --risk-l:     #1a5c30;
+  --risk-l-bg:  #f0f7f3;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ── Typography helpers ── */
+.serif { font-family: 'DM Serif Display', serif; }
+.kicker {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* ── Buttons ── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ink);
+  color: var(--white);
+  padding: 14px 28px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-decoration: none;
+  border-radius: 2px;
+  border: none;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.2s;
+}
+.btn-primary:hover { background: var(--accent); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.btn-ghost {
+  font-size: 13px;
+  color: var(--ink-light);
+  background: none;
+  border: 1px solid var(--rule-soft);
+  border-radius: 2px;
+  padding: 9px 18px;
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-ghost:hover { background: var(--ink); color: var(--white); border-color: var(--ink); }
+
+.btn-text {
+  font-size: 13px;
+  color: var(--ink-light);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 1px;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: color 0.2s, border-color 0.2s;
+}
+.btn-text:hover { color: var(--ink); border-color: var(--ink); }
+
+/* ── Form inputs ── */
+.input {
+  width: 100%;
+  padding: 11px 14px;
+  border: 1px solid var(--rule-soft);
+  border-radius: 2px;
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  background: var(--white);
+  color: var(--ink);
+  outline: none;
+  transition: border-color 0.2s;
+}
+.input:focus { border-color: var(--accent-mid); }
+
+/* ── Risk badges ── */
+.badge {
+  font-family: monospace;
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 2px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.badge-high   { background: var(--risk-h-bg); color: var(--risk-h); }
+.badge-medium { background: var(--risk-m-bg); color: var(--risk-m); }
+.badge-low    { background: var(--risk-l-bg); color: var(--risk-l); }

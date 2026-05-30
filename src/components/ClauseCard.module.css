@@ -1,0 +1,28 @@
+.clause { background: var(--white); border: 1px solid var(--rule-soft); border-radius: 2px; overflow: hidden; transition: box-shadow 0.2s; }
+.clause:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.06); }
+
+.header { display: flex; align-items: center; gap: 12px; padding: 16px 20px; cursor: pointer; user-select: none; }
+.dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.dotH { background: var(--risk-h); }
+.dotM { background: var(--gold); }
+.dotL { background: var(--risk-l); }
+.title { flex: 1; font-weight: 500; font-size: 15px; color: var(--ink); }
+.chev { color: var(--ink-light); font-size: 10px; transition: transform 0.2s; flex-shrink: 0; }
+.chevOpen { transform: rotate(180deg); }
+
+.body { padding: 0 20px 20px; border-top: 1px solid var(--rule); background: #fafcfb; }
+
+.section { margin-top: 16px; }
+.sectionTitle { font-size: 10px; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-light); margin-bottom: 8px; font-weight: 500; }
+.section p { font-size: 14px; line-height: 1.75; color: var(--ink-mid); font-weight: 300; }
+.meta { font-size: 13px !important; color: var(--ink-light) !important; }
+.light { color: #5a5a56 !important; }
+
+.quoteBox { background: var(--gold-light); border: 1px solid #e0d5c0; border-radius: 2px; padding: 14px 16px; }
+.quoteBox p { font-size: 14px; line-height: 1.75; color: var(--risk-m); font-weight: 300; }
+
+.counterBox { background: var(--risk-l-bg); border: 1px solid #b8d8c4; border-radius: 2px; padding: 14px 16px; }
+.counterBox p { font-size: 14px; line-height: 1.75; color: var(--risk-l); font-weight: 300; }
+
+.legislationBox { background: #f0f4f8; border: 1px solid #c0cdd8; border-radius: 2px; padding: 14px 16px; }
+.legislationBox p { font-size: 13px; line-height: 1.7; color: #2a3d50; font-weight: 300; }

@@ -1,0 +1,169 @@
+/* HERO */
+.heroWrap { border-bottom: 1px solid var(--rule); }
+.hero {
+  padding: 148px 48px 100px;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+.kicker {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.kickerLine { display: block; width: 32px; height: 1px; background: var(--gold); flex-shrink: 0; }
+
+.h1 {
+  font-family: 'DM Serif Display', serif;
+  font-size: 62px;
+  font-weight: 500;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+  color: var(--ink);
+  margin-bottom: 28px;
+}
+.h1 em { font-style: italic; color: var(--accent-mid); }
+
+.heroSub {
+  font-size: 18px;
+  line-height: 1.8;
+  color: var(--ink-mid);
+  margin-bottom: 40px;
+  max-width: 460px;
+  font-weight: 300;
+}
+
+.heroActions { display: flex; align-items: center; gap: 24px; }
+
+.heroTrust {
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+}
+.trustPill { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-light); }
+.dot { width: 5px; height: 5px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+
+/* HERO VISUAL */
+.heroVisual { background: var(--paper); border: 1px solid var(--rule); border-radius: 3px; overflow: hidden; }
+.hvBar { background: var(--ink); padding: 14px 20px; display: flex; align-items: center; justify-content: space-between; }
+.hvBarTitle { font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(255,255,255,0.75); font-weight: 500; }
+.hvStatus { font-size: 11px; color: var(--gold); letter-spacing: 0.08em; font-weight: 500; }
+.hvBody { padding: 24px 20px; }
+.hvDocRow { display: flex; align-items: center; gap: 14px; padding: 14px 16px; background: var(--white); border: 1px solid var(--rule); border-radius: 2px; margin-bottom: 16px; }
+.hvDocIcon { width: 32px; height: 40px; background: var(--ink); border-radius: 2px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.hvDocName { font-size: 13px; font-weight: 500; color: var(--ink); }
+.hvDocMeta { font-size: 11px; color: var(--ink-light); margin-top: 2px; }
+.hvScanLabel { font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 12px; font-weight: 500; }
+.hvClauseRow { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.hvClauseRow:last-child { border-bottom: none; }
+.hvRiskBar { width: 3px; border-radius: 2px; align-self: stretch; min-height: 18px; flex-shrink: 0; }
+.hvRbH { background: var(--risk-h); }
+.hvRbM { background: var(--gold); }
+.hvRbL { background: var(--risk-l); }
+.hvClauseName { font-size: 12px; color: var(--ink-mid); flex: 1; }
+.hvBlurred { font-size: 11px; color: var(--ink-light); filter: blur(4px); user-select: none; }
+.hvFooter { padding: 16px 20px; border-top: 1px solid var(--rule); background: var(--white); display: flex; align-items: center; justify-content: space-between; }
+.hvFooterText { font-size: 11px; color: var(--ink-light); letter-spacing: 0.04em; }
+.hvFooterBtn { font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--accent-mid); cursor: pointer; border-bottom: 1px solid var(--accent-mid); padding-bottom: 1px; }
+
+/* VALUE STRIP */
+.valueStrip { background: var(--ink); border-bottom: 1px solid rgba(255,255,255,0.08); }
+.valueInner { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(4,1fr); }
+.vsTile { padding: 36px; border-right: 1px solid rgba(255,255,255,0.08); }
+.vsTile:last-child { border-right: none; }
+.vsKicker { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--gold); margin-bottom: 14px; font-weight: 500; }
+.vsTile h3 { font-family: 'DM Serif Display', serif; font-size: 20px; font-weight: 500; color: var(--white); line-height: 1.3; margin-bottom: 10px; }
+.vsTile p { font-size: 14px; color: rgba(255,255,255,0.68); line-height: 1.7; font-weight: 300; }
+
+/* SECTIONS */
+.sectionWrap { border-bottom: 1px solid var(--rule); }
+.section { padding: 100px 48px; max-width: 1200px; margin: 0 auto; }
+.sectionKicker { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); margin-bottom: 16px; font-weight: 500; display: flex; align-items: center; gap: 12px; }
+.h2 { font-family: 'DM Serif Display', serif; font-size: 48px; font-weight: 500; line-height: 1.1; color: var(--ink); letter-spacing: -0.3px; margin-bottom: 16px; }
+.h2 em { font-style: italic; }
+.sectionSub { font-size: 16px; color: var(--ink-mid); line-height: 1.75; max-width: 520px; font-weight: 300; margin-bottom: 56px; }
+
+/* STEPS */
+.steps { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+.step { background: #fff; padding: 40px 36px; }
+.stepNum { font-family: 'DM Serif Display', serif; font-size: 48px; font-weight: 400; color: var(--rule); line-height: 1; margin-bottom: 24px; }
+.step h3 { font-size: 16px; font-weight: 500; color: var(--ink); margin-bottom: 12px; }
+.step p { font-size: 15px; color: var(--ink-mid); line-height: 1.75; font-weight: 300; }
+
+/* WHAT YOU GET */
+.whatSection { background: var(--paper); border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); padding: 100px 48px; }
+.whatInner { max-width: 1200px; margin: 0 auto; }
+.whatGrid { display: grid; grid-template-columns: repeat(2,1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 56px; }
+.whatCard { background: #fff; padding: 40px 36px; transition: background 0.2s; }
+.whatCard:hover { background: var(--gold-light); }
+.whatCardNum { font-family: 'DM Serif Display', serif; font-size: 13px; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 16px; font-weight: 500; }
+.whatCard h3 { font-size: 17px; font-weight: 500; color: var(--ink); margin-bottom: 12px; }
+.whatCard p { font-size: 15px; color: var(--ink-mid); line-height: 1.75; font-weight: 300; }
+
+/* PRICING */
+.pricingWrap { border-bottom: 1px solid var(--rule); }
+.pricingSection { padding: 100px 48px; max-width: 1200px; margin: 0 auto; }
+.pricingGrid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); margin-top: 56px; }
+.pricingCard { background: #fff; padding: 40px 36px; position: relative; }
+.pricingCard.featured { background: var(--ink); }
+.pricingTier { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--ink-light); margin-bottom: 20px; font-weight: 500; }
+.featured .pricingTier { color: rgba(255,255,255,0.6); }
+.pricingPrice { font-family: 'DM Serif Display', serif; font-size: 56px; font-weight: 400; color: var(--ink); line-height: 1; margin-bottom: 6px; letter-spacing: -1px; }
+.pricingPrice sup { font-size: 24px; vertical-align: super; letter-spacing: 0; }
+.pricingPrice sub { font-size: 16px; font-family: 'Inter', sans-serif; font-weight: 300; color: var(--ink-light); letter-spacing: 0; }
+.featured .pricingPrice { color: var(--white); }
+.featured .pricingPrice sub { color: rgba(255,255,255,0.6); }
+.pricingDesc { font-size: 13px; color: var(--ink-light); margin-bottom: 28px; line-height: 1.6; font-weight: 300; min-height: 40px; }
+.featured .pricingDesc { color: rgba(255,255,255,0.72); }
+.pricingRule { height: 1px; background: var(--rule); margin-bottom: 24px; }
+.featured .pricingRule { background: rgba(255,255,255,0.1); }
+.pricingFeatures { list-style: none; display: flex; flex-direction: column; gap: 11px; margin-bottom: 32px; }
+.pricingFeatures li { display: flex; align-items: flex-start; gap: 10px; font-size: 14px; color: var(--ink-mid); line-height: 1.5; font-weight: 300; }
+.pricingFeatures li::before { content: '·'; color: var(--gold); flex-shrink: 0; font-size: 12px; margin-top: 1px; }
+.featured .pricingFeatures li { color: rgba(255,255,255,0.78); }
+.pricingBtn { width: 100%; padding: 13px; border-radius: 2px; font-size: 11px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; cursor: pointer; border: 1px solid var(--ink); font-family: 'Inter', sans-serif; transition: all 0.2s; background: transparent; color: var(--ink); }
+.pricingBtn:hover { background: var(--ink); color: var(--white); }
+.pricingBtnFeatured { background: var(--white); color: var(--ink); border-color: var(--white); }
+.pricingBtnFeatured:hover { background: var(--gold); border-color: var(--gold); }
+
+/* TRUST */
+.trustSection { background: var(--paper); border-top: 1px solid var(--rule); padding: 80px 48px; }
+.trustInner { max-width: 1200px; margin: 0 auto; }
+.trustGrid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--rule); border: 1px solid var(--rule); }
+.trustCard { background: var(--white); padding: 28px 24px; }
+.trustNum { font-family: 'DM Serif Display', serif; font-size: 13px; color: var(--gold); letter-spacing: 0.1em; margin-bottom: 14px; }
+.trustCard h3 { font-size: 15px; font-weight: 500; color: var(--ink); margin-bottom: 10px; margin-top: 14px; }
+.trustCard p { font-size: 13px; color: var(--ink-mid); line-height: 1.75; font-weight: 300; }
+
+/* CTA */
+.ctaSection { padding: 100px 48px; max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: center; border-top: 1px solid var(--rule); }
+.ctaH2 { font-family: 'DM Serif Display', serif; font-size: 48px; font-weight: 500; line-height: 1.1; color: var(--ink); letter-spacing: -0.3px; }
+.ctaH2 em { font-style: italic; }
+.ctaRight p { font-size: 18px; color: var(--ink-mid); line-height: 1.75; font-weight: 300; margin-bottom: 32px; }
+
+/* RESPONSIVE */
+@media (max-width: 960px) {
+  .hero { grid-template-columns: 1fr; padding: 120px 24px 72px; gap: 48px; }
+  .h1 { font-size: 44px; }
+  .valueInner { grid-template-columns: 1fr 1fr; }
+  .vsTile:nth-child(2) { border-right: none; }
+  .steps, .whatGrid, .pricingGrid { grid-template-columns: 1fr; }
+  .trustGrid { grid-template-columns: 1fr 1fr; }
+  .ctaSection { grid-template-columns: 1fr; gap: 32px; padding: 72px 24px; }
+  .section, .pricingSection { padding: 72px 24px; }
+  .whatSection { padding: 72px 24px; }
+  .trustSection { padding: 56px 24px; }
+}

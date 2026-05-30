@@ -1,0 +1,92 @@
+.nav {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: 68px;
+  background: rgba(247, 251, 248, 0.95);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--rule);
+  display: flex;
+  align-items: center;
+  padding: 0 48px;
+  justify-content: space-between;
+}
+
+.logo {
+  font-family: 'DM Serif Display', serif;
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink);
+  text-decoration: none;
+}
+.logo em { font-style: italic; color: var(--accent-mid); }
+
+.links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  list-style: none;
+}
+
+.links a {
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--ink-light);
+  letter-spacing: 0.02em;
+  transition: color 0.2s;
+}
+.links a:hover { color: var(--ink); }
+
+.signIn {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--ink) !important;
+}
+
+.dashLink {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  color: var(--accent-mid) !important;
+}
+
+.cta {
+  display: inline-block;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: var(--white) !important;
+  background: var(--ink);
+  padding: 10px 22px;
+  border-radius: 2px;
+  letter-spacing: 0.06em !important;
+  text-transform: uppercase;
+  text-decoration: none !important;
+  cursor: pointer;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  transition: background 0.2s !important;
+}
+.cta:hover { background: var(--accent) !important; color: var(--white) !important; }
+
+@media (max-width: 960px) {
+  .nav { padding: 0 24px; }
+  .links { display: none; }
+}
+
+.signOut {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--rule-soft);
+  padding: 10px 22px;
+  border-radius: 2px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  font-family: 'Inter', sans-serif;
+  transition: all 0.2s;
+}
+.signOut:hover { background: var(--ink); color: var(--white); border-color: var(--ink); }
