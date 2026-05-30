@@ -84,3 +84,13 @@
 .field { display: flex; flex-direction: column; gap: 6px; }
 .field label { font-size: 13px; font-weight: 500; color: var(--ink-mid); }
 .modalError { background: var(--risk-h-bg); border: 1px solid #e8c0c0; border-radius: 2px; padding: 10px 14px; font-size: 13px; color: var(--risk-h); }
+
+@media (max-width: 960px) {
+  .layout { flex-direction: column; }
+  .main { margin-left: 0; }
+  .content { padding: 24px 16px; }
+  .statsGrid { grid-template-columns: 1fr 1fr; }
+  .chartsRow { grid-template-columns: 1fr; }
+  .riskRow { grid-template-columns: 1fr; }
+  .tableWrap { overflow-x: auto; }
+}

@@ -61,3 +61,13 @@
   .negHeader { flex-direction: column; }
   .negActions { width: 100%; flex-wrap: wrap; }
 }
+
+@media (max-width: 600px) {
+  .page { padding: 88px 16px 60px; }
+  .header { flex-direction: column; gap: 16px; }
+  .statsRow { grid-template-columns: 1fr 1fr; }
+  .negHeader { flex-direction: column; }
+  .negActions { width: 100%; flex-wrap: wrap; }
+  .docRow { flex-wrap: wrap; gap: 10px; }
+  .docActions { width: 100%; justify-content: flex-end; }
+}

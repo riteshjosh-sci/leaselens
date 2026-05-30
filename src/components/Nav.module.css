@@ -28,7 +28,6 @@
   gap: 32px;
   list-style: none;
 }
-
 .links a {
   text-decoration: none;
   font-size: 13px;
@@ -67,26 +66,81 @@
   font-family: 'Inter', sans-serif;
   transition: background 0.2s !important;
 }
-.cta:hover { background: var(--accent) !important; color: var(--white) !important; }
+.cta:hover { background: var(--accent) !important; }
+
+/* Hamburger */
+.hamburger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  width: 32px;
+  height: 32px;
+}
+
+.bar {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--ink);
+  border-radius: 2px;
+  transition: all 0.25s;
+  transform-origin: center;
+}
+
+.barTop  { transform: translateY(7px) rotate(45deg); }
+.barMid  { opacity: 0; }
+.barBot  { transform: translateY(-7px) rotate(-45deg); }
+
+/* Mobile menu */
+.mobileMenu {
+  display: none;
+  position: fixed;
+  top: 68px; left: 0; right: 0;
+  background: var(--white);
+  border-bottom: 1px solid var(--rule);
+  z-index: 99;
+  padding: 16px 24px 24px;
+  flex-direction: column;
+  gap: 4px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.08);
+}
+
+.mobileMenu a,
+.mobileMenu button {
+  display: block;
+  padding: 12px 0;
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--ink);
+  text-decoration: none;
+  background: none;
+  border: none;
+  font-family: 'Inter', sans-serif;
+  cursor: pointer;
+  text-align: left;
+  border-bottom: 1px solid var(--rule);
+  transition: color 0.2s;
+}
+.mobileMenu a:last-child,
+.mobileMenu button:last-child { border-bottom: none; }
+.mobileMenu a:hover,
+.mobileMenu button:hover { color: var(--accent-mid); }
+
+.mobileDivider { height: 1px; background: var(--rule); margin: 8px 0; }
+
+.mobileCta {
+  color: var(--accent-mid) !important;
+  font-weight: 500 !important;
+}
 
 @media (max-width: 960px) {
   .nav { padding: 0 24px; }
   .links { display: none; }
+  .hamburger { display: flex; }
+  .mobileMenu { display: flex; }
 }
-
-.signOut {
-  display: inline-block;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--ink);
-  background: transparent;
-  border: 1px solid var(--rule-soft);
-  padding: 10px 22px;
-  border-radius: 2px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: pointer;
-  font-family: 'Inter', sans-serif;
-  transition: all 0.2s;
-}
-.signOut:hover { background: var(--ink); color: var(--white); border-color: var(--ink); }

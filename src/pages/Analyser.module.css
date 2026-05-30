@@ -61,3 +61,13 @@
 .savedNote a { color: var(--risk-l); font-weight: 500; }
 
 .legalDisclaimer { padding: 14px 18px; border: 1px solid var(--rule); border-radius: 2px; font-size: 12px; color: var(--ink-light); line-height: 1.6; font-family: monospace; }
+
+@media (max-width: 600px) {
+  .main { padding: 80px 16px 40px; }
+  .h1 { font-size: 28px; }
+  .sub { font-size: 14px; }
+  .card { padding: 20px 16px; }
+  .reportHeader { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .propertyRow { flex-direction: column; }
+  .nextSteps { padding: 20px; }
+}
