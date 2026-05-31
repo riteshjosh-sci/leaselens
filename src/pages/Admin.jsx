@@ -135,7 +135,7 @@ export default function Admin() {
   const [newCode, setNewCode] = useState('')
 
   useEffect(() => {
-    if (!user) { navigate('/login'); return }
+    if (!user) { navigate('/admin/login'); return }
     if (user.email !== ADMIN_EMAIL) { navigate('/'); return }
     fetchAll()
   }, [user])
@@ -541,7 +541,7 @@ export default function Admin() {
                       <td>{formatDate(doc.uploaded_at)}</td>
                       <td>
                         <div className={styles.actionBtns}>
-                          <button className={styles.viewBtn}>View</button>
+                          <button className={styles.viewBtn} onClick={() => navigate(`/admin/report/${doc.id}`)}>View report</button>
                           <button className={styles.deleteBtn} onClick={() => handleDeleteDoc(doc.id, doc.file_path)}>Delete</button>
                         </div>
                       </td>
@@ -573,7 +573,7 @@ export default function Admin() {
                       <td className={styles.monoCell}>{r.id.slice(0, 14)}...</td>
                       <td className={styles.monoCell}>{r.document_id.slice(0, 14)}...</td>
                       <td>{formatDate(r.created_at)}</td>
-                      <td><button className={styles.viewBtn}>View report</button></td>
+                      <td><button className={styles.viewBtn} onClick={() => navigate(`/admin/report/${r.document_id}`)}>View report</button></td>
                     </tr>
                   ))}
                 </tbody>
