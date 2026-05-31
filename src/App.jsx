@@ -10,6 +10,8 @@ import Dashboard from './pages/Dashboard'
 import Admin from './pages/Admin'
 import NotFound from './pages/NotFound'
 import UpdatePassword from './pages/UpdatePassword'
+import ReportView from './pages/ReportView'
+import Compare from './pages/Compare'
 
 import { lazy, Suspense } from 'react'
 const Privacy = lazy(() => import('./pages/Privacy'))
@@ -21,17 +23,19 @@ export default function App() {
       <AuthProvider>
         <Suspense fallback={null}>
           <Routes>
-            <Route path="/"                element={<Home />} />
-            <Route path="/login"           element={<Login />} />
-            <Route path="/signup"          element={<Signup />} />
-            <Route path="/reset-password"  element={<ResetPassword />} />
-            <Route path="/update-password" element={<UpdatePassword />} />
-            <Route path="/analyser"        element={<Analyser />} />
-            <Route path="/privacy"         element={<Privacy />} />
-            <Route path="/terms"           element={<Terms />} />
-            <Route path="/dashboard"       element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/admin"           element={<ProtectedRoute><Admin /></ProtectedRoute>} />
-            <Route path="*"               element={<NotFound />} />
+            <Route path="/"                    element={<Home />} />
+            <Route path="/login"               element={<Login />} />
+            <Route path="/signup"              element={<Signup />} />
+            <Route path="/reset-password"      element={<ResetPassword />} />
+            <Route path="/update-password"     element={<UpdatePassword />} />
+            <Route path="/analyser"            element={<Analyser />} />
+            <Route path="/privacy"             element={<Privacy />} />
+            <Route path="/terms"               element={<Terms />} />
+            <Route path="/dashboard"           element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/admin"               element={<ProtectedRoute><Admin /></ProtectedRoute>} />
+            <Route path="/report/:id"          element={<ProtectedRoute><ReportView /></ProtectedRoute>} />
+            <Route path="/compare/:negotiationId" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
+            <Route path="*"                    element={<NotFound />} />
           </Routes>
         </Suspense>
       </AuthProvider>
