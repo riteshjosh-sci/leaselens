@@ -24,7 +24,7 @@ export const PLANS = {
 }
 
 export async function createCheckoutSession({ plan, userId, userEmail }) {
-  const res = await fetch('/api/stripe-checkout', {
+  const res = await fetch('/api/stripe-checkout.cjs', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

@@ -69,7 +69,7 @@ export default function Analyser() {
 
       setLoadingMsg('Reviewing your document. This can take a couple of minutes...')
 
-      const res = await fetch('/api/analyse', {
+      const res = await fetch('/api/analyse.cjs', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages }),

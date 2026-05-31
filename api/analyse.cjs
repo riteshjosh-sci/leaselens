@@ -1,4 +1,4 @@
-const ANALYSIS_PROMPT = require('./_prompt.js')
+const ANALYSIS_PROMPT = require('./_prompt.cjs')
 
 module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json')
