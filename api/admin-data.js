@@ -1,20 +1,18 @@
-import { createClient } from '@supabase/supabase-js'
+const { createClient } = require('@supabase/supabase-js')
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+  res.setHeader('Content-Type', 'application/json')
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
 
-  // Verify admin email from auth header
   const authHeader = req.headers.authorization
   if (!authHeader) return res.status(401).json({ error: 'Unauthorized' })
 
   const token = authHeader.replace('Bearer ', '')
-
-  // Verify the JWT token
   const { data: { user }, error: authError } = await supabase.auth.getUser(token)
   if (authError || !user) return res.status(401).json({ error: 'Unauthorized' })
   if (user.email !== process.env.VITE_ADMIN_EMAIL) return res.status(403).json({ error: 'Forbidden' })

@@ -1,4 +1,4 @@
-import Stripe from 'stripe'
+const Stripe = require('stripe')
 
 const PRICES = {
   one_off:  { founding: 'price_1TdELACtxJYrkZjf3kupaC3U', standard: 'price_1TdEMtCtxJYrkZjf6vUavKrt' },
@@ -9,8 +9,7 @@ const PRICES = {
 
 const FOUNDING_PERIOD_ACTIVE = true
 
-export default async function handler(req, res) {
-  // Always return JSON
+module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json')
 
   if (req.method !== 'POST') {
@@ -23,11 +22,10 @@ export default async function handler(req, res) {
   }
 
   const stripe = new Stripe(secretKey)
-
   const { plan, userId, userEmail, successUrl, cancelUrl } = req.body
 
   if (!plan || !userId || !userEmail) {
-    return res.status(400).json({ error: 'Missing required fields: plan, userId, userEmail' })
+    return res.status(400).json({ error: 'Missing required fields' })
   }
 
   const priceGroup = PRICES[plan]
@@ -46,11 +44,7 @@ export default async function handler(req, res) {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl || `${req.headers.origin}/dashboard?payment=success`,
       cancel_url: cancelUrl || `${req.headers.origin}/pricing`,
-      metadata: {
-        userId,
-        plan,
-        founding: FOUNDING_PERIOD_ACTIVE ? 'true' : 'false',
-      },
+      metadata: { userId, plan, founding: FOUNDING_PERIOD_ACTIVE ? 'true' : 'false' },
       ...(isSubscription && {
         subscription_data: {
           metadata: { userId, plan, founding: FOUNDING_PERIOD_ACTIVE ? 'true' : 'false' }
@@ -60,7 +54,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({ url: session.url })
   } catch (err) {
-    console.error('Stripe error:', err.message)
+    console.error('Stripe checkout error:', err.message)
     return res.status(500).json({ error: err.message })
   }
 }

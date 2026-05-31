@@ -1,11 +1,12 @@
-import { createClient } from '@supabase/supabase-js'
+const { createClient } = require('@supabase/supabase-js')
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 )
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
+  res.setHeader('Content-Type', 'application/json')
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const authHeader = req.headers.authorization
@@ -21,40 +22,34 @@ export default async function handler(req, res) {
   try {
     switch (action) {
       case 'updatePlan': {
-        const { userId, plan } = payload
-        const { error } = await supabase.from('profiles').update({ plan }).eq('id', userId)
+        const { error } = await supabase.from('profiles').update({ plan: payload.plan }).eq('id', payload.userId)
         if (error) throw error
         return res.status(200).json({ success: true })
       }
       case 'suspendUser': {
-        const { userId, suspended } = payload
-        const { error } = await supabase.from('profiles').update({ suspended }).eq('id', userId)
+        const { error } = await supabase.from('profiles').update({ suspended: payload.suspended }).eq('id', payload.userId)
         if (error) throw error
         return res.status(200).json({ success: true })
       }
       case 'deleteUser': {
-        const { userId } = payload
-        const { error } = await supabase.from('profiles').delete().eq('id', userId)
+        const { error } = await supabase.from('profiles').delete().eq('id', payload.userId)
         if (error) throw error
         return res.status(200).json({ success: true })
       }
       case 'deleteDocument': {
-        const { docId, filePath } = payload
-        if (filePath) await supabase.storage.from('documents').remove([filePath])
-        await supabase.from('reports').delete().eq('document_id', docId)
-        const { error } = await supabase.from('documents').delete().eq('id', docId)
+        if (payload.filePath) await supabase.storage.from('documents').remove([payload.filePath])
+        await supabase.from('reports').delete().eq('document_id', payload.docId)
+        const { error } = await supabase.from('documents').delete().eq('id', payload.docId)
         if (error) throw error
         return res.status(200).json({ success: true })
       }
       case 'addBetaCode': {
-        const { code } = payload
-        const { error } = await supabase.from('beta_codes').insert({ code, used: false })
+        const { error } = await supabase.from('beta_codes').insert({ code: payload.code, used: false })
         if (error) throw error
         return res.status(200).json({ success: true })
       }
       case 'deactivateBetaCode': {
-        const { id } = payload
-        const { error } = await supabase.from('beta_codes').update({ used: true }).eq('id', id)
+        const { error } = await supabase.from('beta_codes').update({ used: true }).eq('id', payload.id)
         if (error) throw error
         return res.status(200).json({ success: true })
       }
