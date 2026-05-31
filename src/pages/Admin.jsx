@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { supabaseAdmin } from '../lib/supabaseAdmin'
 import { useAuth } from '../context/AuthContext'
 import AdminNav from '../components/AdminNav'
 import styles from './Admin.module.css'
@@ -12,6 +11,27 @@ import {
 } from 'recharts'
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
+
+// ── Admin API helpers ──
+async function adminFetch(resource, token) {
+  const res = await fetch(`/api/admin-data?resource=${resource}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+async function adminAction(action, payload, token) {
+  const res = await fetch('/api/admin-action', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ action, payload })
+  })
+  if (!res.ok) throw new Error(await res.text())
+  return res.json()
+}
+
+
 const PLANS = ['free', 'one_off', 'monthly', 'annual', 'adviser']
 
 // ── Animated counter ──
@@ -122,13 +142,21 @@ export default function Admin() {
 
   const fetchAll = async () => {
     setLoading(true)
-    const [profilesRes, docsRes, reportsRes, codesRes, waitlistRes] = await Promise.all([
-      supabaseAdmin.from('profiles').select('*').order('created_at', { ascending: false }),
-      supabaseAdmin.from('documents').select('*, negotiations(property_name)').order('uploaded_at', { ascending: false }).limit(200),
-      supabaseAdmin.from('reports').select('id, created_at, document_id, user_id').order('created_at', { ascending: false }).limit(200),
-      supabaseAdmin.from('beta_codes').select('*').order('created_at', { ascending: false }),
-      supabaseAdmin.from('waitlist').select('*').order('created_at', { ascending: false }),
+    const { data: { session } } = await supabase.auth.getSession()
+    const token = session?.access_token
+    if (!token) { setLoading(false); return }
+    const [profiles, docs, reports, codes, waitlistData] = await Promise.all([
+      adminFetch('profiles', token),
+      adminFetch('documents', token),
+      adminFetch('reports', token),
+      adminFetch('beta_codes', token),
+      adminFetch('waitlist', token),
     ])
+    const profilesRes = { data: profiles }
+    const docsRes = { data: docs }
+    const reportsRes = { data: reports }
+    const codesRes = { data: codes }
+    const waitlistRes = { data: waitlistData }
 
     const u = profilesRes.data || []
     const d = docsRes.data || []
@@ -198,26 +226,28 @@ export default function Admin() {
 
   // ── Actions ──
   const handleChangePlan = async (userId, plan) => {
-    await supabaseAdmin.from('profiles').update({ plan }).eq('id', userId)
+    const { data: { session } } = await supabase.auth.getSession()
+    await adminAction('updatePlan', { userId, plan }, session?.access_token)
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, plan } : u))
   }
 
   const handleSuspend = async (userId, suspended) => {
-    await supabaseAdmin.from('profiles').update({ suspended: !suspended }).eq('id', userId)
+    const { data: { session } } = await supabase.auth.getSession()
+    await adminAction('suspendUser', { userId, suspended: !suspended }, session?.access_token)
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, suspended: !suspended } : u))
   }
 
   const handleDeleteUser = async (userId) => {
     if (!confirm('Delete this user and all their data? This cannot be undone.')) return
-    await supabaseAdmin.from('profiles').delete().eq('id', userId)
+    const { data: { session } } = await supabase.auth.getSession()
+    await adminAction('deleteUser', { userId }, session?.access_token)
     setUsers(prev => prev.filter(u => u.id !== userId))
   }
 
   const handleDeleteDoc = async (docId, filePath) => {
     if (!confirm('Delete this document and its report?')) return
-    if (filePath) await supabaseAdmin.storage.from('documents').remove([filePath])
-    await supabaseAdmin.from('reports').delete().eq('document_id', docId)
-    await supabaseAdmin.from('documents').delete().eq('id', docId)
+    const { data: { session } } = await supabase.auth.getSession()
+    await adminAction('deleteDocument', { docId, filePath }, session?.access_token)
     setDocuments(prev => prev.filter(d => d.id !== docId))
   }
 
@@ -231,13 +261,15 @@ export default function Admin() {
 
   const handleAddCode = async () => {
     if (!newCode.trim()) return
-    await supabaseAdmin.from('beta_codes').insert({ code: newCode.trim().toUpperCase(), used: false })
+    const { data: { session } } = await supabase.auth.getSession()
+    await adminAction('addBetaCode', { code: newCode.trim().toUpperCase() }, session?.access_token)
     setNewCode('')
     fetchAll()
   }
 
   const handleDeactivateCode = async (id) => {
-    await supabaseAdmin.from('beta_codes').update({ used: true }).eq('id', id)
+    const { data: { session } } = await supabase.auth.getSession()
+    await adminAction('deactivateBetaCode', { id }, session?.access_token)
     fetchAll()
   }
 
