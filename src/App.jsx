@@ -1,18 +1,23 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
+import AdminRoute from './components/AdminRoute'
 import './styles/globals.css'
 
 import Home from './pages/Home'
 import { Login, Signup, ResetPassword } from './pages/Auth'
 import Analyser from './pages/Analyser'
 import Dashboard from './pages/Dashboard'
-import Admin from './pages/Admin'
 import NotFound from './pages/NotFound'
 import UpdatePassword from './pages/UpdatePassword'
 import ReportView from './pages/ReportView'
 import Compare from './pages/Compare'
 import Pricing from './pages/Pricing'
+
+// Admin — completely isolated
+import AdminLogin from './pages/AdminLogin'
+import Admin from './pages/Admin'
+import AdminReportView from './pages/AdminReportView'
 
 import { lazy, Suspense } from 'react'
 const Privacy = lazy(() => import('./pages/Privacy'))
@@ -24,6 +29,7 @@ export default function App() {
       <AuthProvider>
         <Suspense fallback={null}>
           <Routes>
+            {/* ── Public routes ── */}
             <Route path="/"                       element={<Home />} />
             <Route path="/login"                  element={<Login />} />
             <Route path="/signup"                 element={<Signup />} />
@@ -33,10 +39,17 @@ export default function App() {
             <Route path="/pricing"                element={<Pricing />} />
             <Route path="/privacy"                element={<Privacy />} />
             <Route path="/terms"                  element={<Terms />} />
+
+            {/* ── User protected routes ── */}
             <Route path="/dashboard"              element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/admin"                  element={<ProtectedRoute><Admin /></ProtectedRoute>} />
             <Route path="/report/:id"             element={<ProtectedRoute><ReportView /></ProtectedRoute>} />
             <Route path="/compare/:negotiationId" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
+
+            {/* ── Admin routes — completely isolated ── */}
+            <Route path="/admin/login"            element={<AdminLogin />} />
+            <Route path="/admin"                  element={<AdminRoute><Admin /></AdminRoute>} />
+            <Route path="/admin/report/:documentId" element={<AdminRoute><AdminReportView /></AdminRoute>} />
+
             <Route path="*"                       element={<NotFound />} />
           </Routes>
         </Suspense>
