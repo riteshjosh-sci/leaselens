@@ -71,7 +71,7 @@ export default function Dashboard() {
   const totalReports = negotiations.reduce((a, n) => a + (n.documents?.reduce((b, d) => b + (d.reports?.length || 0), 0) || 0), 0)
   const highRiskDocs = negotiations.reduce((a, n) => a + (n.documents?.filter(d => d.overall_risk === 'HIGH').length || 0), 0)
 
-  const planLabel = { free: 'Free', one_off: 'Pay per report', monthly: 'Monthly', adviser: 'Adviser' }
+  const planLabel = { free: 'Free', one_off: 'Pay per report', monthly: 'Monthly', annual: 'Annual', adviser: 'Adviser' }
   const scansLeft = profile?.plan === 'free'
     ? Math.max(0, 1 - (profile?.free_scans_used || 0))
     : profile?.plan === 'one_off'
@@ -133,7 +133,7 @@ export default function Dashboard() {
               }
             </div>
             {(profile?.plan === 'free' || profile?.plan === 'one_off') && (
-              <button className={styles.upgradeBtn} onClick={() => navigate('/#pricing')}>
+              <button className={styles.upgradeBtn} onClick={() => navigate('/pricing')}>
                 Upgrade →
               </button>
             )}
