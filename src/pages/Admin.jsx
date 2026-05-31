@@ -1,26 +1,117 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AdminNav from '../components/AdminNav'
 import styles from './Admin.module.css'
+import {
+  AreaChart, Area, BarChart as RBarChart, Bar,
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell
+} from 'recharts'
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
-const PLANS = ['free', 'one_off', 'monthly', 'adviser']
+const PLANS = ['free', 'one_off', 'monthly', 'annual', 'adviser']
+
+// ── Animated counter ──
+function Counter({ value, prefix = '', suffix = '' }) {
+  const [display, setDisplay] = useState(0)
+  const ref = useRef(null)
+  useEffect(() => {
+    let start = 0
+    const end = parseInt(value) || 0
+    if (start === end) { setDisplay(end); return }
+    const duration = 1200
+    const step = Math.ceil(duration / end) || 16
+    const timer = setInterval(() => {
+      start += Math.ceil(end / 60)
+      if (start >= end) { setDisplay(end); clearInterval(timer) }
+      else setDisplay(start)
+    }, step)
+    return () => clearInterval(timer)
+  }, [value])
+  return <span>{prefix}{display.toLocaleString()}{suffix}</span>
+}
+
+// ── Sparkline chart (Recharts) ──
+function Sparkline({ data, color }) {
+  const chartData = (data || []).map(d => ({ name: d.label, value: d.count }))
+  return (
+    <ResponsiveContainer width={120} height={48}>
+      <AreaChart data={chartData} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+        <defs>
+          <linearGradient id={`grad-${color.replace(/[^a-z]/gi,'')}`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity={0.3} />
+            <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+          </linearGradient>
+        </defs>
+        <Area type="monotone" dataKey="value" stroke={color} strokeWidth={2}
+          fill={`url(#grad-${color.replace(/[^a-z]/gi,'')})`} dot={false} />
+      </AreaChart>
+    </ResponsiveContainer>
+  )
+}
+
+// ── Bar chart (Recharts) ──
+function BarChartComp({ data, color }) {
+  const chartData = (data || []).map(d => ({ name: d.label, value: d.count }))
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload?.length) return (
+      <div style={{ background: 'var(--ink)', color: 'white', padding: '8px 12px', borderRadius: 2, fontSize: 12 }}>
+        <div style={{ color: 'var(--gold)', marginBottom: 2 }}>{label}</div>
+        <div>{payload[0].value}</div>
+      </div>
+    )
+    return null
+  }
+  return (
+    <ResponsiveContainer width="100%" height={120}>
+      <RBarChart data={chartData} barSize={24} margin={{ top: 4, right: 0, bottom: 0, left: -24 }}>
+        <CartesianGrid strokeDasharray="3 3" stroke="var(--rule)" vertical={false} />
+        <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'var(--ink-light)' }} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 11, fill: 'var(--ink-light)' }} axisLine={false} tickLine={false} allowDecimals={false} />
+        <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
+        <Bar dataKey="value" fill={color} radius={[2, 2, 0, 0]} />
+      </RBarChart>
+    </ResponsiveContainer>
+  )
+}
+
+// ── Donut chart (Recharts) ──
+function Donut({ segments }) {
+  const data = segments.filter(s => s.value > 0).map(s => ({ value: s.value, color: s.color, label: s.label }))
+  const total = segments.reduce((a, s) => a + s.value, 0)
+  const CustomLabel = ({ cx, cy }) => (
+    <text x={cx} y={cy} textAnchor="middle" dominantBaseline="central" fontFamily="DM Serif Display" fontSize="20" fill="var(--ink)">{total}</text>
+  )
+  if (!data.length) return <div style={{ width: 120, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--ink-light)', fontSize: 12 }}>No data</div>
+  return (
+    <PieChart width={120} height={120}>
+      <Pie data={data} cx={55} cy={55} innerRadius={36} outerRadius={52} dataKey="value" labelLine={false} label={<CustomLabel />} startAngle={90} endAngle={-270}>
+        {data.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+      </Pie>
+      <Tooltip formatter={(val, name, props) => [val, props.payload.label || '']} contentStyle={{ fontSize: 12, background: 'var(--ink)', border: 'none', color: 'white', borderRadius: 2 }} />
+    </PieChart>
+  )
+}
 
 export default function Admin() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [tab, setTab]           = useState('overview')
-  const [loading, setLoading]   = useState(true)
-  const [stats, setStats]       = useState(null)
-  const [users, setUsers]       = useState([])
+  const [tab, setTab] = useState('overview')
+  const [loading, setLoading] = useState(true)
+  const [stats, setStats] = useState(null)
+  const [users, setUsers] = useState([])
   const [documents, setDocuments] = useState([])
-  const [reports, setReports]   = useState([])
-  const [modal, setModal]       = useState(null) // { type: 'addUser' | 'editUser', data? }
-  const [form, setForm]         = useState({})
-  const [saving, setSaving]     = useState(false)
-  const [error, setError]       = useState('')
+  const [reports, setReports] = useState([])
+  const [betaCodes, setBetaCodes] = useState([])
+  const [waitlist, setWaitlist] = useState([])
+  const [modal, setModal] = useState(null)
+  const [form, setForm] = useState({})
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+  const [search, setSearch] = useState('')
+  const [newCode, setNewCode] = useState('')
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -30,50 +121,59 @@ export default function Admin() {
 
   const fetchAll = async () => {
     setLoading(true)
-    const [profilesRes, docsRes, reportsRes] = await Promise.all([
+    const [profilesRes, docsRes, reportsRes, codesRes, waitlistRes] = await Promise.all([
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('documents').select('*, negotiations(property_name)').order('uploaded_at', { ascending: false }).limit(200),
       supabase.from('reports').select('id, created_at, document_id, user_id').order('created_at', { ascending: false }).limit(200),
+      supabase.from('beta_codes').select('*').order('created_at', { ascending: false }),
+      supabase.from('waitlist').select('*').order('created_at', { ascending: false }),
     ])
 
     const u = profilesRes.data || []
     const d = docsRes.data || []
     const r = reportsRes.data || []
+    const c = codesRes.data || []
+    const w = waitlistRes.data || []
 
-    const riskCounts = d.reduce((acc, doc) => {
-      acc[doc.overall_risk] = (acc[doc.overall_risk] || 0) + 1
-      return acc
-    }, {})
+    const riskCounts = d.reduce((acc, doc) => { acc[doc.overall_risk] = (acc[doc.overall_risk] || 0) + 1; return acc }, {})
+    const planCounts = PLANS.reduce((acc, p) => { acc[p] = u.filter(x => x.plan === p).length; return acc }, {})
 
-    // Build monthly signup data (last 6 months)
-    const monthlySignups = buildMonthlyData(u, 'created_at')
-    const monthlyDocs    = buildMonthlyData(d, 'uploaded_at')
+    const paidUsers = u.filter(x => ['one_off','monthly','annual','adviser'].includes(x.plan))
+    const mrr = u.filter(x => x.plan === 'monthly').length * 99
+      + u.filter(x => x.plan === 'annual').length * (99 * 0.8)
+      + u.filter(x => x.plan === 'adviser').length * 299
 
     setStats({
-      totalUsers:   u.length,
-      totalDocs:    d.length,
+      totalUsers: u.length,
+      totalDocs: d.length,
       totalReports: r.length,
-      highRisk:     riskCounts['HIGH']   || 0,
-      medRisk:      riskCounts['MEDIUM'] || 0,
-      lowRisk:      riskCounts['LOW']    || 0,
-      planCounts:   PLANS.reduce((acc, p) => { acc[p] = u.filter(x => x.plan === p).length; return acc }, {}),
-      monthlySignups,
-      monthlyDocs,
+      paidUsers: paidUsers.length,
+      mrr: Math.round(mrr),
+      highRisk: riskCounts['HIGH'] || 0,
+      medRisk: riskCounts['MEDIUM'] || 0,
+      lowRisk: riskCounts['LOW'] || 0,
+      planCounts,
+      monthlySignups: buildMonthly(u, 'created_at'),
+      monthlyDocs: buildMonthly(d, 'uploaded_at'),
+      betaUsed: c.filter(x => x.used).length,
+      betaTotal: c.length,
+      waitlistCount: w.length,
     })
     setUsers(u)
     setDocuments(d)
     setReports(r)
+    setBetaCodes(c)
+    setWaitlist(w)
     setLoading(false)
   }
 
-  const buildMonthlyData = (rows, dateField) => {
+  const buildMonthly = (rows, field) => {
     const months = []
     for (let i = 5; i >= 0; i--) {
-      const d = new Date()
-      d.setMonth(d.getMonth() - i)
+      const d = new Date(); d.setMonth(d.getMonth() - i)
       const label = d.toLocaleDateString('en-AU', { month: 'short' })
       const count = rows.filter(r => {
-        const rd = new Date(r[dateField])
+        const rd = new Date(r[field])
         return rd.getMonth() === d.getMonth() && rd.getFullYear() === d.getFullYear()
       }).length
       months.push({ label, count })
@@ -82,6 +182,7 @@ export default function Admin() {
   }
 
   const formatDate = (d) => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+  const formatCurrency = (n) => `$${n.toLocaleString()}`
 
   const riskBadge = (risk) => {
     if (!risk) return <span className="badge badge-medium">—</span>
@@ -90,14 +191,19 @@ export default function Admin() {
   }
 
   const planBadge = (plan) => {
-    const map = { free: styles.planFree, one_off: styles.planOneOff, monthly: styles.planMonthly, adviser: styles.planAdviser }
-    return <span className={`${styles.planBadge} ${map[plan] || ''}`}>{plan || 'free'}</span>
+    const map = { free: styles.planFree, one_off: styles.planOneOff, monthly: styles.planMonthly, annual: styles.planAnnual, adviser: styles.planAdviser }
+    return <span className={`${styles.planBadge} ${map[plan] || styles.planFree}`}>{plan || 'free'}</span>
   }
 
-  // ── User actions ──
+  // ── Actions ──
   const handleChangePlan = async (userId, plan) => {
     await supabase.from('profiles').update({ plan }).eq('id', userId)
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, plan } : u))
+  }
+
+  const handleSuspend = async (userId, suspended) => {
+    await supabase.from('profiles').update({ suspended: !suspended }).eq('id', userId)
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, suspended: !suspended } : u))
   }
 
   const handleDeleteUser = async (userId) => {
@@ -106,23 +212,6 @@ export default function Admin() {
     setUsers(prev => prev.filter(u => u.id !== userId))
   }
 
-  const handleAddUser = async () => {
-    if (!form.email || !form.password) { setError('Email and password are required'); return }
-    setSaving(true)
-    setError('')
-    const { error: signUpError } = await supabase.auth.admin.createUser({
-      email: form.email,
-      password: form.password,
-      email_confirm: true,
-    })
-    if (signUpError) { setError(signUpError.message); setSaving(false); return }
-    await fetchAll()
-    setModal(null)
-    setForm({})
-    setSaving(false)
-  }
-
-  // ── Document actions ──
   const handleDeleteDoc = async (docId, filePath) => {
     if (!confirm('Delete this document and its report?')) return
     if (filePath) await supabase.storage.from('documents').remove([filePath])
@@ -131,25 +220,34 @@ export default function Admin() {
     setDocuments(prev => prev.filter(d => d.id !== docId))
   }
 
-  // ── Mini bar chart ──
-  const BarChart = ({ data, color }) => {
-    const max = Math.max(...data.map(d => d.count), 1)
-    return (
-      <div className={styles.chart}>
-        {data.map((d, i) => (
-          <div key={i} className={styles.chartCol}>
-            <div className={styles.chartBar} style={{ height: `${(d.count / max) * 100}%`, background: color }} />
-            <div className={styles.chartLabel}>{d.label}</div>
-          </div>
-        ))}
-      </div>
-    )
+  const handleAddUser = async () => {
+    if (!form.email || !form.password) { setError('Email and password required'); return }
+    setSaving(true); setError('')
+    const { error: e } = await supabase.auth.admin.createUser({ email: form.email, password: form.password, email_confirm: true })
+    if (e) { setError(e.message); setSaving(false); return }
+    await fetchAll(); setModal(null); setForm({}); setSaving(false)
   }
+
+  const handleAddCode = async () => {
+    if (!newCode.trim()) return
+    await supabase.from('beta_codes').insert({ code: newCode.trim().toUpperCase(), used: false })
+    setNewCode('')
+    fetchAll()
+  }
+
+  const handleDeactivateCode = async (id) => {
+    await supabase.from('beta_codes').update({ used: true }).eq('id', id)
+    fetchAll()
+  }
+
+  const filteredUsers = users.filter(u =>
+    !search || u.email?.toLowerCase().includes(search.toLowerCase())
+  )
 
   if (loading) return (
     <div className={styles.loadingWrap}>
-      <div className={styles.loadingDot} />
-      Loading admin panel...
+      <div className={styles.loadingRing} />
+      <span>Loading admin panel</span>
     </div>
   )
 
@@ -160,25 +258,35 @@ export default function Admin() {
       <main className={styles.main}>
 
         {/* ── OVERVIEW ── */}
-        {tab === 'overview' && (
+        {tab === 'overview' && stats && (
           <div className={styles.content}>
             <div className={styles.pageHeader}>
-              <h1 className={styles.h1}>Overview</h1>
-              <span className={styles.lastUpdated}>Live data</span>
+              <div>
+                <div className={styles.kicker}>Admin · LeaseLens</div>
+                <h1 className={styles.h1}>Overview</h1>
+              </div>
+              <div className={styles.liveTag}>● Live</div>
             </div>
 
-            {/* Stat cards */}
-            <div className={styles.statsGrid}>
+            {/* Primary stat cards */}
+            <div className={styles.statGrid}>
               {[
-                { label: 'Total users',    value: stats.totalUsers,   sub: `${stats.planCounts.monthly + stats.planCounts.adviser} paid` },
-                { label: 'Documents',      value: stats.totalDocs,    sub: 'uploaded total' },
-                { label: 'Reports',        value: stats.totalReports, sub: 'generated total' },
-                { label: 'High risk docs', value: stats.highRisk,     sub: `${stats.totalDocs ? Math.round((stats.highRisk/stats.totalDocs)*100) : 0}% of total` },
-              ].map(s => (
-                <div key={s.label} className={styles.statCard}>
-                  <div className={styles.statValue}>{s.value}</div>
-                  <div className={styles.statLabel}>{s.label}</div>
-                  <div className={styles.statSub}>{s.sub}</div>
+                { label: 'Total users', value: stats.totalUsers, sub: `${stats.paidUsers} paid`, color: 'var(--accent-mid)', sparkData: stats.monthlySignups },
+                { label: 'MRR', value: stats.mrr, prefix: '$', sub: 'monthly recurring', color: 'var(--gold)', sparkData: stats.monthlySignups },
+                { label: 'Documents analysed', value: stats.totalDocs, sub: 'all time', color: 'var(--accent-mid)', sparkData: stats.monthlyDocs },
+                { label: 'Reports generated', value: stats.totalReports, sub: 'all time', color: 'var(--gold)', sparkData: stats.monthlyDocs },
+              ].map((s, i) => (
+                <div key={i} className={styles.statCard} style={{ animationDelay: `${i * 80}ms` }}>
+                  <div className={styles.statTop}>
+                    <div>
+                      <div className={styles.statLabel}>{s.label}</div>
+                      <div className={styles.statValue}>
+                        <Counter value={s.value} prefix={s.prefix} />
+                      </div>
+                      <div className={styles.statSub}>{s.sub}</div>
+                    </div>
+                    <Sparkline data={s.sparkData} color={s.color} />
+                  </div>
                 </div>
               ))}
             </div>
@@ -186,46 +294,117 @@ export default function Admin() {
             {/* Charts row */}
             <div className={styles.chartsRow}>
               <div className={styles.chartCard}>
-                <div className={styles.chartTitle}>New users — last 6 months</div>
-                <BarChart data={stats.monthlySignups} color="var(--accent-mid)" />
+                <div className={styles.chartHeader}>
+                  <div className={styles.chartTitle}>New users</div>
+                  <div className={styles.chartSub}>Last 6 months</div>
+                </div>
+                <BarChartComp data={stats.monthlySignups} color="var(--accent-mid)" />
               </div>
+
               <div className={styles.chartCard}>
-                <div className={styles.chartTitle}>Documents uploaded — last 6 months</div>
-                <BarChart data={stats.monthlyDocs} color="var(--gold)" />
+                <div className={styles.chartHeader}>
+                  <div className={styles.chartTitle}>Documents uploaded</div>
+                  <div className={styles.chartSub}>Last 6 months</div>
+                </div>
+                <BarChartComp data={stats.monthlyDocs} color="var(--gold)" />
               </div>
+
               <div className={styles.chartCard}>
-                <div className={styles.chartTitle}>Plan distribution</div>
-                <div className={styles.planDist}>
-                  {PLANS.map(p => (
-                    <div key={p} className={styles.planRow}>
-                      <span className={styles.planRowLabel}>{p}</span>
-                      <div className={styles.planTrack}>
-                        <div className={styles.planFill} style={{
-                          width: stats.totalUsers ? `${(stats.planCounts[p] / stats.totalUsers) * 100}%` : '0%'
+                <div className={styles.chartHeader}>
+                  <div className={styles.chartTitle}>Plan distribution</div>
+                  <div className={styles.chartSub}>{stats.totalUsers} total users</div>
+                </div>
+                <div className={styles.planDistList}>
+                  {[
+                    { label: 'Free',     val: stats.planCounts.free,    color: 'var(--rule-soft)' },
+                    { label: 'One-off',  val: stats.planCounts.one_off,  color: '#60a5fa' },
+                    { label: 'Monthly',  val: stats.planCounts.monthly,  color: 'var(--accent-mid)' },
+                    { label: 'Annual',   val: stats.planCounts.annual,   color: 'var(--risk-l)' },
+                    { label: 'Adviser',  val: stats.planCounts.adviser,  color: 'var(--gold)' },
+                  ].map(l => (
+                    <div key={l.label} className={styles.planDistRow}>
+                      <span className={styles.legendDot} style={{ background: l.color }} />
+                      <span className={styles.legendLabel}>{l.label}</span>
+                      <div className={styles.planDistTrack}>
+                        <div className={styles.planDistFill} style={{
+                          width: stats.totalUsers ? `${(l.val / stats.totalUsers) * 100}%` : '0%',
+                          background: l.color
                         }} />
                       </div>
-                      <span className={styles.planCount}>{stats.planCounts[p]}</span>
+                      <span className={styles.legendVal}>{l.val}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Risk distribution */}
-            <div className={styles.riskRow}>
-              {[
-                { label: 'High risk',   value: stats.highRisk, color: 'var(--risk-h)', bg: 'var(--risk-h-bg)' },
-                { label: 'Medium risk', value: stats.medRisk,  color: 'var(--risk-m)', bg: 'var(--risk-m-bg)' },
-                { label: 'Low risk',    value: stats.lowRisk,  color: 'var(--risk-l)', bg: 'var(--risk-l-bg)' },
-              ].map(r => (
-                <div key={r.label} className={styles.riskCard} style={{ background: r.bg, borderColor: r.color }}>
-                  <div className={styles.riskValue} style={{ color: r.color }}>{r.value}</div>
-                  <div className={styles.riskLabel}>{r.label}</div>
-                  <div className={styles.riskPct} style={{ color: r.color }}>
-                    {stats.totalDocs ? Math.round((r.value / stats.totalDocs) * 100) : 0}%
-                  </div>
+            {/* Bottom row */}
+            <div className={styles.bottomRow}>
+              {/* Risk distribution */}
+              <div className={styles.riskCard}>
+                <div className={styles.chartHeader}>
+                  <div className={styles.chartTitle}>Risk distribution</div>
+                  <div className={styles.chartSub}>{stats.totalDocs} documents</div>
                 </div>
-              ))}
+                <div className={styles.riskBars}>
+                  {[
+                    { label: 'High', value: stats.highRisk, color: 'var(--risk-h)', bg: 'var(--risk-h-bg)' },
+                    { label: 'Medium', value: stats.medRisk, color: 'var(--gold)', bg: 'var(--risk-m-bg)' },
+                    { label: 'Low', value: stats.lowRisk, color: 'var(--risk-l)', bg: 'var(--risk-l-bg)' },
+                  ].map(r => (
+                    <div key={r.label} className={styles.riskBarRow}>
+                      <span className={styles.riskBarLabel}>{r.label}</span>
+                      <div className={styles.riskTrack}>
+                        <div className={styles.riskFill} style={{
+                          width: stats.totalDocs ? `${(r.value / stats.totalDocs) * 100}%` : '0%',
+                          background: r.color
+                        }} />
+                      </div>
+                      <span className={styles.riskCount} style={{ color: r.color }}>{r.value}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Platform health */}
+              <div className={styles.healthCard}>
+                <div className={styles.chartHeader}>
+                  <div className={styles.chartTitle}>Platform health</div>
+                </div>
+                <div className={styles.healthItems}>
+                  {[
+                    { label: 'Beta codes issued', value: stats.betaTotal, sub: `${stats.betaUsed} used` },
+                    { label: 'Waitlist signups', value: stats.waitlistCount, sub: 'pending launch' },
+                    { label: 'Est. API cost (mo)', value: `~$${Math.round(stats.totalDocs * 0.08)}`, sub: 'based on avg tokens' },
+                  ].map((h, i) => (
+                    <div key={i} className={styles.healthItem}>
+                      <div className={styles.healthValue}>{h.value}</div>
+                      <div className={styles.healthLabel}>{h.label}</div>
+                      <div className={styles.healthSub}>{h.sub}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Recent users */}
+              <div className={styles.recentCard}>
+                <div className={styles.chartHeader}>
+                  <div className={styles.chartTitle}>Recent signups</div>
+                  <button className={styles.viewAll} onClick={() => setTab('users')}>View all →</button>
+                </div>
+                <div className={styles.recentList}>
+                  {users.slice(0, 6).map(u => (
+                    <div key={u.id} className={styles.recentRow}>
+                      <div className={styles.recentAvatar}>{u.email?.[0]?.toUpperCase()}</div>
+                      <div className={styles.recentInfo}>
+                        <div className={styles.recentEmail}>{u.email}</div>
+                        <div className={styles.recentDate}>{formatDate(u.created_at)}</div>
+                      </div>
+                      {planBadge(u.plan)}
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         )}
@@ -234,47 +413,61 @@ export default function Admin() {
         {tab === 'users' && (
           <div className={styles.content}>
             <div className={styles.pageHeader}>
-              <h1 className={styles.h1}>Users <span className={styles.count}>{users.length}</span></h1>
-              <button className="btn-primary" onClick={() => { setModal({ type: 'addUser' }); setForm({}); setError('') }}>
-                + Add user
-              </button>
+              <div>
+                <div className={styles.kicker}>Admin · Users</div>
+                <h1 className={styles.h1}>Users <span className={styles.count}>{users.length}</span></h1>
+              </div>
+              <div className={styles.headerActions}>
+                <input className={`input ${styles.searchInput}`} placeholder="Search by email..." value={search} onChange={e => setSearch(e.target.value)} />
+                <button className="btn-primary" onClick={() => { setModal({ type: 'addUser' }); setForm({}); setError('') }}>+ Add user</button>
+              </div>
             </div>
 
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
                   <tr>
-                    <th>Email</th>
+                    <th>User</th>
                     <th>Plan</th>
-                    <th>Scans used</th>
+                    <th>Scans</th>
+                    <th>Status</th>
                     <th>Joined</th>
                     <th>Change plan</th>
-                    <th>Delete</th>
+                    <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {users.map(u => (
-                    <tr key={u.id}>
-                      <td className={styles.emailCell}>{u.email}</td>
+                  {filteredUsers.map(u => (
+                    <tr key={u.id} className={u.suspended ? styles.suspendedRow : ''}>
+                      <td>
+                        <div className={styles.userCell}>
+                          <div className={styles.avatar}>{u.email?.[0]?.toUpperCase()}</div>
+                          <div>
+                            <div className={styles.emailCell}>{u.email}</div>
+                            <div className={styles.uidCell}>{u.id?.slice(0, 8)}...</div>
+                          </div>
+                        </div>
+                      </td>
                       <td>{planBadge(u.plan)}</td>
                       <td>{u.free_scans_used || 0}</td>
+                      <td>
+                        <span className={u.suspended ? styles.tagSuspended : styles.tagActive}>
+                          {u.suspended ? 'Suspended' : 'Active'}
+                        </span>
+                      </td>
                       <td>{formatDate(u.created_at)}</td>
                       <td>
-                        <select
-                          className={styles.planSelect}
-                          value={u.plan || 'free'}
-                          onChange={e => handleChangePlan(u.id, e.target.value)}
-                        >
+                        <select className={styles.planSelect} value={u.plan || 'free'} onChange={e => handleChangePlan(u.id, e.target.value)}>
                           {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
                       </td>
                       <td>
-                        <button
-                          className={styles.deleteBtn}
-                          onClick={() => handleDeleteUser(u.id)}
-                        >
-                          Delete
-                        </button>
+                        <div className={styles.actionBtns}>
+                          <button className={u.suspended ? styles.activateBtn : styles.suspendBtn} onClick={() => handleSuspend(u.id, u.suspended)}>
+                            {u.suspended ? 'Reactivate' : 'Suspend'}
+                          </button>
+                          <button className={styles.deleteBtn} onClick={() => handleDeleteUser(u.id)}>Delete</button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -288,9 +481,11 @@ export default function Admin() {
         {tab === 'documents' && (
           <div className={styles.content}>
             <div className={styles.pageHeader}>
-              <h1 className={styles.h1}>Documents <span className={styles.count}>{documents.length}</span></h1>
+              <div>
+                <div className={styles.kicker}>Admin · Documents</div>
+                <h1 className={styles.h1}>Documents <span className={styles.count}>{documents.length}</span></h1>
+              </div>
             </div>
-
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
@@ -313,7 +508,7 @@ export default function Admin() {
                       <td>{formatDate(doc.uploaded_at)}</td>
                       <td>
                         <div className={styles.actionBtns}>
-                          <button className={styles.viewBtn} onClick={() => navigate(`/admin/report/${doc.id}`)}>View</button>
+                          <button className={styles.viewBtn}>View</button>
                           <button className={styles.deleteBtn} onClick={() => handleDeleteDoc(doc.id, doc.file_path)}>Delete</button>
                         </div>
                       </td>
@@ -329,30 +524,87 @@ export default function Admin() {
         {tab === 'reports' && (
           <div className={styles.content}>
             <div className={styles.pageHeader}>
-              <h1 className={styles.h1}>Reports <span className={styles.count}>{reports.length}</span></h1>
+              <div>
+                <div className={styles.kicker}>Admin · Reports</div>
+                <h1 className={styles.h1}>Reports <span className={styles.count}>{reports.length}</span></h1>
+              </div>
             </div>
-
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
-                  <tr>
-                    <th>Report ID</th>
-                    <th>Document ID</th>
-                    <th>Generated</th>
-                    <th>View</th>
-                  </tr>
+                  <tr><th>Report ID</th><th>Document ID</th><th>Generated</th><th>View</th></tr>
                 </thead>
                 <tbody>
                   {reports.map(r => (
                     <tr key={r.id}>
-                      <td className={styles.monoCell}>{r.id.slice(0, 12)}...</td>
-                      <td className={styles.monoCell}>{r.document_id.slice(0, 12)}...</td>
+                      <td className={styles.monoCell}>{r.id.slice(0, 14)}...</td>
+                      <td className={styles.monoCell}>{r.document_id.slice(0, 14)}...</td>
                       <td>{formatDate(r.created_at)}</td>
-                      <td>
-                        <button className={styles.viewBtn} onClick={() => navigate(`/admin/report/${r.document_id}`)}>
-                          View report
-                        </button>
-                      </td>
+                      <td><button className={styles.viewBtn}>View report</button></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── BETA CODES ── */}
+        {tab === 'beta' && (
+          <div className={styles.content}>
+            <div className={styles.pageHeader}>
+              <div>
+                <div className={styles.kicker}>Admin · Beta access</div>
+                <h1 className={styles.h1}>Beta codes <span className={styles.count}>{betaCodes.length}</span></h1>
+              </div>
+            </div>
+            <div className={styles.betaAddRow}>
+              <input className={`input ${styles.codeInput}`} value={newCode} onChange={e => setNewCode(e.target.value.toUpperCase())} placeholder="Enter new code e.g. BETA2026" />
+              <button className="btn-primary" onClick={handleAddCode}>Add code</button>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>Code</th><th>Status</th><th>Created</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                  {betaCodes.map(c => (
+                    <tr key={c.id}>
+                      <td className={styles.codeCell}>{c.code}</td>
+                      <td><span className={c.used ? styles.tagSuspended : styles.tagActive}>{c.used ? 'Used' : 'Active'}</span></td>
+                      <td>{formatDate(c.created_at)}</td>
+                      <td>{!c.used && <button className={styles.suspendBtn} onClick={() => handleDeactivateCode(c.id)}>Deactivate</button>}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── WAITLIST ── */}
+        {tab === 'waitlist' && (
+          <div className={styles.content}>
+            <div className={styles.pageHeader}>
+              <div>
+                <div className={styles.kicker}>Admin · Waitlist</div>
+                <h1 className={styles.h1}>Waitlist <span className={styles.count}>{waitlist.length}</span></h1>
+              </div>
+              <button className="btn-primary" onClick={() => {
+                const csv = 'email,joined\n' + waitlist.map(w => `${w.email},${w.created_at}`).join('\n')
+                const blob = new Blob([csv], { type: 'text/csv' })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement('a'); a.href = url; a.download = 'waitlist.csv'; a.click()
+              }}>Export CSV</button>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead><tr><th>Email</th><th>Joined</th></tr></thead>
+                <tbody>
+                  {waitlist.map(w => (
+                    <tr key={w.id}>
+                      <td className={styles.emailCell}>{w.email}</td>
+                      <td>{formatDate(w.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -362,7 +614,7 @@ export default function Admin() {
         )}
       </main>
 
-      {/* ── ADD USER MODAL ── */}
+      {/* ADD USER MODAL */}
       {modal?.type === 'addUser' && (
         <div className={styles.modalOverlay} onClick={() => setModal(null)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
@@ -371,24 +623,11 @@ export default function Admin() {
               <button className={styles.modalClose} onClick={() => setModal(null)}>✕</button>
             </div>
             <div className={styles.modalBody}>
-              <div className={styles.field}>
-                <label>Email</label>
-                <input className="input" type="email" value={form.email || ''} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="user@example.com" />
-              </div>
-              <div className={styles.field}>
-                <label>Password</label>
-                <input className="input" type="password" value={form.password || ''} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="8+ characters" />
-              </div>
-              <div className={styles.field}>
-                <label>Plan</label>
-                <select className="input" value={form.plan || 'free'} onChange={e => setForm(p => ({ ...p, plan: e.target.value }))}>
-                  {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </div>
+              <div className={styles.field}><label>Email</label><input className="input" type="email" value={form.email || ''} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} placeholder="user@example.com" /></div>
+              <div className={styles.field}><label>Password</label><input className="input" type="password" value={form.password || ''} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} placeholder="8+ characters" /></div>
+              <div className={styles.field}><label>Plan</label><select className="input" value={form.plan || 'free'} onChange={e => setForm(p => ({ ...p, plan: e.target.value }))}>{PLANS.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
               {error && <div className={styles.modalError}>{error}</div>}
-              <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleAddUser} disabled={saving}>
-                {saving ? 'Creating...' : 'Create user'}
-              </button>
+              <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }} onClick={handleAddUser} disabled={saving}>{saving ? 'Creating...' : 'Create user'}</button>
             </div>
           </div>
         </div>
