@@ -1,18 +1,33 @@
 import Stripe from 'stripe'
 import { createClient } from '@supabase/supabase-js'
 
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end()
 
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY)
 
+  // Get raw body
+  const rawBody = await new Promise((resolve, reject) => {
+    let data = ''
+    req.on('data', chunk => data += chunk)
+    req.on('end', () => resolve(data))
+    req.on('error', reject)
+  })
+
   const sig = req.headers['stripe-signature']
   let event
+
   try {
-    const rawBody = JSON.stringify(req.body)
     event = stripe.webhooks.constructEvent(rawBody, sig, process.env.STRIPE_WEBHOOK_SECRET)
   } catch (err) {
+    console.error('Webhook signature failed:', err.message)
     return res.status(400).send(`Webhook Error: ${err.message}`)
   }
 
@@ -61,6 +76,7 @@ export default async function handler(req, res) {
     }
     return res.status(200).json({ received: true })
   } catch (err) {
+    console.error('Webhook handler error:', err)
     return res.status(500).json({ error: err.message })
   }
 }
