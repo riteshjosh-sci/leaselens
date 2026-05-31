@@ -71,3 +71,20 @@
   .propertyRow { flex-direction: column; }
   .nextSteps { padding: 20px; }
 }
+
+/* FREE TIER */
+.freeResult { display: flex; flex-direction: column; gap: 16px; animation: fadeIn 0.4s ease; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+.freeHeader { background: var(--white); border: 1px solid var(--rule-soft); border-radius: 2px; padding: 24px; }
+.freeTitle { font-family: 'DM Serif Display', serif; font-size: 32px; font-weight: 400; color: var(--ink); margin-bottom: 12px; }
+.freeSummary { font-size: 15px; line-height: 1.75; color: var(--ink-mid); font-weight: 300; }
+
+.freeStats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.freeStat { border: 1px solid var(--rule-soft); border-radius: 2px; padding: 20px; text-align: center; }
+.freeStatValue { font-family: 'DM Serif Display', serif; font-size: 40px; font-weight: 400; line-height: 1; margin-bottom: 6px; }
+.freeStatLabel { font-size: 11px; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-light); }
+
+.freeGate { background: var(--ink); border-radius: 2px; padding: 32px; text-align: center; }
+.freeGate h3 { font-family: 'DM Serif Display', serif; font-size: 24px; font-weight: 400; color: var(--white); margin-bottom: 12px; }
+.freeGate p { font-size: 15px; color: rgba(255,255,255,0.7); line-height: 1.75; font-weight: 300; margin-bottom: 24px; max-width: 440px; margin-left: auto; margin-right: auto; }

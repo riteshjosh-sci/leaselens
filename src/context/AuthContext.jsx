@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, checkFreeReset } from '../lib/supabase'
 
 const AuthContext = createContext(null)
 
@@ -15,6 +15,7 @@ export function AuthProvider({ children }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null)
+      if (session?.user) checkFreeReset(session.user.id)
     })
 
     return () => subscription.unsubscribe()

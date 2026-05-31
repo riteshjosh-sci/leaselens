@@ -12,6 +12,14 @@ export default function Analyser() {
   const location = useLocation()
   const negotiationId = location.state?.negotiationId || null
 
+  useEffect(() => {
+    if (user) {
+      supabase.from('profiles').select('*').eq('id', user.id).single()
+        .then(({ data }) => setProfile(data))
+    }
+  }, [user])
+
+  const [profile, setProfile] = useState(null)
   const [file, setFile] = useState(null)
   const [pasteText, setPasteText] = useState('')
   const [showPaste, setShowPaste] = useState(false)
@@ -38,6 +46,19 @@ export default function Analyser() {
 
   const handleAnalyse = async () => {
     if (!file && pasteText.length < 100) { setError('Please upload a file or paste document text.'); return }
+
+    // Feature gating check
+    if (user && profile) {
+      const plan = profile.plan || 'free'
+      if (plan === 'free' && (profile.free_scans_used || 0) >= 1) {
+        setError('You have used your free scan this month. Upgrade to continue.')
+        return
+      }
+      if (plan === 'one_off' && (profile.scan_credits || 0) <= 0) {
+        setError('No scan credits remaining. Purchase another report to continue.')
+        return
+      }
+    }
 
     setLoading(true)
     setError('')
@@ -84,7 +105,18 @@ export default function Analyser() {
 
       // Save to Supabase if logged in
       if (user) {
-        if (negotiationId) {
+        // Update scan usage
+      if (profile?.plan === 'free') {
+        await supabase.from('profiles').update({
+          free_scans_used: (profile.free_scans_used || 0) + 1
+        }).eq('id', user.id)
+      } else if (profile?.plan === 'one_off') {
+        await supabase.from('profiles').update({
+          scan_credits: Math.max(0, (profile.scan_credits || 0) - 1)
+        }).eq('id', user.id)
+      }
+
+      if (negotiationId) {
           // Adding to existing negotiation — save immediately
           await saveDocument(parsed, negotiationId)
         } else {
@@ -258,8 +290,40 @@ export default function Analyser() {
             </div>
           )}
 
-          {/* REPORT */}
-          {report && (
+          {/* FREE TIER SCAN RESULT */}
+          {report && profile?.plan === 'free' && !user?.isPaid && (
+            <div className={styles.freeResult}>
+              <div className={styles.freeHeader}>
+                <div className={styles.kicker}>Free scan complete</div>
+                <h2 className={styles.freeTitle}>
+                  {report.clauses?.length || 0} clauses identified
+                </h2>
+                <div className={styles.freeSummary}>{report.summary}</div>
+              </div>
+              <div className={styles.freeStats}>
+                {[
+                  { label: 'High risk', value: (report.clauses||[]).filter(c=>c.danger==='HIGH').length, color: 'var(--risk-h)', bg: 'var(--risk-h-bg)' },
+                  { label: 'Medium risk', value: (report.clauses||[]).filter(c=>c.danger==='MEDIUM').length, color: 'var(--gold)', bg: 'var(--risk-m-bg)' },
+                  { label: 'Low risk', value: (report.clauses||[]).filter(c=>c.danger==='LOW').length, color: 'var(--risk-l)', bg: 'var(--risk-l-bg)' },
+                ].map(s => (
+                  <div key={s.label} className={styles.freeStat} style={{ background: s.bg }}>
+                    <div className={styles.freeStatValue} style={{ color: s.color }}>{s.value}</div>
+                    <div className={styles.freeStatLabel}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div className={styles.freeGate}>
+                <h3>Unlock the full report</h3>
+                <p>See every clause quoted from your document, the risk explained, and a suggested counter position for each issue.</p>
+                <button className="btn-primary" onClick={() => navigate('/pricing')}>
+                  View pricing →
+                </button>
+              </div>
+            </div>
+          )}
+
+        {/* FULL REPORT — paid users */}
+          {report && profile?.plan !== 'free' && (
             <div className={styles.report}>
               <div className={styles.reportHeader}>
                 <h2>Analysis Report</h2>
