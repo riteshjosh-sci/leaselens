@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { supabaseAdmin } from '../lib/supabaseAdmin'
 import { useAuth } from '../context/AuthContext'
 import AdminNav from '../components/AdminNav'
 import styles from './Admin.module.css'
@@ -122,11 +123,11 @@ export default function Admin() {
   const fetchAll = async () => {
     setLoading(true)
     const [profilesRes, docsRes, reportsRes, codesRes, waitlistRes] = await Promise.all([
-      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
-      supabase.from('documents').select('*, negotiations(property_name)').order('uploaded_at', { ascending: false }).limit(200),
-      supabase.from('reports').select('id, created_at, document_id, user_id').order('created_at', { ascending: false }).limit(200),
-      supabase.from('beta_codes').select('*').order('created_at', { ascending: false }),
-      supabase.from('waitlist').select('*').order('created_at', { ascending: false }),
+      supabaseAdmin.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabaseAdmin.from('documents').select('*, negotiations(property_name)').order('uploaded_at', { ascending: false }).limit(200),
+      supabaseAdmin.from('reports').select('id, created_at, document_id, user_id').order('created_at', { ascending: false }).limit(200),
+      supabaseAdmin.from('beta_codes').select('*').order('created_at', { ascending: false }),
+      supabaseAdmin.from('waitlist').select('*').order('created_at', { ascending: false }),
     ])
 
     const u = profilesRes.data || []
@@ -197,26 +198,26 @@ export default function Admin() {
 
   // ── Actions ──
   const handleChangePlan = async (userId, plan) => {
-    await supabase.from('profiles').update({ plan }).eq('id', userId)
+    await supabaseAdmin.from('profiles').update({ plan }).eq('id', userId)
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, plan } : u))
   }
 
   const handleSuspend = async (userId, suspended) => {
-    await supabase.from('profiles').update({ suspended: !suspended }).eq('id', userId)
+    await supabaseAdmin.from('profiles').update({ suspended: !suspended }).eq('id', userId)
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, suspended: !suspended } : u))
   }
 
   const handleDeleteUser = async (userId) => {
     if (!confirm('Delete this user and all their data? This cannot be undone.')) return
-    await supabase.from('profiles').delete().eq('id', userId)
+    await supabaseAdmin.from('profiles').delete().eq('id', userId)
     setUsers(prev => prev.filter(u => u.id !== userId))
   }
 
   const handleDeleteDoc = async (docId, filePath) => {
     if (!confirm('Delete this document and its report?')) return
-    if (filePath) await supabase.storage.from('documents').remove([filePath])
-    await supabase.from('reports').delete().eq('document_id', docId)
-    await supabase.from('documents').delete().eq('id', docId)
+    if (filePath) await supabaseAdmin.storage.from('documents').remove([filePath])
+    await supabaseAdmin.from('reports').delete().eq('document_id', docId)
+    await supabaseAdmin.from('documents').delete().eq('id', docId)
     setDocuments(prev => prev.filter(d => d.id !== docId))
   }
 
@@ -230,13 +231,13 @@ export default function Admin() {
 
   const handleAddCode = async () => {
     if (!newCode.trim()) return
-    await supabase.from('beta_codes').insert({ code: newCode.trim().toUpperCase(), used: false })
+    await supabaseAdmin.from('beta_codes').insert({ code: newCode.trim().toUpperCase(), used: false })
     setNewCode('')
     fetchAll()
   }
 
   const handleDeactivateCode = async (id) => {
-    await supabase.from('beta_codes').update({ used: true }).eq('id', id)
+    await supabaseAdmin.from('beta_codes').update({ used: true }).eq('id', id)
     fetchAll()
   }
 
