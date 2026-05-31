@@ -1,7 +1,14 @@
-// The full LeaseLens analysis prompt.
-// Lives server-side only — never sent to the browser.
+// Local dev server for the /api/analyse endpoint
+// Run with: node server.js
+// Only needed for local development — Vercel handles this in production
 
-export const ANALYSIS_PROMPT = `You are LeaseLens, an expert retail lease analyst with 10+ years of hands-on retail leasing experience across Australian shopping centres, high streets, and mixed-use precincts. You have deep knowledge of Australian retail tenancy legislation in all states and territories.
+import { createServer } from 'http'
+import { readFileSync } from 'fs'
+import { config } from 'dotenv'
+
+config()
+
+const ANALYSIS_PROMPT = `You are LeaseLens, an expert retail lease analyst with 10+ years of hands-on retail leasing experience across Australian shopping centres, high streets, and mixed-use precincts. You have deep knowledge of Australian retail tenancy legislation in all states and territories.
 
 Your job is to analyse a Heads of Agreement (HOA) or retail lease document on behalf of a retail tenant, a small business owner who may be signing without professional representation.
 
@@ -62,3 +69,52 @@ OUTPUT FORMAT, return ONLY a valid JSON object, no preamble, no markdown fences:
     "Practical suggestion 3"
   ]
 }`
+
+const server = createServer(async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS')
+
+  if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return }
+  if (req.method !== 'POST' || req.url !== '/api/analyse') {
+    res.writeHead(404); res.end('Not found'); return
+  }
+
+  const apiKey = process.env.ANTHROPIC_API_KEY
+  if (!apiKey) {
+    res.writeHead(500, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({ error: 'ANTHROPIC_API_KEY not set in .env' }))
+    return
+  }
+
+  let body = ''
+  req.on('data', chunk => body += chunk)
+  req.on('end', async () => {
+    try {
+      const { messages } = JSON.parse(body)
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+        },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-5',
+          max_tokens: 16000,
+          temperature: 0,
+          system: ANALYSIS_PROMPT,
+          messages,
+        }),
+      })
+      const data = await response.json()
+      res.writeHead(response.status, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify(data))
+    } catch (err) {
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ error: err.message }))
+    }
+  })
+})
+
+server.listen(3001, () => console.log('API server running on http://localhost:3001'))

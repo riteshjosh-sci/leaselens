@@ -84,8 +84,24 @@ export default function Analyser() {
 
       // Save to Supabase if logged in
       if (user) {
-        setShowPropertyPrompt(!negotiationId)
-        if (negotiationId) await saveDocument(parsed, negotiationId)
+        if (negotiationId) {
+          // Adding to existing negotiation — save immediately
+          await saveDocument(parsed, negotiationId)
+        } else {
+          // New negotiation — auto-create with filename as default name
+          const defaultName = file?.name?.replace(/.[^/.]+$/, '') || 'New negotiation'
+          const { data: negData } = await supabase.from('negotiations').insert({
+            user_id: user.id,
+            property_name: defaultName,
+            status: 'active',
+          }).select().single()
+          if (negData) {
+            await saveDocument(parsed, negData.id)
+            // Show rename prompt so user can give it a proper name
+            setPropertyName(defaultName)
+            setShowPropertyPrompt(true)
+          }
+        }
       }
 
     } catch (e) {
@@ -119,6 +135,9 @@ export default function Analyser() {
         file_path: filePath,
         version_number: versionNumber,
         overall_risk: parsed.overall_risk,
+        base_rent_psm: parsed.base_rent_psm || null,
+        tenancy_size_sqm: parsed.tenancy_size_sqm || null,
+        total_annual_rent: parsed.total_annual_rent || null,
       }).select().single()
 
       if (docData) {
@@ -135,16 +154,17 @@ export default function Analyser() {
 
   const handleCreateNegotiation = async () => {
     if (!propertyName.trim()) return
-    const { data } = await supabase.from('negotiations').insert({
-      user_id: user.id,
-      property_name: propertyName.trim(),
-      status: 'active',
-    }).select().single()
-
-    if (data && report) {
-      await saveDocument(report, data.id)
-      setShowPropertyPrompt(false)
+    // Find the most recently created negotiation for this user and rename it
+    const { data: negs } = await supabase
+      .from('negotiations')
+      .select('id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+    if (negs?.[0]) {
+      await supabase.from('negotiations').update({ property_name: propertyName.trim() }).eq('id', negs[0].id)
     }
+    setShowPropertyPrompt(false)
   }
 
   const riskBadge = (risk) => {
@@ -222,8 +242,8 @@ export default function Analyser() {
           {/* PROPERTY NAME PROMPT (for new negotiations) */}
           {showPropertyPrompt && report && (
             <div className={styles.propertyPrompt}>
-              <h3>Save to your account</h3>
-              <p>Give this negotiation a name (e.g. "Shop 4, Westfield Perth") so you can track revisions over time.</p>
+              <h3>Report saved ✓</h3>
+              <p>Give this negotiation a name so you can find it easily (e.g. "Shop 4, Westfield Perth").</p>
               <div className={styles.propertyRow}>
                 <input
                   className="input"
@@ -232,7 +252,7 @@ export default function Analyser() {
                   placeholder="Property or negotiation name"
                 />
                 <button className="btn-primary" onClick={handleCreateNegotiation} disabled={!propertyName.trim()}>
-                  Save
+                  Rename
                 </button>
               </div>
             </div>
