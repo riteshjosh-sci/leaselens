@@ -1,4 +1,4 @@
-const Stripe = require('stripe')
+import Stripe from 'stripe'
 
 const PRICES = {
   one_off:  { founding: 'price_1TdELACtxJYrkZjf3kupaC3U', standard: 'price_1TdEMtCtxJYrkZjf6vUavKrt' },
@@ -9,29 +9,20 @@ const PRICES = {
 
 const FOUNDING_PERIOD_ACTIVE = true
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
   res.setHeader('Content-Type', 'application/json')
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' })
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
   const secretKey = process.env.STRIPE_SECRET_KEY
-  if (!secretKey) {
-    return res.status(500).json({ error: 'Stripe secret key not configured' })
-  }
+  if (!secretKey) return res.status(500).json({ error: 'Stripe secret key not configured' })
 
   const stripe = new Stripe(secretKey)
   const { plan, userId, userEmail, successUrl, cancelUrl } = req.body
 
-  if (!plan || !userId || !userEmail) {
-    return res.status(400).json({ error: 'Missing required fields' })
-  }
+  if (!plan || !userId || !userEmail) return res.status(400).json({ error: 'Missing required fields' })
 
   const priceGroup = PRICES[plan]
-  if (!priceGroup) {
-    return res.status(400).json({ error: `Invalid plan: ${plan}` })
-  }
+  if (!priceGroup) return res.status(400).json({ error: `Invalid plan: ${plan}` })
 
   const priceId = FOUNDING_PERIOD_ACTIVE ? priceGroup.founding : priceGroup.standard
   const isSubscription = plan !== 'one_off'
@@ -51,10 +42,9 @@ module.exports = async function handler(req, res) {
         }
       }),
     })
-
     return res.status(200).json({ url: session.url })
   } catch (err) {
-    console.error('Stripe checkout error:', err.message)
+    console.error('Stripe error:', err.message)
     return res.status(500).json({ error: err.message })
   }
 }

@@ -14,7 +14,7 @@ const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
 
 // ── Admin API helpers ──
 async function adminFetch(resource, token) {
-  const res = await fetch(`/api/admin-data.cjs?resource=${resource}`, {
+  const res = await fetch(`/api/admin-data?resource=${resource}`, {
     headers: { Authorization: `Bearer ${token}` }
   })
   if (!res.ok) throw new Error(await res.text())
@@ -22,7 +22,7 @@ async function adminFetch(resource, token) {
 }
 
 async function adminAction(action, payload, token) {
-  const res = await fetch('/api/admin-action.cjs', {
+  const res = await fetch('/api/admin-action', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
     body: JSON.stringify({ action, payload })
