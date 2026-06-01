@@ -160,18 +160,16 @@ export default function Analyser() {
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
 
-      // Trigger Edge Function
-      const edgeFnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-job`
-      const { data: { session } } = await supabase.auth.getSession()
-
-      fetch(edgeFnUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ jobId: job.id }),
-      }).catch(console.error) // Fire and forget — don't await
+      // Trigger Railway worker (fire and forget)
+      const workerUrl = import.meta.env.VITE_WORKER_URL
+      if (workerUrl) {
+        fetch(`${workerUrl}/process`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ jobId: job.id }),
+        }).catch(console.error)
+      }
+      // Worker also polls automatically — no trigger needed if URL not set
 
       // Subscribe to job updates via Realtime
       const subscription = supabase
