@@ -1,4 +1,15 @@
 import ANALYSIS_PROMPT from './_prompt.js'
+
+// Concise prompt for large documents — shorter responses, same analysis quality
+const CONCISE_PROMPT = ANALYSIS_PROMPT + `
+
+IMPORTANT — CONCISE MODE:
+This is a large document. For each clause:
+- risk: maximum 2 sentences
+- context: maximum 1 sentence  
+- counter: maximum 2 sentences
+- quote: first 100 characters only if clause is long
+Be direct and brief. Do not pad responses.`
 import { createClient } from '@supabase/supabase-js'
 import mammoth from 'mammoth'
 
@@ -101,6 +112,14 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No file or text provided' })
     }
 
+    // Use concise mode for large documents to avoid timeout
+    const messageText = typeof messages[0]?.content === 'string' 
+      ? messages[0].content 
+      : messages[0]?.content?.find(c => c.type === 'text')?.text || ''
+    const isLargeDoc = messageText.length > 40000
+    const systemPrompt = isLargeDoc ? CONCISE_PROMPT : ANALYSIS_PROMPT
+    const maxTokens = isLargeDoc ? 8000 : 16000
+
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -110,9 +129,9 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 16000,
+        max_tokens: maxTokens,
         temperature: 0,
-        system: ANALYSIS_PROMPT,
+        system: systemPrompt,
         messages,
       }),
     })
