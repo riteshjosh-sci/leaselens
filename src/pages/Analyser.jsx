@@ -18,6 +18,31 @@ export default function Analyser() {
   const [showPaste, setShowPaste] = useState(false)
   const [loading, setLoading] = useState(false)
   const [loadingMsg, setLoadingMsg] = useState('')
+  const loadingIntervalRef = useRef(null)
+
+  const LOADING_STAGES = [
+    'Reviewing document...',
+    'Extracting key clauses and conditions...',
+    'Reviewing key terms, clauses and conditions...',
+    'Comparing clauses to state legislation...',
+    'Preparing your report...',
+  ]
+
+  const startLoadingCycle = () => {
+    let stage = 0
+    setLoadingMsg(LOADING_STAGES[0])
+    loadingIntervalRef.current = setInterval(() => {
+      stage = (stage + 1) % LOADING_STAGES.length
+      setLoadingMsg(LOADING_STAGES[stage])
+    }, 8000)
+  }
+
+  const stopLoadingCycle = () => {
+    if (loadingIntervalRef.current) {
+      clearInterval(loadingIntervalRef.current)
+      loadingIntervalRef.current = null
+    }
+  }
   const [error, setError] = useState('')
   const [report, setReport] = useState(null)
   const [propertyName, setPropertyName] = useState('')
@@ -69,6 +94,7 @@ export default function Analyser() {
     setLoading(true)
     setError('')
     setReport(null)
+    startLoadingCycle()
 
     try {
       let body
@@ -80,7 +106,7 @@ export default function Analyser() {
 
       } else if (file) {
         // Upload file to Supabase Storage first
-        setLoadingMsg('Uploading document...')
+        // Loading cycle handles messages
         const ext = file.name.split('.').pop().toLowerCase()
         const uploadPath = `temp/${user?.id || 'anon'}/${Date.now()}_${file.name}`
 
@@ -91,7 +117,7 @@ export default function Analyser() {
         if (uploadError) throw new Error('Upload failed: ' + uploadError.message)
 
         body = { filePath: uploadData.path, fileType: ext }
-        setLoadingMsg('Analysing your document. This can take a minute...')
+        // Loading cycle handles messages
       }
 
       const res = await fetch('/api/analyse', {
@@ -154,6 +180,7 @@ export default function Analyser() {
     } catch (e) {
       setError(e.message || 'Something went wrong. Please try again.')
     } finally {
+      stopLoadingCycle()
       setLoading(false)
       setLoadingMsg('')
     }
@@ -307,6 +334,25 @@ export default function Analyser() {
                 <><span className={styles.spinner} />{loadingMsg || 'Analysing...'}</>
               ) : 'Analyse my document'}
             </button>
+
+            {loading && (
+              <div className={styles.loadingStages}>
+                <div className={styles.loadingProgress}>
+                  {['Reviewing', 'Extracting', 'Analysing', 'Legislation', 'Report'].map((stage, i) => {
+                    const currentStage = ['Reviewing document', 'Extracting key', 'Reviewing key terms', 'Comparing clauses', 'Preparing'].findIndex(s => loadingMsg?.startsWith(s))
+                    const isActive = i === currentStage
+                    const isDone = i < currentStage
+                    return (
+                      <div key={i} className={`${styles.stageStep} ${isActive ? styles.stageActive : ''} ${isDone ? styles.stageDone : ''}`}>
+                        <div className={styles.stageDot} />
+                        <span>{stage}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+                <p className={styles.loadingNote}>Please keep this page open while your document is being analysed.</p>
+              </div>
+            )}
 
             {!user && (
               <p className={styles.signInNudge}>
