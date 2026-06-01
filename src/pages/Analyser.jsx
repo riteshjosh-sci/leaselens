@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react'
-import mammoth from 'mammoth'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -115,6 +114,7 @@ export default function Analyser() {
           const arrayBuffer = await file.arrayBuffer()
           let extractedText = ''
           try {
+            const mammoth = await import('https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js')
             const result = await mammoth.extractRawText({ arrayBuffer })
             extractedText = result.value
           } catch (e) {
