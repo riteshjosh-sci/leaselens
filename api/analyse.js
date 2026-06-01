@@ -1,51 +1,31 @@
 import ANALYSIS_PROMPT from './_prompt.js'
+import { createClient } from '@supabase/supabase-js'
 
-// Sections to strip from large documents before sending to Claude
-const SKIP_PATTERNS = [
-  /schedule\s+\d/gi,
-  /annexure\s+[a-z\d]/gi,
-  /appendix\s+[a-z\d]/gi,
-  /exhibit\s+[a-z\d]/gi,
-  /plan\s+\d/gi,
-  /body\s+corporate\s+rules/gi,
-  /centre\s+management\s+procedures/gi,
-  /stamp\s+duty/gi,
-]
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+)
 
-// Strip obviously non-commercial boilerplate from text content
+// Strip non-commercial content and cap size
 function preprocessText(text) {
-  if (!text || text.length < 50000) return text // Only preprocess large docs
-
+  if (!text) return ''
   const lines = text.split('\n')
   const filtered = []
   let skipMode = false
+  const skipPatterns = [/^schedule\s+\d/i, /^annexure\s+[a-z\d]/i, /^appendix\s+[a-z\d]/i]
 
   for (const line of lines) {
     const trimmed = line.trim()
-
-    // Check if we're entering a skip section
-    const isSkipHeader = SKIP_PATTERNS.some(p => p.test(trimmed))
-    if (isSkipHeader && trimmed.length < 80) {
-      skipMode = true
-      continue
-    }
-
-    // Exit skip mode when we hit a new major section (numbered heading)
-    if (skipMode && /^(PART|CLAUSE|SECTION)\s+\d/i.test(trimmed)) {
-      skipMode = false
-    }
-
+    if (!trimmed) { filtered.push(line); continue }
+    if (skipPatterns.some(p => p.test(trimmed)) && trimmed.length < 80) { skipMode = true; continue }
+    if (skipMode && /^(PART|CLAUSE|SECTION|\d+\.)\s+/i.test(trimmed) && trimmed.length < 120) skipMode = false
     if (!skipMode) filtered.push(line)
   }
 
-  const result = filtered.join('\n')
-
-  // If still very large, truncate to first 80000 chars (commercial terms are usually early)
-  if (result.length > 80000) {
-    return result.slice(0, 80000) + '\n\n[Document truncated for analysis — schedules and annexures omitted]'
-  }
-
-  return result
+  const result = filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+  return result.length > 80000
+    ? result.slice(0, 80000) + '\n\n[Document truncated — schedules and annexures omitted]'
+    : result
 }
 
 export default async function handler(req, res) {
@@ -56,26 +36,74 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'API key not configured' })
 
   try {
-    const { messages } = req.body
+    const { filePath, fileType, pasteText } = req.body
+    let messages
 
-    // Pre-process text messages to reduce token count
-    const processedMessages = messages.map(msg => {
-      if (Array.isArray(msg.content)) {
-        return {
-          ...msg,
-          content: msg.content.map(block => {
-            if (block.type === 'text') {
-              return { ...block, text: preprocessText(block.text) }
-            }
-            return block
-          })
+    if (pasteText) {
+      // Pasted text — send directly
+      messages = [{
+        role: 'user',
+        content: `Analyse this retail lease or heads of agreement and return a JSON risk report:\n\n${pasteText}`
+      }]
+
+    } else if (filePath) {
+      const ext = fileType?.toLowerCase()
+
+      if (ext === 'pdf') {
+        // Download PDF from Supabase and send as base64
+        const { data, error } = await supabase.storage.from('documents').download(filePath)
+        if (error) throw new Error('Could not retrieve file: ' + error.message)
+
+        const arrayBuffer = await data.arrayBuffer()
+        const base64 = Buffer.from(arrayBuffer).toString('base64')
+
+        messages = [{
+          role: 'user',
+          content: [
+            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+            { type: 'text', text: 'Analyse this retail lease or heads of agreement. Focus on all commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.' }
+          ]
+        }]
+
+      } else {
+        // DOC/DOCX/TXT — download and extract text server-side with mammoth
+        const { data, error } = await supabase.storage.from('documents').download(filePath)
+        if (error) throw new Error('Could not retrieve file: ' + error.message)
+
+        const arrayBuffer = await data.arrayBuffer()
+        let extractedText = ''
+
+        if (ext === 'docx') {
+          const mammoth = await import('mammoth')
+          const result = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) })
+          extractedText = result.value
+        } else if (ext === 'doc') {
+          // Legacy .doc — try mammoth, it handles some .doc files
+          try {
+            const mammoth = await import('mammoth')
+            const result = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) })
+            extractedText = result.value
+          } catch {
+            throw new Error('Legacy .doc files are not supported. Please save as .docx or PDF and try again.')
+          }
+        } else if (ext === 'txt') {
+          extractedText = Buffer.from(arrayBuffer).toString('utf8')
         }
+
+        if (!extractedText || extractedText.length < 100) {
+          throw new Error('Could not extract text from this document. Please try saving as PDF and uploading again.')
+        }
+
+        const processed = preprocessText(extractedText)
+
+        messages = [{
+          role: 'user',
+          content: `Analyse this retail lease or heads of agreement. Focus on all commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.\n\n${processed}`
+        }]
       }
-      if (typeof msg.content === 'string') {
-        return { ...msg, content: preprocessText(msg.content) }
-      }
-      return msg
-    })
+    } else {
+      return res.status(400).json({ error: 'No file or text provided' })
+    }
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -89,12 +117,13 @@ export default async function handler(req, res) {
         max_tokens: 16000,
         temperature: 0,
         system: ANALYSIS_PROMPT,
-        messages: processedMessages,
+        messages,
       }),
     })
 
     const data = await response.json()
     return res.status(response.status).json(data)
+
   } catch (err) {
     console.error('Analyse error:', err.message)
     return res.status(500).json({ error: err.message })

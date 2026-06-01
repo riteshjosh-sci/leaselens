@@ -6,41 +6,11 @@ import Nav from '../components/Nav'
 import ClauseCard from '../components/ClauseCard'
 import styles from './Analyser.module.css'
 
-
-// Strip non-commercial content and cap document size
-function preprocessDocText(text) {
-  if (!text) return ''
-  const lines = text.split('\n')
-  const filtered = []
-  let skipMode = false
-  const skipPatterns = [/^schedule\s+\d/i, /^annexure\s+[a-z\d]/i, /^appendix\s+[a-z\d]/i]
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-    if (!trimmed) { filtered.push(line); continue }
-    if (skipPatterns.some(p => p.test(trimmed)) && trimmed.length < 80) { skipMode = true; continue }
-    if (skipMode && /^(PART|CLAUSE|SECTION|\d+\.)\s+/i.test(trimmed) && trimmed.length < 120) skipMode = false
-    if (!skipMode) filtered.push(line)
-  }
-
-  const result = filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim()
-  return result.length > 80000
-    ? result.slice(0, 80000) + '\n\n[Document truncated — schedules and annexures omitted]'
-    : result
-}
-
 export default function Analyser() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
   const negotiationId = location.state?.negotiationId || null
-
-  useEffect(() => {
-    if (user) {
-      supabase.from('profiles').select('*').eq('id', user.id).single()
-        .then(({ data }) => setProfile(data))
-    }
-  }, [user])
 
   const [profile, setProfile] = useState(null)
   const [file, setFile] = useState(null)
@@ -54,10 +24,20 @@ export default function Analyser() {
   const [showPropertyPrompt, setShowPropertyPrompt] = useState(false)
   const fileInputRef = useRef()
 
+  useEffect(() => {
+    if (user) {
+      supabase.from('profiles').select('*').eq('id', user.id).single()
+        .then(({ data }) => setProfile(data))
+    }
+  }, [user])
+
   const handleFile = (f) => {
     if (!f) return
     const ext = f.name.split('.').pop().toLowerCase()
-    if (!['pdf', 'doc', 'docx', 'txt'].includes(ext)) { setError('Please upload a PDF, Word, or text document.'); return }
+    if (!['pdf', 'doc', 'docx', 'txt'].includes(ext)) {
+      setError('Please upload a PDF, Word, or text document.')
+      return
+    }
     setFile(f)
     setError('')
   }
@@ -68,9 +48,12 @@ export default function Analyser() {
   }
 
   const handleAnalyse = async () => {
-    if (!file && pasteText.length < 100) { setError('Please upload a file or paste document text.'); return }
+    if (!file && pasteText.length < 100) {
+      setError('Please upload a file or paste document text.')
+      return
+    }
 
-    // Feature gating check
+    // Feature gating
     if (user && profile) {
       const plan = profile.plan || 'free'
       if (plan === 'free' && (profile.free_scans_used || 0) >= 1) {
@@ -86,130 +69,78 @@ export default function Analyser() {
     setLoading(true)
     setError('')
     setReport(null)
-    setLoadingMsg('Reading your document...')
 
     try {
-      let messages
+      let body
 
-      if (file) {
+      if (pasteText && !file) {
+        // Pasted text — send directly
+        body = { pasteText }
+        setLoadingMsg('Reviewing your document...')
+
+      } else if (file) {
+        // Upload file to Supabase Storage first
+        setLoadingMsg('Uploading document...')
         const ext = file.name.split('.').pop().toLowerCase()
+        const uploadPath = `temp/${user?.id || 'anon'}/${Date.now()}_${file.name}`
 
-        if (ext === 'pdf') {
-          // PDFs — send as base64, Claude reads natively
-          const arrayBuffer = await file.arrayBuffer()
-          const bytes = new Uint8Array(arrayBuffer)
-          let binary = ''
-          for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
-          const base64 = btoa(binary)
-          messages = [{
-            role: 'user',
-            content: [
-              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-              { type: 'text', text: 'Analyse this retail lease or heads of agreement. Focus on all commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.' }
-            ]
-          }]
-        } else if (ext === 'doc' || ext === 'docx') {
-          // DOC/DOCX — extract text using JSZip (docx is a zip file)
-          setLoadingMsg('Extracting document text...')
-          const arrayBuffer = await file.arrayBuffer()
-          let extractedText = ''
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('documents')
+          .upload(uploadPath, file, { upsert: true })
 
-          if (ext === 'docx') {
-            try {
-              const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default
-              const zip = await JSZip.loadAsync(arrayBuffer)
-              const docXml = await zip.file('word/document.xml')?.async('string')
-              if (docXml) {
-                // Strip XML tags and extract plain text
-                extractedText = docXml
-                  .replace(/<w:br[^>]*\/>/gi, '\n')
-                  .replace(/<w:p[ >][^>]*>/gi, '\n')
-                  .replace(/<[^>]+>/g, ' ')
-                  .replace(/&amp;/g, '&')
-                  .replace(/&lt;/g, '<')
-                  .replace(/&gt;/g, '>')
-                  .replace(/&quot;/g, '"')
-                  .replace(/&apos;/g, "'")
-                  .replace(/[ \t]+/g, ' ')
-                  .replace(/\n[ \t]+/g, '\n')
-                  .replace(/\n{3,}/g, '\n\n')
-                  .trim()
-              }
-            } catch (e) {
-              console.error('DOCX extraction failed:', e)
-            }
-          }
+        if (uploadError) throw new Error('Upload failed: ' + uploadError.message)
 
-          if (!extractedText || extractedText.length < 100) {
-            // Legacy .doc or extraction failed — send as base64 and let Claude try
-            const bytes = new Uint8Array(arrayBuffer)
-            let binary = ''
-            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
-            const base64 = btoa(binary)
-            messages = [{
-              role: 'user',
-              content: [
-                { type: 'document', source: { type: 'base64', media_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', data: base64 } },
-                { type: 'text', text: 'Analyse this retail lease or heads of agreement. Focus on all commercial terms, special conditions, and clauses that affect the tenant financially or operationally.' }
-              ]
-            }]
-          } else {
-            const processed = preprocessDocText(extractedText)
-            messages = [{
-              role: 'user',
-              content: `Analyse this retail lease or heads of agreement. Focus on all commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.\n\n${processed}`
-            }]
-          }
-        } else if (ext === 'txt') {
-          const text = await file.text()
-          messages = [{ role: 'user', content: `Analyse this retail lease or heads of agreement and return a JSON risk report:\n\n${text}` }]
-        }
-      } else {
-        messages = [{ role: 'user', content: `Analyse this retail lease or heads of agreement and return a JSON risk report:\n\n${pasteText}` }]
+        body = { filePath: uploadData.path, fileType: ext }
+        setLoadingMsg('Analysing your document. This can take a minute...')
       }
-
-      setLoadingMsg('Reviewing your document. This can take a couple of minutes...')
 
       const res = await fetch('/api/analyse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages }),
+        body: JSON.stringify(body),
       })
 
-      if (!res.ok) throw new Error('Analysis failed. Please try again.')
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.error || 'Analysis failed. Please try again.')
+      }
+
       const data = await res.json()
-      const raw = data.content[0].text.trim().replace(/^```json\s*/, '').replace(/\s*```$/, '')
+      if (data.error) throw new Error(data.error)
+
+      const raw = data.content[0].text.trim()
+        .replace(/^```json\s*/, '')
+        .replace(/\s*```$/, '')
       const parsed = JSON.parse(raw)
 
       setReport(parsed)
 
-      // Save to Supabase if logged in
-      if (user) {
-        // Update scan usage
-      if (profile?.plan === 'free') {
-        await supabase.from('profiles').update({
-          free_scans_used: (profile.free_scans_used || 0) + 1
-        }).eq('id', user.id)
-      } else if (profile?.plan === 'one_off') {
-        await supabase.from('profiles').update({
-          scan_credits: Math.max(0, (profile.scan_credits || 0) - 1)
-        }).eq('id', user.id)
+      // Update scan usage
+      if (user && profile) {
+        if (profile.plan === 'free') {
+          await supabase.from('profiles').update({
+            free_scans_used: (profile.free_scans_used || 0) + 1
+          }).eq('id', user.id)
+        } else if (profile.plan === 'one_off') {
+          await supabase.from('profiles').update({
+            scan_credits: Math.max(0, (profile.scan_credits || 0) - 1)
+          }).eq('id', user.id)
+        }
       }
 
-      if (negotiationId) {
-          // Adding to existing negotiation — save immediately
-          await saveDocument(parsed, negotiationId)
+      // Save to Supabase if logged in
+      if (user) {
+        if (negotiationId) {
+          await saveDocument(parsed, negotiationId, body.filePath)
         } else {
-          // New negotiation — auto-create with filename as default name
-          const defaultName = file?.name?.replace(/.[^/.]+$/, '') || 'New negotiation'
+          const defaultName = file?.name?.replace(/\.[^/.]+$/, '') || 'New negotiation'
           const { data: negData } = await supabase.from('negotiations').insert({
             user_id: user.id,
             property_name: defaultName,
             status: 'active',
           }).select().single()
           if (negData) {
-            await saveDocument(parsed, negData.id)
-            // Show rename prompt so user can give it a proper name
+            await saveDocument(parsed, negData.id, body.filePath)
             setPropertyName(defaultName)
             setShowPropertyPrompt(true)
           }
@@ -224,10 +155,17 @@ export default function Analyser() {
     }
   }
 
-  const saveDocument = async (parsed, negId) => {
+  const saveDocument = async (parsed, negId, existingFilePath) => {
     try {
-      let filePath = null
-      if (file) {
+      let filePath = existingFilePath || null
+
+      // If file was uploaded to temp, move to permanent location
+      if (filePath && filePath.startsWith('temp/')) {
+        const permanentPath = `${user.id}/${negId}/${Date.now()}_${file.name}`
+        await supabase.storage.from('documents').move(filePath, permanentPath)
+        filePath = permanentPath
+      } else if (file && !filePath) {
+        // Upload file if not already uploaded
         const path = `${user.id}/${negId}/${Date.now()}_${file.name}`
         const { data: uploadData } = await supabase.storage.from('documents').upload(path, file)
         filePath = uploadData?.path
@@ -235,7 +173,7 @@ export default function Analyser() {
 
       const { data: countData } = await supabase
         .from('documents')
-        .select('id', { count: 'exact' })
+        .select('id')
         .eq('negotiation_id', negId)
 
       const versionNumber = (countData?.length || 0) + 1
@@ -266,21 +204,25 @@ export default function Analyser() {
 
   const handleCreateNegotiation = async () => {
     if (!propertyName.trim()) return
-    // Find the most recently created negotiation for this user and rename it
     const { data: negs } = await supabase
-      .from('negotiations')
-      .select('id')
+      .from('negotiations').select('id')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(1)
     if (negs?.[0]) {
-      await supabase.from('negotiations').update({ property_name: propertyName.trim() }).eq('id', negs[0].id)
+      await supabase.from('negotiations')
+        .update({ property_name: propertyName.trim() })
+        .eq('id', negs[0].id)
     }
     setShowPropertyPrompt(false)
   }
 
   const riskBadge = (risk) => {
-    const map = { HIGH: ['badge-high', '● High Risk'], MEDIUM: ['badge-medium', '● Medium Risk'], LOW: ['badge-low', '● Low Risk'] }
+    const map = {
+      HIGH: ['badge-high', '● High Risk'],
+      MEDIUM: ['badge-medium', '● Medium Risk'],
+      LOW: ['badge-low', '● Low Risk']
+    }
     const [cls, label] = map[risk] || map['MEDIUM']
     return <span className={`badge ${cls}`} style={{ fontSize: 12, padding: '5px 12px' }}>{label}</span>
   }
@@ -311,7 +253,13 @@ export default function Analyser() {
                 </button>
               )}
             </div>
-            <input ref={fileInputRef} type="file" style={{ display: 'none' }} accept=".pdf,.txt,.doc,.docx" onChange={e => handleFile(e.target.files[0])} />
+            <input
+              ref={fileInputRef}
+              type="file"
+              style={{ display: 'none' }}
+              accept=".pdf,.txt,.doc,.docx"
+              onChange={e => handleFile(e.target.files[0])}
+            />
 
             <div className={styles.pasteToggle}>
               <button onClick={() => setShowPaste(!showPaste)}>
@@ -351,7 +299,7 @@ export default function Analyser() {
             )}
           </div>
 
-          {/* PROPERTY NAME PROMPT (for new negotiations) */}
+          {/* PROPERTY NAME PROMPT */}
           {showPropertyPrompt && report && (
             <div className={styles.propertyPrompt}>
               <h3>Report saved ✓</h3>
@@ -370,8 +318,8 @@ export default function Analyser() {
             </div>
           )}
 
-          {/* FREE TIER SCAN RESULT */}
-          {report && profile?.plan === 'free' && !user?.isPaid && (
+          {/* FREE TIER RESULT */}
+          {report && profile?.plan === 'free' && (
             <div className={styles.freeResult}>
               <div className={styles.freeHeader}>
                 <div className={styles.kicker}>Free scan complete</div>
@@ -402,7 +350,7 @@ export default function Analyser() {
             </div>
           )}
 
-        {/* FULL REPORT — paid users */}
+          {/* FULL REPORT */}
           {report && profile?.plan !== 'free' && (
             <div className={styles.report}>
               <div className={styles.reportHeader}>
@@ -430,6 +378,31 @@ export default function Analyser() {
                 </div>
               )}
 
+              <div className={styles.legalDisclaimer}>
+                DISCLAIMER: LeaseLens is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.
+              </div>
+            </div>
+          )}
+
+          {/* NOT LOGGED IN — show full report but prompt to save */}
+          {report && !user && (
+            <div className={styles.report}>
+              <div className={styles.reportHeader}>
+                <h2>Analysis Report</h2>
+                {riskBadge(report.overall_risk)}
+              </div>
+              <div className={styles.summary}>{report.summary}</div>
+              <div className={styles.sectionLabel}>Clause-by-clause findings</div>
+              <div className={styles.clauses}>
+                {(report.clauses || []).map((c, i) => <ClauseCard key={i} clause={c} />)}
+              </div>
+              <div className={styles.nextSteps}>
+                <h3>Recommended next steps</h3>
+                <ol>{(report.next_steps || []).map((s, i) => <li key={i}>{s}</li>)}</ol>
+              </div>
+              <div className={styles.savedNote} style={{ background: 'var(--gold-light)', borderColor: '#e0d5c0', color: 'var(--risk-m)' }}>
+                <a href="/signup">Create a free account</a> to save this report and track future revisions.
+              </div>
               <div className={styles.legalDisclaimer}>
                 DISCLAIMER: LeaseLens is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.
               </div>
