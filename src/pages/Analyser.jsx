@@ -75,6 +75,21 @@ export default function Analyser() {
     handleFile(e.dataTransfer.files[0])
   }
 
+  const handleJobUpdate = (jobData, subscription, negId) => {
+    if (jobData.status === 'complete') {
+      stopLoadingCycle()
+      if (subscription) subscription.unsubscribe()
+      setReport(jobData.report_json)
+      setLoading(false)
+      if (negId && !negotiationId) setShowPropertyPrompt(true)
+    } else if (jobData.status === 'failed') {
+      stopLoadingCycle()
+      if (subscription) subscription.unsubscribe()
+      setError(jobData.error || 'Analysis failed. Please try again.')
+      setLoading(false)
+    }
+  }
+
   const handleAnalyse = async () => {
     if (!file && pasteText.length < 100) {
       setError('Please upload a file or paste document text.')
@@ -181,38 +196,31 @@ export default function Analyser() {
           filter: `id=eq.${job.id}`,
         }, async (payload) => {
           const updatedJob = payload.new
-
-          if (updatedJob.status === 'complete') {
-            stopLoadingCycle()
-            subscription.unsubscribe()
-
-            const parsed = updatedJob.report_json
-            setReport(parsed)
-            setLoading(false)
-
-            if (negId && !negotiationId) {
-              setShowPropertyPrompt(true)
-            }
-
-          } else if (updatedJob.status === 'failed') {
-            stopLoadingCycle()
-            subscription.unsubscribe()
-            setError(updatedJob.error || 'Analysis failed. Please try again.')
-            setLoading(false)
-          }
+          handleJobUpdate(updatedJob, subscription, negId)
         })
         .subscribe()
 
       jobSubscriptionRef.current = subscription
 
+      // Also poll every 3 seconds as fallback in case Realtime misses the event
+      const pollInterval = setInterval(async () => {
+        const { data: jobData } = await supabase
+          .from('jobs')
+          .select('status, report_json, error')
+          .eq('id', job.id)
+          .single()
+
+        if (jobData?.status === 'complete' || jobData?.status === 'failed') {
+          clearInterval(pollInterval)
+          handleJobUpdate(jobData, subscription, negId)
+        }
+      }, 3000)
+
       // Fallback timeout — if no response in 280 seconds show error
       setTimeout(() => {
-        if (loading) {
-          stopLoadingCycle()
-          subscription.unsubscribe()
-          setError('Analysis is taking longer than expected. Please try again with a smaller document.')
-          setLoading(false)
-        }
+        stopLoadingCycle()
+        setError('Analysis is taking longer than expected. Please try again.')
+        setLoading(false)
       }, 280000)
 
     } catch (e) {
