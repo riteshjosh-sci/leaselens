@@ -242,7 +242,13 @@ Deno.serve(async (req) => {
       const uint8Array = new Uint8Array(arrayBuffer)
 
       if (ext === 'pdf') {
-        const base64 = btoa(String.fromCharCode(...uint8Array))
+        // Safe base64 encoding for large files — spread operator fails on large arrays
+        let base64 = ''
+        const chunkSize = 8192
+        for (let i = 0; i < uint8Array.length; i += chunkSize) {
+          base64 += String.fromCharCode(...uint8Array.slice(i, i + chunkSize))
+        }
+        base64 = btoa(base64)
         messages = [{
           role: 'user',
           content: [
