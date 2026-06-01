@@ -189,6 +189,55 @@ function repairTruncatedJson(raw: string): any {
   }
 }
 
+
+// Minimal PDF text extractor — no external libraries needed
+// Extracts text from PDF content streams directly
+function extractPdfText(data: Uint8Array): string {
+  const text = new TextDecoder('latin1').decode(data)
+  const extracted: string[] = []
+
+  // Extract text from BT...ET blocks (PDF text operators)
+  const btEtRegex = /BT([sS]*?)ET/g
+  let match
+  while ((match = btEtRegex.exec(text)) !== null) {
+    const block = match[1]
+    // Extract strings from Tj, TJ, ' and " operators
+    const strRegex = /\(([^)\\]|\\.)*\)|<([0-9A-Fa-f\s]+)>/g
+    let strMatch
+    while ((strMatch = strRegex.exec(block)) !== null) {
+      if (strMatch[1] !== undefined) {
+        // Regular string (...)
+        const str = strMatch[0]
+          .slice(1, -1)
+          .replace(/\\n/g, '\n')
+          .replace(/\\r/g, '\r')
+          .replace(/\\t/g, '\t')
+          .replace(/\\\(/g, '(')
+          .replace(/\\\)/g, ')')
+          .replace(/\\\\/g, '\\')
+        extracted.push(str)
+      } else if (strMatch[2] !== undefined) {
+        // Hex string <...>
+        const hex = strMatch[2].replace(/\s/g, '')
+        let str = ''
+        for (let i = 0; i < hex.length; i += 2) {
+          const code = parseInt(hex.slice(i, i + 2), 16)
+          if (code > 31) str += String.fromCharCode(code)
+        }
+        extracted.push(str)
+      }
+    }
+    extracted.push('\n')
+  }
+
+  return extracted
+    .join(' ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/\n[ \t]+/g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
