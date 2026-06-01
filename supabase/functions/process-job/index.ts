@@ -93,8 +93,8 @@ function preprocessText(text: string): string {
   }
 
   const result = filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim()
-  return result.length > 80000
-    ? result.slice(0, 80000) + '\n\n[Document truncated — schedules and annexures omitted]'
+  return result.length > 50000
+    ? result.slice(0, 50000) + '\n\n[Document truncated — schedules and annexures omitted]'
     : result
 }
 
@@ -198,8 +198,10 @@ Deno.serve(async (req) => {
       throw new Error('No file or text provided')
     }
 
-    const isLargeDoc = typeof messages[0]?.content === 'string' && messages[0].content.length > 40000
+    const isLargeDoc = typeof messages[0]?.content === 'string' && messages[0].content.length > 30000
     const maxTokens = isLargeDoc ? 8000 : 16000
+    // Use Haiku for large docs — 3x faster, still high quality
+    const model = isLargeDoc ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-5'
 
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -209,7 +211,7 @@ Deno.serve(async (req) => {
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-5',
+        model,
         max_tokens: maxTokens,
         temperature: 0,
         system: ANALYSIS_PROMPT,
