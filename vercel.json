@@ -3,8 +3,11 @@
     { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "functions": {
-    "api/*.js": {
-      "includeFiles": "api/**"
+    "api/analyse.js": {
+      "maxDuration": 60
+    },
+    "api/stripe-webhook.js": {
+      "maxDuration": 10
     }
   }
 }
