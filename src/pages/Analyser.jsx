@@ -109,28 +109,57 @@ export default function Analyser() {
             ]
           }]
         } else if (ext === 'doc' || ext === 'docx') {
-          // DOC/DOCX — extract text in browser with mammoth, send only text
+          // DOC/DOCX — extract text using JSZip (docx is a zip file)
           setLoadingMsg('Extracting document text...')
           const arrayBuffer = await file.arrayBuffer()
           let extractedText = ''
-          try {
-            const mammoth = await import('https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js')
-            const result = await mammoth.extractRawText({ arrayBuffer })
-            extractedText = result.value
-          } catch (e) {
-            throw new Error('Could not read this Word document. Please try saving it as PDF and uploading again.')
+
+          if (ext === 'docx') {
+            try {
+              const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js')).default
+              const zip = await JSZip.loadAsync(arrayBuffer)
+              const docXml = await zip.file('word/document.xml')?.async('string')
+              if (docXml) {
+                // Strip XML tags and extract plain text
+                extractedText = docXml
+                  .replace(/<w:br[^>]*\/>/gi, '\n')
+                  .replace(/<w:p[ >][^>]*>/gi, '\n')
+                  .replace(/<[^>]+>/g, ' ')
+                  .replace(/&amp;/g, '&')
+                  .replace(/&lt;/g, '<')
+                  .replace(/&gt;/g, '>')
+                  .replace(/&quot;/g, '"')
+                  .replace(/&apos;/g, "'")
+                  .replace(/[ \t]+/g, ' ')
+                  .replace(/\n[ \t]+/g, '\n')
+                  .replace(/\n{3,}/g, '\n\n')
+                  .trim()
+              }
+            } catch (e) {
+              console.error('DOCX extraction failed:', e)
+            }
           }
 
           if (!extractedText || extractedText.length < 100) {
-            throw new Error('Could not extract text from this document. Please try saving as PDF and uploading again.')
+            // Legacy .doc or extraction failed — send as base64 and let Claude try
+            const bytes = new Uint8Array(arrayBuffer)
+            let binary = ''
+            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+            const base64 = btoa(binary)
+            messages = [{
+              role: 'user',
+              content: [
+                { type: 'document', source: { type: 'base64', media_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', data: base64 } },
+                { type: 'text', text: 'Analyse this retail lease or heads of agreement. Focus on all commercial terms, special conditions, and clauses that affect the tenant financially or operationally.' }
+              ]
+            }]
+          } else {
+            const processed = preprocessDocText(extractedText)
+            messages = [{
+              role: 'user',
+              content: `Analyse this retail lease or heads of agreement. Focus on all commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.\n\n${processed}`
+            }]
           }
-
-          // Strip schedules/annexures and cap at 80,000 chars
-          const processed = preprocessDocText(extractedText)
-          messages = [{
-            role: 'user',
-            content: `Analyse this retail lease or heads of agreement. Focus on all commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.\n\n${processed}`
-          }]
         } else if (ext === 'txt') {
           const text = await file.text()
           messages = [{ role: 'user', content: `Analyse this retail lease or heads of agreement and return a JSON risk report:\n\n${text}` }]
