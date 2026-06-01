@@ -202,26 +202,32 @@ export default function Analyser() {
 
       jobSubscriptionRef.current = subscription
 
-      // Also poll every 3 seconds as fallback in case Realtime misses the event
-      const pollInterval = setInterval(async () => {
+      // Poll every 5 seconds as fallback in case Realtime misses the event
+      // Check immediately first
+      const checkJob = async () => {
         const { data: jobData } = await supabase
           .from('jobs')
           .select('status, report_json, error')
           .eq('id', job.id)
           .single()
-
         if (jobData?.status === 'complete' || jobData?.status === 'failed') {
           clearInterval(pollInterval)
           handleJobUpdate(jobData, subscription, negId)
+          return true
         }
-      }, 3000)
+        return false
+      }
+      // Start polling every 5 seconds
+      const pollInterval = setInterval(async () => {
+        await checkJob()
+      }, 5000)
 
-      // Fallback timeout — if no response in 280 seconds show error
+      // Fallback timeout — 10 minutes max
       setTimeout(() => {
         stopLoadingCycle()
         setError('Analysis is taking longer than expected. Please try again.')
         setLoading(false)
-      }, 280000)
+      }, 600000)
 
     } catch (e) {
       stopLoadingCycle()
