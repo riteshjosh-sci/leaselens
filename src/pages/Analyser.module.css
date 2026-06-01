@@ -88,3 +88,42 @@
 .freeGate { background: var(--ink); border-radius: 2px; padding: 32px; text-align: center; }
 .freeGate h3 { font-family: 'DM Serif Display', serif; font-size: 24px; font-weight: 400; color: var(--white); margin-bottom: 12px; }
 .freeGate p { font-size: 15px; color: rgba(255,255,255,0.7); line-height: 1.75; font-weight: 300; margin-bottom: 24px; max-width: 440px; margin-left: auto; margin-right: auto; }
+
+/* Legacy .doc error */
+.docError {
+  background: var(--risk-m-bg);
+  border: 1px solid #e0d5c0;
+  border-left: 3px solid var(--gold);
+  border-radius: 0 2px 2px 0;
+  padding: 16px 20px;
+  margin-top: 12px;
+}
+.docError strong {
+  display: block;
+  font-size: 14px;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.docError p {
+  font-size: 13px;
+  color: var(--ink-mid);
+  margin-bottom: 10px;
+  font-weight: 300;
+}
+.docError ol {
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.docError li {
+  font-size: 13px;
+  color: var(--ink-mid);
+  line-height: 1.5;
+  font-weight: 300;
+}
+.docError li strong {
+  display: inline;
+  font-size: 13px;
+  color: var(--ink);
+}

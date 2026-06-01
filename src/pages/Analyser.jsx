@@ -102,7 +102,11 @@ export default function Analyser() {
 
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
-        throw new Error(errData.error || 'Analysis failed. Please try again.')
+        const errMsg = errData.error || 'Analysis failed. Please try again.'
+        if (errMsg === 'LEGACY_DOC') {
+          throw new Error('LEGACY_DOC')
+        }
+        throw new Error(errMsg)
       }
 
       const data = await res.json()
@@ -279,7 +283,19 @@ export default function Analyser() {
               By analysing a document you agree that LeaseLens may use anonymised clause data from your submission to improve future analysis. No personally identifying information is retained.
             </p>
 
-            {error && <div className={styles.error}>{error}</div>}
+            {error && error !== 'LEGACY_DOC' && <div className={styles.error}>{error}</div>}
+            {error === 'LEGACY_DOC' && (
+              <div className={styles.docError}>
+                <strong>Legacy .doc format detected</strong>
+                <p>This file is in the old Word format (.doc) which cannot be processed directly. Please convert it first:</p>
+                <ol>
+                  <li>Open the file in Microsoft Word or Google Docs</li>
+                  <li>Go to File → Save As (Word) or File → Download (Google Docs)</li>
+                  <li>Save as <strong>.docx</strong> or <strong>PDF</strong></li>
+                  <li>Upload the converted file here</li>
+                </ol>
+              </div>
+            )}
 
             <button
               className="btn-primary"

@@ -1,5 +1,7 @@
 import ANALYSIS_PROMPT from './_prompt.js'
 import { createClient } from '@supabase/supabase-js'
+import mammoth from 'mammoth'
+
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -74,18 +76,12 @@ export default async function handler(req, res) {
         let extractedText = ''
 
         if (ext === 'docx') {
-          const mammoth = await import('mammoth')
           const result = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) })
           extractedText = result.value
         } else if (ext === 'doc') {
-          // Legacy .doc — try mammoth, it handles some .doc files
-          try {
-            const mammoth = await import('mammoth')
-            const result = await mammoth.extractRawText({ buffer: Buffer.from(arrayBuffer) })
-            extractedText = result.value
-          } catch {
-            throw new Error('Legacy .doc files are not supported. Please save as .docx or PDF and try again.')
-          }
+          // Legacy .doc binary format — not supported by mammoth
+          // User must convert to .docx or PDF
+          throw new Error('LEGACY_DOC')
         } else if (ext === 'txt') {
           extractedText = Buffer.from(arrayBuffer).toString('utf8')
         }
