@@ -104,19 +104,47 @@ async function extractDocxText(data: Uint8Array): Promise<string> {
   const docXml = await zip.file('word/document.xml')?.async('string')
   if (!docXml) throw new Error('Could not read document XML')
 
-  return docXml
-    .replace(/<w:br[^>]*\/>/gi, '\n')
-    .replace(/<w:p[ >][^>]*>/gi, '\n')
-    .replace(/<[^>]+>/g, ' ')
+  // Convert to clean markdown — much more token efficient than raw text
+  let md = docXml
+
+  // Headings — w:pStyle with Heading
+  md = md.replace(/<w:pStyle w:val="Heading1"[^>]*\/><\/w:pPr>/g, '### ')
+  md = md.replace(/<w:pStyle w:val="Heading2"[^>]*\/><\/w:pPr>/g, '## ')
+  md = md.replace(/<w:pStyle w:val="Heading3"[^>]*\/><\/w:pPr>/g, '# ')
+
+  // Bold text
+  md = md.replace(/<w:b\/><w:bCs\/>/g, '**')
+
+  // Line breaks and paragraphs
+  md = md.replace(/<w:br[^>]*\/>/gi, '\n')
+  md = md.replace(/<\/w:p>/gi, '\n')
+  md = md.replace(/<w:p[ >][^>]*>/gi, '')
+
+  // Table cells — separate with pipe
+  md = md.replace(/<\/w:tc>/gi, ' | ')
+  md = md.replace(/<\/w:tr>/gi, '\n')
+
+  // Strip all remaining XML tags
+  md = md.replace(/<[^>]+>/g, '')
+
+  // Decode HTML entities
+  md = md
     .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&apos;/g, "'")
+    .replace(/&#x[0-9A-Fa-f]+;/g, ' ')
+    .replace(/&[a-z]+;/g, ' ')
+
+  // Clean up whitespace
+  md = md
     .replace(/[ \t]+/g, ' ')
     .replace(/\n[ \t]+/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim()
+
+  return md
 }
 
 
