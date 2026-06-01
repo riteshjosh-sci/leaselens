@@ -6,6 +6,14 @@ import Nav from '../components/Nav'
 import ClauseCard from '../components/ClauseCard'
 import styles from './Analyser.module.css'
 
+const LOADING_STAGES = [
+  'Reviewing document...',
+  'Extracting key clauses and conditions...',
+  'Reviewing key terms, clauses and conditions...',
+  'Comparing clauses to state legislation...',
+  'Preparing your report...',
+]
+
 export default function Analyser() {
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -17,44 +25,39 @@ export default function Analyser() {
   const [pasteText, setPasteText] = useState('')
   const [showPaste, setShowPaste] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [loadingMsg, setLoadingMsg] = useState('')
-  const loadingIntervalRef = useRef(null)
-
-  const LOADING_STAGES = [
-    'Reviewing document...',
-    'Extracting key clauses and conditions...',
-    'Reviewing key terms, clauses and conditions...',
-    'Comparing clauses to state legislation...',
-    'Preparing your report...',
-  ]
-
-  const startLoadingCycle = () => {
-    let stage = 0
-    setLoadingMsg(LOADING_STAGES[0])
-    loadingIntervalRef.current = setInterval(() => {
-      stage = (stage + 1) % LOADING_STAGES.length
-      setLoadingMsg(LOADING_STAGES[stage])
-    }, 8000)
-  }
-
-  const stopLoadingCycle = () => {
-    if (loadingIntervalRef.current) {
-      clearInterval(loadingIntervalRef.current)
-      loadingIntervalRef.current = null
-    }
-  }
+  const [loadingStage, setLoadingStage] = useState(0)
   const [error, setError] = useState('')
   const [report, setReport] = useState(null)
   const [propertyName, setPropertyName] = useState('')
   const [showPropertyPrompt, setShowPropertyPrompt] = useState(false)
   const fileInputRef = useRef()
+  const stageIntervalRef = useRef(null)
+  const jobSubscriptionRef = useRef(null)
 
   useEffect(() => {
     if (user) {
       supabase.from('profiles').select('*').eq('id', user.id).single()
         .then(({ data }) => setProfile(data))
     }
+    return () => {
+      if (stageIntervalRef.current) clearInterval(stageIntervalRef.current)
+      if (jobSubscriptionRef.current) jobSubscriptionRef.current.unsubscribe()
+    }
   }, [user])
+
+  const startLoadingCycle = () => {
+    setLoadingStage(0)
+    stageIntervalRef.current = setInterval(() => {
+      setLoadingStage(prev => (prev + 1) % LOADING_STAGES.length)
+    }, 8000)
+  }
+
+  const stopLoadingCycle = () => {
+    if (stageIntervalRef.current) {
+      clearInterval(stageIntervalRef.current)
+      stageIntervalRef.current = null
+    }
+  }
 
   const handleFile = (f) => {
     if (!f) return
@@ -97,53 +100,40 @@ export default function Analyser() {
     startLoadingCycle()
 
     try {
-      let body
+      let filePath = null
+      let fileType = null
+      let negId = negotiationId
 
-      if (pasteText && !file) {
-        // Pasted text — send directly
-        body = { pasteText }
-        setLoadingMsg('Reviewing your document...')
+      // Upload file to Supabase Storage
+      if (file) {
+        fileType = file.name.split('.').pop().toLowerCase()
 
-      } else if (file) {
-        // Upload file to Supabase Storage first
-        // Loading cycle handles messages
-        const ext = file.name.split('.').pop().toLowerCase()
+        if (fileType === 'doc') {
+          throw new Error('LEGACY_DOC')
+        }
+
         const uploadPath = `temp/${user?.id || 'anon'}/${Date.now()}_${file.name}`
-
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('documents')
           .upload(uploadPath, file, { upsert: true })
 
         if (uploadError) throw new Error('Upload failed: ' + uploadError.message)
-
-        body = { filePath: uploadData.path, fileType: ext }
-        // Loading cycle handles messages
+        filePath = uploadData.path
       }
 
-      const res = await fetch('/api/analyse', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      })
-
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}))
-        const errMsg = errData.error || 'Analysis failed. Please try again.'
-        if (errMsg === 'LEGACY_DOC') {
-          throw new Error('LEGACY_DOC')
+      // Create or get negotiation
+      if (user && !negId) {
+        const defaultName = file?.name?.replace(/\.[^/.]+$/, '') || 'New negotiation'
+        const { data: negData } = await supabase.from('negotiations').insert({
+          user_id: user.id,
+          property_name: defaultName,
+          status: 'active',
+        }).select().single()
+        if (negData) {
+          negId = negData.id
+          setPropertyName(defaultName)
         }
-        throw new Error(errMsg)
       }
-
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
-
-      const raw = data.content[0].text.trim()
-        .replace(/^```json\s*/, '')
-        .replace(/\s*```$/, '')
-      const parsed = JSON.parse(raw)
-
-      setReport(parsed)
 
       // Update scan usage
       if (user && profile) {
@@ -158,78 +148,79 @@ export default function Analyser() {
         }
       }
 
-      // Save to Supabase if logged in
-      if (user) {
-        if (negotiationId) {
-          await saveDocument(parsed, negotiationId, body.filePath)
-        } else {
-          const defaultName = file?.name?.replace(/\.[^/.]+$/, '') || 'New negotiation'
-          const { data: negData } = await supabase.from('negotiations').insert({
-            user_id: user.id,
-            property_name: defaultName,
-            status: 'active',
-          }).select().single()
-          if (negData) {
-            await saveDocument(parsed, negData.id, body.filePath)
-            setPropertyName(defaultName)
-            setShowPropertyPrompt(true)
-          }
-        }
-      }
-
-    } catch (e) {
-      setError(e.message || 'Something went wrong. Please try again.')
-    } finally {
-      stopLoadingCycle()
-      setLoading(false)
-      setLoadingMsg('')
-    }
-  }
-
-  const saveDocument = async (parsed, negId, existingFilePath) => {
-    try {
-      let filePath = existingFilePath || null
-
-      // If file was uploaded to temp, move to permanent location
-      if (filePath && filePath.startsWith('temp/')) {
-        const permanentPath = `${user.id}/${negId}/${Date.now()}_${file.name}`
-        await supabase.storage.from('documents').move(filePath, permanentPath)
-        filePath = permanentPath
-      } else if (file && !filePath) {
-        // Upload file if not already uploaded
-        const path = `${user.id}/${negId}/${Date.now()}_${file.name}`
-        const { data: uploadData } = await supabase.storage.from('documents').upload(path, file)
-        filePath = uploadData?.path
-      }
-
-      const { data: countData } = await supabase
-        .from('documents')
-        .select('id')
-        .eq('negotiation_id', negId)
-
-      const versionNumber = (countData?.length || 0) + 1
-
-      const { data: docData } = await supabase.from('documents').insert({
-        negotiation_id: negId,
-        user_id: user.id,
-        filename: file?.name || 'pasted-document.txt',
+      // Create job in Supabase
+      const { data: job, error: jobError } = await supabase.from('jobs').insert({
+        user_id: user?.id || null,
         file_path: filePath,
-        version_number: versionNumber,
-        overall_risk: parsed.overall_risk,
-        base_rent_psm: parsed.base_rent_psm || null,
-        tenancy_size_sqm: parsed.tenancy_size_sqm || null,
-        total_annual_rent: parsed.total_annual_rent || null,
+        file_type: fileType,
+        paste_text: pasteText || null,
+        negotiation_id: negId || null,
+        status: 'pending',
       }).select().single()
 
-      if (docData) {
-        await supabase.from('reports').insert({
-          document_id: docData.id,
-          user_id: user.id,
-          report_json: parsed,
+      if (jobError) throw new Error('Failed to create job: ' + jobError.message)
+
+      // Trigger Edge Function
+      const edgeFnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/process-job`
+      const { data: { session } } = await supabase.auth.getSession()
+
+      fetch(edgeFnUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ jobId: job.id }),
+      }).catch(console.error) // Fire and forget — don't await
+
+      // Subscribe to job updates via Realtime
+      const subscription = supabase
+        .channel(`job-${job.id}`)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'jobs',
+          filter: `id=eq.${job.id}`,
+        }, async (payload) => {
+          const updatedJob = payload.new
+
+          if (updatedJob.status === 'complete') {
+            stopLoadingCycle()
+            subscription.unsubscribe()
+
+            const parsed = updatedJob.report_json
+            setReport(parsed)
+            setLoading(false)
+
+            if (negId && !negotiationId) {
+              setShowPropertyPrompt(true)
+            }
+
+          } else if (updatedJob.status === 'failed') {
+            stopLoadingCycle()
+            subscription.unsubscribe()
+            setError(updatedJob.error || 'Analysis failed. Please try again.')
+            setLoading(false)
+          }
         })
-      }
+        .subscribe()
+
+      jobSubscriptionRef.current = subscription
+
+      // Fallback timeout — if no response in 280 seconds show error
+      setTimeout(() => {
+        if (loading) {
+          stopLoadingCycle()
+          subscription.unsubscribe()
+          setError('Analysis is taking longer than expected. Please try again with a smaller document.')
+          setLoading(false)
+        }
+      }, 280000)
+
     } catch (e) {
-      console.error('Save failed:', e)
+      stopLoadingCycle()
+      setError(e.message || 'Something went wrong. Please try again.')
+      setLoading(false)
     }
   }
 
@@ -258,6 +249,8 @@ export default function Analyser() {
     return <span className={`badge ${cls}`} style={{ fontSize: 12, padding: '5px 12px' }}>{label}</span>
   }
 
+  const currentStageMsg = LOADING_STAGES[loadingStage]
+
   return (
     <>
       <Nav />
@@ -267,7 +260,6 @@ export default function Analyser() {
           <h1 className={styles.h1}>Know what you're signing <em>before you sign it.</em></h1>
           <p className={styles.sub}>Drag and drop your document below, or paste the text. LeaseLens analyses the terms and provides a clear outline of risk, impact and suggested response.</p>
 
-          {/* UPLOAD CARD */}
           <div className={styles.card}>
             <div
               className={`${styles.zone} ${file ? styles.zoneLoaded : ''}`}
@@ -277,7 +269,7 @@ export default function Analyser() {
             >
               <span className={styles.zoneIcon}>{file ? '✅' : '📄'}</span>
               <h3>{file ? 'File ready for analysis' : 'Drop your HOA or lease here'}</h3>
-              <p>{file ? file.name : 'or click to browse · PDF, TXT, DOC, DOCX'}</p>
+              <p>{file ? file.name : 'or click to browse · PDF, DOCX, TXT'}</p>
               {file && (
                 <button className={styles.removeFile} onClick={e => { e.stopPropagation(); setFile(null) }}>
                   ✕ Remove
@@ -288,7 +280,7 @@ export default function Analyser() {
               ref={fileInputRef}
               type="file"
               style={{ display: 'none' }}
-              accept=".pdf,.txt,.doc,.docx"
+              accept=".pdf,.docx,.txt"
               onChange={e => handleFile(e.target.files[0])}
             />
 
@@ -314,11 +306,10 @@ export default function Analyser() {
             {error === 'LEGACY_DOC' && (
               <div className={styles.docError}>
                 <strong>Legacy .doc format detected</strong>
-                <p>This file is in the old Word format (.doc) which cannot be processed directly. Please convert it first:</p>
+                <p>This file is in the old Word format which cannot be processed directly. Please convert it:</p>
                 <ol>
-                  <li>Open the file in Microsoft Word or Google Docs</li>
-                  <li>Go to File → Save As (Word) or File → Download (Google Docs)</li>
-                  <li>Save as <strong>.docx</strong> or <strong>PDF</strong></li>
+                  <li>Open in Microsoft Word or Google Docs</li>
+                  <li>Save As <strong>.docx</strong> or export as <strong>PDF</strong></li>
                   <li>Upload the converted file here</li>
                 </ol>
               </div>
@@ -330,31 +321,27 @@ export default function Analyser() {
               onClick={handleAnalyse}
               disabled={loading}
             >
-              {loading ? (
-                <><span className={styles.spinner} />{loadingMsg || 'Analysing...'}</>
-              ) : 'Analyse my document'}
+              {loading
+                ? <><span className={styles.spinner} />{currentStageMsg}</>
+                : 'Analyse my document'
+              }
             </button>
 
             {loading && (
               <div className={styles.loadingStages}>
                 <div className={styles.loadingProgress}>
-                  {['Reviewing', 'Extracting', 'Analysing', 'Legislation', 'Report'].map((stage, i) => {
-                    const currentStage = ['Reviewing document', 'Extracting key', 'Reviewing key terms', 'Comparing clauses', 'Preparing'].findIndex(s => loadingMsg?.startsWith(s))
-                    const isActive = i === currentStage
-                    const isDone = i < currentStage
-                    return (
-                      <div key={i} className={`${styles.stageStep} ${isActive ? styles.stageActive : ''} ${isDone ? styles.stageDone : ''}`}>
-                        <div className={styles.stageDot} />
-                        <span>{stage}</span>
-                      </div>
-                    )
-                  })}
+                  {LOADING_STAGES.map((stage, i) => (
+                    <div key={i} className={`${styles.stageStep} ${i === loadingStage ? styles.stageActive : ''} ${i < loadingStage ? styles.stageDone : ''}`}>
+                      <div className={styles.stageDot} />
+                      <span>{stage}</span>
+                    </div>
+                  ))}
                 </div>
                 <p className={styles.loadingNote}>Please keep this page open while your document is being analysed.</p>
               </div>
             )}
 
-            {!user && (
+            {!user && !loading && (
               <p className={styles.signInNudge}>
                 <a href="/signup">Create a free account</a> to save your documents and track revisions.
               </p>
@@ -385,9 +372,7 @@ export default function Analyser() {
             <div className={styles.freeResult}>
               <div className={styles.freeHeader}>
                 <div className={styles.kicker}>Free scan complete</div>
-                <h2 className={styles.freeTitle}>
-                  {report.clauses?.length || 0} clauses identified
-                </h2>
+                <h2 className={styles.freeTitle}>{report.clauses?.length || 0} clauses identified</h2>
                 <div className={styles.freeSummary}>{report.summary}</div>
               </div>
               <div className={styles.freeStats}>
@@ -405,49 +390,13 @@ export default function Analyser() {
               <div className={styles.freeGate}>
                 <h3>Unlock the full report</h3>
                 <p>See every clause quoted from your document, the risk explained, and a suggested counter position for each issue.</p>
-                <button className="btn-primary" onClick={() => navigate('/pricing')}>
-                  View pricing →
-                </button>
+                <button className="btn-primary" onClick={() => navigate('/pricing')}>View pricing →</button>
               </div>
             </div>
           )}
 
           {/* FULL REPORT */}
-          {report && profile?.plan !== 'free' && (
-            <div className={styles.report}>
-              <div className={styles.reportHeader}>
-                <h2>Analysis Report</h2>
-                {riskBadge(report.overall_risk)}
-              </div>
-
-              <div className={styles.summary}>{report.summary}</div>
-
-              <div className={styles.sectionLabel}>Clause-by-clause findings</div>
-              <div className={styles.clauses}>
-                {(report.clauses || []).map((c, i) => <ClauseCard key={i} clause={c} />)}
-              </div>
-
-              <div className={styles.nextSteps}>
-                <h3>Recommended next steps</h3>
-                <ol>
-                  {(report.next_steps || []).map((s, i) => <li key={i}>{s}</li>)}
-                </ol>
-              </div>
-
-              {user && (
-                <div className={styles.savedNote}>
-                  ✓ Report saved to your account. <a href="/dashboard">View all documents →</a>
-                </div>
-              )}
-
-              <div className={styles.legalDisclaimer}>
-                DISCLAIMER: LeaseLens is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.
-              </div>
-            </div>
-          )}
-
-          {/* NOT LOGGED IN — show full report but prompt to save */}
-          {report && !user && (
+          {report && (!user || profile?.plan !== 'free') && (
             <div className={styles.report}>
               <div className={styles.reportHeader}>
                 <h2>Analysis Report</h2>
@@ -462,9 +411,16 @@ export default function Analyser() {
                 <h3>Recommended next steps</h3>
                 <ol>{(report.next_steps || []).map((s, i) => <li key={i}>{s}</li>)}</ol>
               </div>
-              <div className={styles.savedNote} style={{ background: 'var(--gold-light)', borderColor: '#e0d5c0', color: 'var(--risk-m)' }}>
-                <a href="/signup">Create a free account</a> to save this report and track future revisions.
-              </div>
+              {user && (
+                <div className={styles.savedNote}>
+                  ✓ Report saved to your account. <a href="/dashboard">View all documents →</a>
+                </div>
+              )}
+              {!user && (
+                <div className={styles.savedNote} style={{ background: 'var(--gold-light)', borderColor: '#e0d5c0', color: 'var(--risk-m)' }}>
+                  <a href="/signup">Create a free account</a> to save this report and track future revisions.
+                </div>
+              )}
               <div className={styles.legalDisclaimer}>
                 DISCLAIMER: LeaseLens is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.
               </div>
