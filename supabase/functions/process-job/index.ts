@@ -119,6 +119,48 @@ async function extractDocxText(data: Uint8Array): Promise<string> {
     .trim()
 }
 
+
+// Attempt to repair truncated JSON by extracting valid clauses
+function repairTruncatedJson(raw: string): any {
+  // First try normal parse
+  try {
+    return JSON.parse(raw)
+  } catch {}
+
+  // Try to extract what we can
+  try {
+    // Get overall_risk
+    const riskMatch = raw.match(/"overall_risk"\s*:\s*"(HIGH|MEDIUM|LOW)"/)
+    const overall_risk = riskMatch ? riskMatch[1] : 'MEDIUM'
+
+    // Get summary
+    const summaryMatch = raw.match(/"summary"\s*:\s*"([^"]*)"/)
+    const summary = summaryMatch ? summaryMatch[1] : 'Analysis incomplete — document may be too large.'
+
+    // Extract complete clause objects
+    const clauses: any[] = []
+    const clauseRegex = /\{[^{}]*"name"[^{}]*"danger"[^{}]*"location"[^{}]*\}/g
+    const matches = raw.match(clauseRegex) || []
+    for (const match of matches) {
+      try {
+        clauses.push(JSON.parse(match))
+      } catch {}
+    }
+
+    return {
+      overall_risk,
+      summary: summary + (clauses.length < 3 ? ' Some clauses may be missing due to document length.' : ''),
+      base_rent_psm: null,
+      tenancy_size_sqm: null,
+      total_annual_rent: null,
+      clauses,
+      next_steps: ['Review the full document carefully with a qualified solicitor given its length and complexity.']
+    }
+  } catch (e) {
+    throw new Error('Could not parse analysis response: ' + e.message)
+  }
+}
+
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
@@ -199,7 +241,7 @@ Deno.serve(async (req) => {
     }
 
     const isLargeDoc = typeof messages[0]?.content === 'string' && messages[0].content.length > 30000
-    const maxTokens = isLargeDoc ? 8000 : 16000
+    const maxTokens = isLargeDoc ? 12000 : 16000
     // Use Haiku for large docs — 3x faster, still high quality
     const model = isLargeDoc ? 'claude-haiku-4-5-20251001' : 'claude-sonnet-4-5'
 
@@ -229,7 +271,7 @@ Deno.serve(async (req) => {
       .replace(/^```json\s*/, '')
       .replace(/\s*```$/, '')
 
-    const parsed = JSON.parse(raw)
+    const parsed = repairTruncatedJson(raw)
 
     await supabase.from('jobs').update({
       status: 'complete',
