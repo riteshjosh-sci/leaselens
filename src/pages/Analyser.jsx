@@ -1,10 +1,34 @@
 import { useState, useRef, useEffect } from 'react'
+import mammoth from 'mammoth'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import Nav from '../components/Nav'
 import ClauseCard from '../components/ClauseCard'
 import styles from './Analyser.module.css'
+
+
+// Strip non-commercial content and cap document size
+function preprocessDocText(text) {
+  if (!text) return ''
+  const lines = text.split('\n')
+  const filtered = []
+  let skipMode = false
+  const skipPatterns = [/^schedule\s+\d/i, /^annexure\s+[a-z\d]/i, /^appendix\s+[a-z\d]/i]
+
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (!trimmed) { filtered.push(line); continue }
+    if (skipPatterns.some(p => p.test(trimmed)) && trimmed.length < 80) { skipMode = true; continue }
+    if (skipMode && /^(PART|CLAUSE|SECTION|\d+\.)\s+/i.test(trimmed) && trimmed.length < 120) skipMode = false
+    if (!skipMode) filtered.push(line)
+  }
+
+  const result = filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+  return result.length > 80000
+    ? result.slice(0, 80000) + '\n\n[Document truncated — schedules and annexures omitted]'
+    : result
+}
 
 export default function Analyser() {
   const { user } = useAuth()
@@ -72,54 +96,44 @@ export default function Analyser() {
         const ext = file.name.split('.').pop().toLowerCase()
 
         if (ext === 'pdf') {
-          // PDFs sent as base64 — Claude reads natively
+          // PDFs — send as base64, Claude reads natively
           const arrayBuffer = await file.arrayBuffer()
           const bytes = new Uint8Array(arrayBuffer)
           let binary = ''
           for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
           const base64 = btoa(binary)
-
           messages = [{
             role: 'user',
             content: [
               { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-              { type: 'text', text: 'Analyse this retail lease or heads of agreement. Focus only on commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.' }
+              { type: 'text', text: 'Analyse this retail lease or heads of agreement. Focus on all commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.' }
             ]
           }]
-        } else {
-          // DOC/DOCX — extract text server-side first to avoid 413 errors
+        } else if (ext === 'doc' || ext === 'docx') {
+          // DOC/DOCX — extract text in browser with mammoth, send only text
           setLoadingMsg('Extracting document text...')
-          const formData = new FormData()
-          formData.append('file', file)
-
-          const extractRes = await fetch('/api/extract-text', {
-            method: 'POST',
-            body: formData,
-          })
-
-          if (!extractRes.ok) throw new Error('Failed to extract document text.')
-          const { text: extractedText, useBase64 } = await extractRes.json()
-
-          if (useBase64 || !extractedText) {
-            // Fallback — send as base64
-            const arrayBuffer = await file.arrayBuffer()
-            const bytes = new Uint8Array(arrayBuffer)
-            let binary = ''
-            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
-            const base64 = btoa(binary)
-            messages = [{
-              role: 'user',
-              content: [
-                { type: 'document', source: { type: 'base64', media_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', data: base64 } },
-                { type: 'text', text: 'Analyse this retail lease or heads of agreement. Focus only on commercial terms, special conditions, and clauses that affect the tenant financially or operationally.' }
-              ]
-            }]
-          } else {
-            messages = [{
-              role: 'user',
-              content: `Analyse this retail lease or heads of agreement and return a JSON risk report. Focus only on commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.\n\n${extractedText}`
-            }]
+          const arrayBuffer = await file.arrayBuffer()
+          let extractedText = ''
+          try {
+            const result = await mammoth.extractRawText({ arrayBuffer })
+            extractedText = result.value
+          } catch (e) {
+            throw new Error('Could not read this Word document. Please try saving it as PDF and uploading again.')
           }
+
+          if (!extractedText || extractedText.length < 100) {
+            throw new Error('Could not extract text from this document. Please try saving as PDF and uploading again.')
+          }
+
+          // Strip schedules/annexures and cap at 80,000 chars
+          const processed = preprocessDocText(extractedText)
+          messages = [{
+            role: 'user',
+            content: `Analyse this retail lease or heads of agreement. Focus on all commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.\n\n${processed}`
+          }]
+        } else if (ext === 'txt') {
+          const text = await file.text()
+          messages = [{ role: 'user', content: `Analyse this retail lease or heads of agreement and return a JSON risk report:\n\n${text}` }]
         }
       } else {
         messages = [{ role: 'user', content: `Analyse this retail lease or heads of agreement and return a JSON risk report:\n\n${pasteText}` }]
