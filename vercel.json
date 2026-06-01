@@ -4,7 +4,7 @@
   ],
   "functions": {
     "api/analyse.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     },
     "api/stripe-webhook.js": {
       "maxDuration": 10
