@@ -242,20 +242,43 @@ Deno.serve(async (req) => {
       const uint8Array = new Uint8Array(arrayBuffer)
 
       if (ext === 'pdf') {
-        // Safe base64 encoding for large files — spread operator fails on large arrays
-        let base64 = ''
-        const chunkSize = 8192
-        for (let i = 0; i < uint8Array.length; i += chunkSize) {
-          base64 += String.fromCharCode(...uint8Array.slice(i, i + chunkSize))
+        // Extract text from PDF and convert to markdown
+        try {
+          const { default: pdf } = await import('https://esm.sh/pdf-parse@1.1.1')
+          const pdfData = await pdf(uint8Array)
+          const rawText = pdfData.text
+
+          // Convert to clean markdown
+          const md = rawText
+            .replace(/([A-Z][A-Z\s]{4,})/g, (m: string) => `## ${m.trim()}`) // ALL CAPS lines → headings
+            .replace(/^(\d+\.\s+[A-Z].{0,80})$/gm, (m: string) => `### ${m.trim()}`) // Numbered headings
+            .replace(/[ \t]+/g, ' ')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim()
+
+          const processed = preprocessText(md)
+          const isLarge = processed.length > 30000
+          messages = [{
+            role: 'user',
+            content: `Analyse this retail lease. Focus on all commercial terms and special conditions. Ignore schedules, annexures, and boilerplate.${isLarge ? ' Be concise — 2 sentences max per field.' : ''}\n\n${processed}`
+          }]
+        } catch (pdfErr) {
+          // Fallback to base64 for scanned/image PDFs
+          console.error('PDF text extraction failed, using base64:', pdfErr.message)
+          let base64 = ''
+          const chunkSize = 8192
+          for (let i = 0; i < uint8Array.length; i += chunkSize) {
+            base64 += String.fromCharCode(...uint8Array.slice(i, i + chunkSize))
+          }
+          base64 = btoa(base64)
+          messages = [{
+            role: 'user',
+            content: [
+              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+              { type: 'text', text: 'Analyse this retail lease. Focus on all commercial terms and special conditions.' }
+            ]
+          }]
         }
-        base64 = btoa(base64)
-        messages = [{
-          role: 'user',
-          content: [
-            { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-            { type: 'text', text: 'Analyse this retail lease. Focus on all commercial terms and special conditions. Ignore schedules, annexures, and boilerplate.' }
-          ]
-        }]
       } else if (ext === 'docx') {
         const rawText = await extractDocxText(uint8Array)
         const processed = preprocessText(rawText)
