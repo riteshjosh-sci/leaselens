@@ -70,20 +70,57 @@ export default function Analyser() {
 
       if (file) {
         const ext = file.name.split('.').pop().toLowerCase()
-        const arrayBuffer = await file.arrayBuffer()
-        const bytes = new Uint8Array(arrayBuffer)
-        let binary = ''
-        for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
-        const base64 = btoa(binary)
-        const mediaType = ext === 'pdf' ? 'application/pdf' : 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
 
-        messages = [{
-          role: 'user',
-          content: [
-            { type: 'document', source: { type: 'base64', media_type: mediaType, data: base64 } },
-            { type: 'text', text: 'Analyse this retail lease or heads of agreement and return a JSON risk report. Focus only on commercial terms. Ignore drawings, plans, schedules, or technical specifications.' }
-          ]
-        }]
+        if (ext === 'pdf') {
+          // PDFs sent as base64 — Claude reads natively
+          const arrayBuffer = await file.arrayBuffer()
+          const bytes = new Uint8Array(arrayBuffer)
+          let binary = ''
+          for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+          const base64 = btoa(binary)
+
+          messages = [{
+            role: 'user',
+            content: [
+              { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
+              { type: 'text', text: 'Analyse this retail lease or heads of agreement. Focus only on commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.' }
+            ]
+          }]
+        } else {
+          // DOC/DOCX — extract text server-side first to avoid 413 errors
+          setLoadingMsg('Extracting document text...')
+          const formData = new FormData()
+          formData.append('file', file)
+
+          const extractRes = await fetch('/api/extract-text', {
+            method: 'POST',
+            body: formData,
+          })
+
+          if (!extractRes.ok) throw new Error('Failed to extract document text.')
+          const { text: extractedText, useBase64 } = await extractRes.json()
+
+          if (useBase64 || !extractedText) {
+            // Fallback — send as base64
+            const arrayBuffer = await file.arrayBuffer()
+            const bytes = new Uint8Array(arrayBuffer)
+            let binary = ''
+            for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i])
+            const base64 = btoa(binary)
+            messages = [{
+              role: 'user',
+              content: [
+                { type: 'document', source: { type: 'base64', media_type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', data: base64 } },
+                { type: 'text', text: 'Analyse this retail lease or heads of agreement. Focus only on commercial terms, special conditions, and clauses that affect the tenant financially or operationally.' }
+              ]
+            }]
+          } else {
+            messages = [{
+              role: 'user',
+              content: `Analyse this retail lease or heads of agreement and return a JSON risk report. Focus only on commercial terms, special conditions, and clauses that affect the tenant financially or operationally. Ignore schedules, annexures, plans, and standard boilerplate.\n\n${extractedText}`
+            }]
+          }
+        }
       } else {
         messages = [{ role: 'user', content: `Analyse this retail lease or heads of agreement and return a JSON risk report:\n\n${pasteText}` }]
       }
