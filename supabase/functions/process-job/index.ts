@@ -1,5 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+}
+
 const ANALYSIS_PROMPT = `You are LeaseLens, an expert retail lease analyst with 10+ years of hands-on retail leasing experience across Australian shopping centres, high streets, and mixed-use precincts. You have deep knowledge of Australian retail tenancy legislation in all states and territories.
 
 Your job is to analyse a Heads of Agreement (HOA) or retail lease document on behalf of a retail tenant, a small business owner who may be signing without professional representation.
@@ -71,7 +77,6 @@ OUTPUT — valid JSON only, no preamble, no markdown:
   "next_steps": ["string"]
 }`
 
-// Strip non-commercial content and cap size
 function preprocessText(text: string): string {
   if (!text) return ''
   const lines = text.split('\n')
@@ -88,14 +93,12 @@ function preprocessText(text: string): string {
   }
 
   const result = filtered.join('\n').replace(/\n{3,}/g, '\n\n').trim()
-  const isLarge = result.length > 40000
-  const capped = result.length > 80000 ? result.slice(0, 80000) + '\n\n[Truncated]' : result
-  return capped
+  return result.length > 80000
+    ? result.slice(0, 80000) + '\n\n[Document truncated — schedules and annexures omitted]'
+    : result
 }
 
-// Extract text from DOCX (ZIP-based XML format) in Deno
 async function extractDocxText(data: Uint8Array): Promise<string> {
-  // DOCX is a ZIP file — we extract word/document.xml
   const { default: JSZip } = await import('https://esm.sh/jszip@3.10.1')
   const zip = await JSZip.loadAsync(data)
   const docXml = await zip.file('word/document.xml')?.async('string')
@@ -117,8 +120,13 @@ async function extractDocxText(data: Uint8Array): Promise<string> {
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
+
   if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 })
+    return new Response('Method not allowed', { status: 405, headers: corsHeaders })
   }
 
   const supabase = createClient(
@@ -130,9 +138,8 @@ Deno.serve(async (req) => {
 
   try {
     const { jobId } = await req.json()
-    if (!jobId) return new Response(JSON.stringify({ error: 'jobId required' }), { status: 400 })
+    if (!jobId) return new Response(JSON.stringify({ error: 'jobId required' }), { status: 400, headers: corsHeaders })
 
-    // Get job
     const { data: job, error: jobError } = await supabase
       .from('jobs')
       .select('*')
@@ -140,10 +147,9 @@ Deno.serve(async (req) => {
       .single()
 
     if (jobError || !job) {
-      return new Response(JSON.stringify({ error: 'Job not found' }), { status: 404 })
+      return new Response(JSON.stringify({ error: 'Job not found' }), { status: 404, headers: corsHeaders })
     }
 
-    // Mark as processing
     await supabase.from('jobs').update({ status: 'processing' }).eq('id', jobId)
 
     let messages: any[]
@@ -156,7 +162,6 @@ Deno.serve(async (req) => {
     } else if (job.file_path) {
       const ext = job.file_type?.toLowerCase()
 
-      // Download file from Supabase Storage
       const { data: fileData, error: fileError } = await supabase.storage
         .from('documents')
         .download(job.file_path)
@@ -172,24 +177,20 @@ Deno.serve(async (req) => {
           role: 'user',
           content: [
             { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: base64 } },
-            { type: 'text', text: 'Analyse this retail lease. Focus on all commercial terms and special conditions.' }
+            { type: 'text', text: 'Analyse this retail lease. Focus on all commercial terms and special conditions. Ignore schedules, annexures, and boilerplate.' }
           ]
         }]
       } else if (ext === 'docx') {
         const rawText = await extractDocxText(uint8Array)
         const processed = preprocessText(rawText)
         const isLarge = processed.length > 40000
-
         messages = [{
           role: 'user',
           content: `Analyse this retail lease. Focus on all commercial terms and special conditions. Ignore schedules, annexures, and boilerplate.${isLarge ? ' Be concise — 2 sentences max per field.' : ''}\n\n${processed}`
         }]
       } else if (ext === 'txt') {
         const text = new TextDecoder().decode(uint8Array)
-        messages = [{
-          role: 'user',
-          content: `Analyse this retail lease:\n\n${text}`
-        }]
+        messages = [{ role: 'user', content: `Analyse this retail lease:\n\n${text}` }]
       } else {
         throw new Error('Unsupported file type: ' + ext)
       }
@@ -197,7 +198,9 @@ Deno.serve(async (req) => {
       throw new Error('No file or text provided')
     }
 
-    // Call Claude
+    const isLargeDoc = typeof messages[0]?.content === 'string' && messages[0].content.length > 40000
+    const maxTokens = isLargeDoc ? 8000 : 16000
+
     const claudeRes = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -207,7 +210,7 @@ Deno.serve(async (req) => {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-5',
-        max_tokens: 16000,
+        max_tokens: maxTokens,
         temperature: 0,
         system: ANALYSIS_PROMPT,
         messages,
@@ -226,13 +229,11 @@ Deno.serve(async (req) => {
 
     const parsed = JSON.parse(raw)
 
-    // Save report and update job
     await supabase.from('jobs').update({
       status: 'complete',
       report_json: parsed,
     }).eq('id', jobId)
 
-    // Save document record if negotiation exists
     if (job.negotiation_id && job.user_id) {
       const { data: countData } = await supabase
         .from('documents')
@@ -241,7 +242,6 @@ Deno.serve(async (req) => {
 
       const versionNumber = (countData?.length || 0) + 1
 
-      // Move file from temp to permanent
       let permanentPath = job.file_path
       if (job.file_path?.startsWith('temp/')) {
         const filename = job.file_path.split('/').pop()
@@ -267,28 +267,31 @@ Deno.serve(async (req) => {
           user_id: job.user_id,
           report_json: parsed,
         })
-
         await supabase.from('jobs').update({ document_id: docData.id }).eq('id', jobId)
       }
     }
 
-    return new Response(JSON.stringify({ success: true }), { status: 200 })
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: corsHeaders
+    })
 
   } catch (err) {
-    console.error('Job processing error:', err.message)
+    console.error('Job error:', err.message)
 
-    const { jobId } = await req.json().catch(() => ({}))
-    if (jobId) {
-      const supabaseErr = createClient(
-        Deno.env.get('SB_URL')!,
-        Deno.env.get('SB_SERVICE_ROLE_KEY')!
-      )
-      await supabaseErr.from('jobs').update({
-        status: 'failed',
-        error: err.message,
-      }).eq('id', jobId)
-    }
+    try {
+      const { jobId } = await req.clone().json()
+      if (jobId) {
+        await supabase.from('jobs').update({
+          status: 'failed',
+          error: err.message,
+        }).eq('id', jobId)
+      }
+    } catch {}
 
-    return new Response(JSON.stringify({ error: err.message }), { status: 500 })
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: corsHeaders
+    })
   }
 })
