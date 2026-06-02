@@ -98,3 +98,52 @@
   letter-spacing: 0.04em;
 }
 .siteLink:hover { color: rgba(255,255,255,0.7); }
+
+/* Mobile */
+.mobileHeader {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  background: var(--ink);
+  z-index: 200;
+  padding: 0 20px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+
+.hamburger {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 8px;
+  line-height: 1;
+}
+
+.overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 149;
+}
+
+@media (max-width: 768px) {
+  .mobileHeader { display: flex; }
+
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    z-index: 150;
+    top: 56px;
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .overlay { display: block; }
+}
