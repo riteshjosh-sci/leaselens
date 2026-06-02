@@ -177,3 +177,47 @@
   .chartsGrid { grid-template-columns: 1fr; }
   .tableWrap { overflow-x: auto; }
 }
+
+/* Hide non-essential columns on mobile */
+@media (max-width: 768px) {
+  /* Users table — hide Scans, Joined, Change plan on mobile */
+  .table th:nth-child(3),
+  .table td:nth-child(3),
+  .table th:nth-child(5),
+  .table td:nth-child(5),
+  .table th:nth-child(6),
+  .table td:nth-child(6) { display: none; }
+
+  /* Documents table — hide Negotiation, Version on mobile */
+  .table th:nth-child(2),
+  .table td:nth-child(2),
+  .table th:nth-child(3),
+  .table td:nth-child(3) { display: none; }
+
+  /* Make action buttons smaller */
+  .viewBtn, .suspendBtn, .activateBtn, .deleteBtn {
+    padding: 4px 8px;
+    font-size: 10px;
+  }
+
+  /* Fix table layout */
+  .tableWrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .table { min-width: unset; width: 100%; }
+
+  /* Stats grid 2 cols on mobile */
+  .statsGrid { grid-template-columns: 1fr 1fr !important; gap: 10px !important; }
+  .statCard { padding: 16px !important; }
+  .statValue { font-size: 28px !important; }
+
+  /* Charts stack on mobile */
+  .chartsGrid { grid-template-columns: 1fr !important; }
+}
+
+/* Fix dashboard overview horizontal scroll */
+@media (max-width: 768px) {
+  .content { overflow-x: hidden; }
+  .statGrid { grid-template-columns: 1fr 1fr !important; }
+  .chartsRow { grid-template-columns: 1fr !important; }
+  .bottomRow { grid-template-columns: 1fr !important; }
+  .chartCard { min-width: 0; overflow: hidden; }
+}

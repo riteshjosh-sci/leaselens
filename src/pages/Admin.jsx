@@ -462,10 +462,10 @@ export default function Admin() {
                   <tr>
                     <th>User</th>
                     <th>Plan</th>
-                    <th>Scans</th>
+                    <th className={styles.hideMobile}>Scans</th>
                     <th>Status</th>
-                    <th>Joined</th>
-                    <th>Change plan</th>
+                    <th className={styles.hideMobile}>Joined</th>
+                    <th className={styles.hideMobile}>Change plan</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -482,14 +482,14 @@ export default function Admin() {
                         </div>
                       </td>
                       <td>{planBadge(u.plan)}</td>
-                      <td>{u.free_scans_used || 0}</td>
+                      <td className={styles.hideMobile}>{u.free_scans_used || 0}</td>
                       <td>
                         <span className={u.suspended ? styles.tagSuspended : styles.tagActive}>
                           {u.suspended ? 'Suspended' : 'Active'}
                         </span>
                       </td>
-                      <td>{formatDate(u.created_at)}</td>
-                      <td>
+                      <td className={styles.hideMobile}>{formatDate(u.created_at)}</td>
+                      <td className={styles.hideMobile}>
                         <select className={styles.planSelect} value={u.plan || 'free'} onChange={e => handleChangePlan(u.id, e.target.value)}>
                           {PLANS.map(p => <option key={p} value={p}>{p}</option>)}
                         </select>
@@ -524,8 +524,8 @@ export default function Admin() {
                 <thead>
                   <tr>
                     <th>Filename</th>
-                    <th>Negotiation</th>
-                    <th>Version</th>
+                    <th className={styles.hideMobile}>Negotiation</th>
+                    <th className={styles.hideMobile}>Version</th>
                     <th>Risk</th>
                     <th>Uploaded</th>
                     <th>Actions</th>
@@ -535,8 +535,8 @@ export default function Admin() {
                   {documents.map(doc => (
                     <tr key={doc.id}>
                       <td className={styles.filenameCell}>{doc.filename}</td>
-                      <td className={styles.lightCell}>{doc.negotiations?.property_name || '—'}</td>
-                      <td>v{doc.version_number}</td>
+                      <td className={styles.hideMobile}>{doc.negotiations?.property_name || '—'}</td>
+                      <td className={styles.hideMobile}>v{doc.version_number}</td>
                       <td>{riskBadge(doc.overall_risk)}</td>
                       <td>{formatDate(doc.uploaded_at)}</td>
                       <td>
@@ -565,13 +565,13 @@ export default function Admin() {
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>Report ID</th><th>Document ID</th><th>Generated</th><th>View</th></tr>
+                  <tr><th>Report ID</th><th className={styles.hideMobile}>Document ID</th><th>Generated</th><th>View</th></tr>
                 </thead>
                 <tbody>
                   {reports.map(r => (
                     <tr key={r.id}>
                       <td className={styles.monoCell}>{r.id.slice(0, 14)}...</td>
-                      <td className={styles.monoCell}>{r.document_id.slice(0, 14)}...</td>
+                      <td className={styles.hideMobile}>{r.document_id.slice(0, 14)}...</td>
                       <td>{formatDate(r.created_at)}</td>
                       <td><button className={styles.viewBtn} onClick={() => navigate(`/admin/report/${r.document_id}`)}>View report</button></td>
                     </tr>
