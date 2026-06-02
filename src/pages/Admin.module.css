@@ -241,3 +241,8 @@
     width: 100% !important;
   }
 }
+
+/* Single column stat cards on mobile */
+@media (max-width: 480px) {
+  .statGrid { grid-template-columns: 1fr !important; }
+}
