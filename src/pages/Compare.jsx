@@ -195,7 +195,7 @@ export default function Compare() {
             <div className={styles.selectorLabel}>Version A (earlier)</div>
             <select className="input" value={versionA?.id || ''} onChange={e => setVersionA(versions.find(v => v.id === e.target.value))}>
               {versions.map(v => (
-                <option key={v.id} value={v.id}>v{v.version_number} — {v.filename}</option>
+                <option key={v.id} value={v.id}>v{v.version_number} — {v.filename.replace(/^\d+_/, '')}</option>
               ))}
             </select>
             {versionA && <div className={styles.selectorMeta}>{formatDate(versionA.uploaded_at)} · {riskBadge(versionA.overall_risk)}</div>}
