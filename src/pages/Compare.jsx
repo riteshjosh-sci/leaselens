@@ -59,6 +59,47 @@ export default function Compare() {
       return
     }
 
+    // Fuzzy clause matching — normalise names before comparing
+    const normaliseName = (name) => name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+    // Extract key words from clause name for matching
+    const keyWords = (name) => normaliseName(name)
+      .split(' ')
+      .filter(w => w.length > 3)
+      .sort()
+      .join(' ')
+
+    // Find best match in clauseMapA for a given clause name
+    const findMatch = (name, mapA) => {
+      const normB = normaliseName(name)
+      const keyB = keyWords(name)
+
+      // Try exact normalised match first
+      for (const [key, clause] of Object.entries(mapA)) {
+        if (normaliseName(key) === normB) return key
+      }
+
+      // Try keyword overlap match
+      let bestMatch = null
+      let bestScore = 0
+      for (const [key, clause] of Object.entries(mapA)) {
+        const keyA = keyWords(key)
+        const wordsA = keyA.split(' ')
+        const wordsB = keyB.split(' ')
+        const common = wordsA.filter(w => wordsB.includes(w)).length
+        const score = common / Math.max(wordsA.length, wordsB.length)
+        if (score > bestScore && score >= 0.5) {
+          bestScore = score
+          bestMatch = key
+        }
+      }
+      return bestMatch
+    }
+
     // Build clause map from version A
     const clauseMapA = {}
     ;(reportA.clauses || []).forEach(c => { clauseMapA[c.name] = c })
@@ -67,7 +108,8 @@ export default function Compare() {
     const results = []
 
     ;(reportB.clauses || []).forEach(clauseB => {
-      const clauseA = clauseMapA[clauseB.name]
+      const matchKey = findMatch(clauseB.name, clauseMapA)
+      const clauseA = matchKey ? clauseMapA[matchKey] : null
       let status = 'new'
 
       if (clauseA) {
@@ -77,7 +119,7 @@ export default function Compare() {
         if (bRisk < aRisk) status = 'improved'
         else if (bRisk > aRisk) status = 'worsened'
         else status = 'unchanged'
-        delete clauseMapA[clauseB.name]
+        delete clauseMapA[matchKey]
       }
 
       results.push({ clause: clauseB, prevClause: clauseA, status })
