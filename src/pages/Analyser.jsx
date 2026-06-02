@@ -48,8 +48,15 @@ export default function Analyser() {
   const startLoadingCycle = () => {
     setLoadingStage(0)
     stageIntervalRef.current = setInterval(() => {
-      setLoadingStage(prev => (prev + 1) % LOADING_STAGES.length)
-    }, 8000)
+      setLoadingStage(prev => {
+        // Stop at second to last stage — last stage only shows when almost done
+        if (prev >= LOADING_STAGES.length - 2) {
+          clearInterval(stageIntervalRef.current)
+          return LOADING_STAGES.length - 2
+        }
+        return prev + 1
+      })
+    }, 18000) // 18 seconds per stage — 4 stages = ~72 seconds total
   }
 
   const stopLoadingCycle = () => {
@@ -341,6 +348,16 @@ export default function Analyser() {
 
             {loading && (
               <div className={styles.loadingStages}>
+                <div className={styles.progressBarTrack}>
+                  <div
+                    className={styles.progressBarFill}
+                    style={{ width: `${Math.round(((loadingStage + 1) / LOADING_STAGES.length) * 100)}%` }}
+                  />
+                </div>
+                <div className={styles.progressMeta}>
+                  <span className={styles.progressStage}>{LOADING_STAGES[loadingStage]}</span>
+                  <span className={styles.progressPct}>{Math.round(((loadingStage + 1) / LOADING_STAGES.length) * 100)}%</span>
+                </div>
                 <div className={styles.loadingProgress}>
                   {LOADING_STAGES.map((stage, i) => (
                     <div key={i} className={`${styles.stageStep} ${i === loadingStage ? styles.stageActive : ''} ${i < loadingStage ? styles.stageDone : ''}`}>
@@ -349,7 +366,7 @@ export default function Analyser() {
                     </div>
                   ))}
                 </div>
-                <p className={styles.loadingNote}>Please keep this page open while your document is being analysed.</p>
+                <p className={styles.loadingNote}>Please keep this page open while your document is being analysed. This can take 1-3 minutes for larger documents.</p>
               </div>
             )}
 
