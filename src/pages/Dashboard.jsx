@@ -181,6 +181,11 @@ export default function Dashboard() {
                     <button className="btn-ghost" style={{ fontSize: 11 }} onClick={() => { setRenaming(neg.id); setRenameVal(neg.property_name || '') }}>
                       Rename
                     </button>
+                    {neg.documents?.length >= 2 && (
+                      <button className="btn-ghost" style={{ fontSize: 11 }} onClick={() => navigate(`/compare/${neg.id}`)}>
+                        Compare versions
+                      </button>
+                    )}
                     <button className="btn-primary" style={{ fontSize: 11 }} onClick={() => navigate('/analyser', { state: { negotiationId: neg.id } })}>
                       + Add version
                     </button>
@@ -203,7 +208,7 @@ export default function Dashboard() {
                           </svg>
                         </div>
                         <div className={styles.docInfo}>
-                          <div className={styles.docName}>{doc.filename}</div>
+                          <div className={styles.docName}>{doc.filename.replace(/^\d+_/, '')}</div>
                           <div className={styles.docMeta}>
                             Version {doc.version_number} · {formatDate(doc.uploaded_at)}
                             {doc.reports?.length > 0 && <span className={styles.reportCount}> · {doc.reports.length} report</span>}
