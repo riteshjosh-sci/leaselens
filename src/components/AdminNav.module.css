@@ -147,3 +147,8 @@
 
   .overlay { display: block; }
 }
+
+/* Hide sidebar brand on mobile since mobileHeader shows it */
+@media (max-width: 768px) {
+  .brand { display: none; }
+}

@@ -221,3 +221,23 @@
   .bottomRow { grid-template-columns: 1fr !important; }
   .chartCard { min-width: 0; overflow: hidden; }
 }
+
+/* Fix recharts on mobile */
+@media (max-width: 768px) {
+  .chartCard { min-height: 200px; }
+  .chartCard > div { min-height: 160px; }
+}
+
+/* Force charts to be visible on mobile */
+@media (max-width: 768px) {
+  .chartCard { 
+    min-height: 180px !important; 
+    width: 100% !important;
+    overflow: visible !important;
+  }
+  /* Force recharts containers to have size */
+  .chartCard .recharts-responsive-container {
+    min-height: 120px !important;
+    width: 100% !important;
+  }
+}
