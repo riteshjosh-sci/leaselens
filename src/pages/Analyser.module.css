@@ -239,3 +239,23 @@
   color: var(--ink-mid);
   white-space: nowrap;
 }
+
+/* Asset class row - improved styling */
+.assetClassRow {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 14px 0 !important;
+  border-top: 1px solid var(--rule-soft) !important;
+  margin-top: 4px !important;
+}
+
+.assetClassLabel {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  color: var(--ink-light) !important;
+  white-space: nowrap !important;
+  min-width: 80px !important;
+}
