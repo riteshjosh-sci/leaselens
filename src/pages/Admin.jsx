@@ -482,7 +482,16 @@ export default function Admin() {
                         </div>
                       </td>
                       <td>{planBadge(u.plan)}</td>
-                      <td className={styles.hideMobile}>{u.free_scans_used || 0}</td>
+                      <td className={styles.hideMobile}>
+                        {['monthly', 'annual'].includes(u.plan)
+                          ? `${u.monthly_scans_used || 0}/10`
+                          : u.plan === 'one_off'
+                          ? `${u.scan_credits || 0} credits`
+                          : u.plan === 'adviser'
+                          ? 'Unlimited'
+                          : `${u.free_scans_used || 0}/1`
+                        }
+                      </td>
                       <td>
                         <span className={u.suspended ? styles.tagSuspended : styles.tagActive}>
                           {u.suspended ? 'Suspended' : 'Active'}
@@ -499,7 +508,9 @@ export default function Admin() {
                           <button className={u.suspended ? styles.activateBtn : styles.suspendBtn} onClick={() => handleSuspend(u.id, u.suspended)}>
                             {u.suspended ? 'Reactivate' : 'Suspend'}
                           </button>
+                          {u.email !== ADMIN_EMAIL && (
                           <button className={styles.deleteBtn} onClick={() => handleDeleteUser(u.id)}>Delete</button>
+                        )}
                         </div>
                       </td>
                     </tr>
