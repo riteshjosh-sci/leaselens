@@ -1,7 +1,76 @@
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import styles from './Home.module.css'
+
+function WaitlistForm() {
+  const [email, setEmail] = useState('')
+  const [status, setStatus] = useState('') // 'success' | 'error' | 'duplicate'
+  const [loading, setLoading] = useState(false)
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    setLoading(true)
+    setStatus('')
+
+    const { error } = await supabase.from('waitlist').insert({ email: email.trim().toLowerCase() })
+
+    if (error) {
+      if (error.code === '23505') {
+        setStatus('duplicate')
+      } else {
+        setStatus('error')
+      }
+    } else {
+      setStatus('success')
+      setEmail('')
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center', padding: '0 24px' }}>
+      <div style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--gold)', fontWeight: 500, marginBottom: 14 }}>
+        Early access
+      </div>
+      <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 36, fontWeight: 400, color: 'var(--ink)', marginBottom: 12, letterSpacing: '-0.3px' }}>
+        Join the waitlist
+      </h2>
+      <p style={{ fontSize: 16, color: 'var(--ink-mid)', lineHeight: 1.75, fontWeight: 300, marginBottom: 28 }}>
+        LeaseLens is currently in private beta. Join the waitlist and we will be in touch when access opens.
+      </p>
+      {status === 'success' ? (
+        <div style={{ background: 'var(--risk-l-bg)', border: '1px solid #c0e0c0', borderRadius: 2, padding: '16px 20px', fontSize: 14, color: 'var(--risk-l)', fontWeight: 500 }}>
+          You are on the list. We will be in touch soon.
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 10, maxWidth: 440, margin: '0 auto' }}>
+          <input
+            type="email"
+            className="input"
+            value={email}
+            onChange={e => { setEmail(e.target.value); setStatus('') }}
+            placeholder="your@email.com"
+            required
+            style={{ flex: 1 }}
+          />
+          <button className="btn-primary" disabled={loading} style={{ whiteSpace: 'nowrap' }}>
+            {loading ? 'Joining...' : 'Join waitlist'}
+          </button>
+        </form>
+      )}
+      {status === 'duplicate' && (
+        <p style={{ fontSize: 13, color: 'var(--ink-light)', marginTop: 10 }}>You are already on the waitlist.</p>
+      )}
+      {status === 'error' && (
+        <p style={{ fontSize: 13, color: 'var(--risk-h)', marginTop: 10 }}>Something went wrong. Please try again.</p>
+      )}
+    </div>
+  )
+}
 
 export default function Home() {
   const navigate = useNavigate()
@@ -183,6 +252,11 @@ export default function Home() {
       </div>
 
       {/* TRUST */}
+      {/* WAITLIST */}
+      <div className={styles.waitlistSection} id="waitlist">
+        <WaitlistForm />
+      </div>
+
       <div className={styles.trustSection}>
         <div className={styles.trustInner}>
           <div style={{ marginBottom: 48 }}>
