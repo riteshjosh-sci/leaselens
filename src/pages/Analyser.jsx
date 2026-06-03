@@ -21,6 +21,7 @@ export default function Analyser() {
   const negotiationId = location.state?.negotiationId || null
 
   const [profile, setProfile] = useState(null)
+  const [assetClass, setAssetClass] = useState('retail')
   const [file, setFile] = useState(null)
   const [pasteText, setPasteText] = useState('')
   const [showPaste, setShowPaste] = useState(false)
@@ -178,6 +179,7 @@ export default function Analyser() {
         paste_text: pasteText || null,
         negotiation_id: negId || null,
         status: 'pending',
+        asset_class: assetClass,
       }).select().single()
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
@@ -302,6 +304,17 @@ export default function Analyser() {
               accept=".pdf,.docx,.txt"
               onChange={e => handleFile(e.target.files[0])}
             />
+
+            <div className={styles.assetClassRow}>
+              <label className={styles.assetClassLabel}>Asset class</label>
+              <select className="input" value={assetClass} onChange={e => setAssetClass(e.target.value)} style={{ maxWidth: 220 }}>
+                <option value="retail">Retail</option>
+                <option value="office">Office</option>
+                <option value="industrial">Industrial</option>
+                <option value="childcare">Childcare</option>
+                <option value="medical">Medical</option>
+              </select>
+            </div>
 
             <div className={styles.pasteToggle}>
               <button onClick={() => setShowPaste(!showPaste)}>

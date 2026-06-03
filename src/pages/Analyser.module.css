@@ -225,3 +225,17 @@
   color: var(--ink-light);
   font-weight: 500;
 }
+
+/* Asset class selector */
+.assetClassRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.assetClassLabel {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-mid);
+  white-space: nowrap;
+}
