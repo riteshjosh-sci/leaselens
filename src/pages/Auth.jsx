@@ -135,12 +135,46 @@ export function Login() {
 
 // ── Signup ──
 export function Signup() {
+  const [betaCode, setBetaCode]     = useState('')
+  const [betaValid, setBetaValid]   = useState(false)
+  const [betaError, setBetaError]   = useState('')
+  const [betaLoading, setBetaLoading] = useState(false)
   const [email, setEmail]           = useState('')
   const [password, setPassword]     = useState('')
   const [confirmPass, setConfirmPass] = useState('')
   const [errors, setErrors]         = useState({})
   const [success, setSuccess]       = useState(false)
   const [loading, setLoading]       = useState(false)
+
+  const handleBetaCode = async (ev) => {
+    ev.preventDefault()
+    if (!betaCode.trim()) return
+    setBetaLoading(true)
+    setBetaError('')
+
+    const { data, error } = await supabase
+      .from('beta_codes')
+      .select('id, used')
+      .eq('code', betaCode.trim().toUpperCase())
+      .single()
+
+    if (error || !data) {
+      setBetaError('Invalid access code. Please check and try again.')
+      setBetaLoading(false)
+      return
+    }
+
+    if (data.used) {
+      setBetaError('This access code has already been used.')
+      setBetaLoading(false)
+      return
+    }
+
+    // Mark code as used
+    await supabase.from('beta_codes').update({ used: true }).eq('id', data.id)
+    setBetaValid(true)
+    setBetaLoading(false)
+  }
 
   const validate = () => {
     const e = {}
@@ -179,7 +213,38 @@ export function Signup() {
       <Nav />
       <div className={styles.page}>
         <div className={styles.card}>
-          {success ? (
+          {!betaValid ? (
+            <>
+              <div className={styles.kicker}>Beta access</div>
+              <h1 className={styles.h1}>Enter your access code</h1>
+              <p className={styles.confirmText}>
+                LeaseLens is currently in beta. Enter your access code to create an account.
+              </p>
+              <form onSubmit={handleBetaCode} className={styles.form} noValidate>
+                <div className={styles.field}>
+                  <label>Access code</label>
+                  <input
+                    className={`input ${betaError ? styles.inputError : ''}`}
+                    type="text"
+                    value={betaCode}
+                    onChange={e => { setBetaCode(e.target.value.toUpperCase()); setBetaError('') }}
+                    placeholder="BETA2026"
+                    autoFocus
+                  />
+                  {betaError && <span className={styles.fieldError}>{betaError}</span>}
+                </div>
+                <button className="btn-primary" style={{ width: '100%', justifyContent: 'center' }} disabled={betaLoading}>
+                  {betaLoading ? 'Checking...' : 'Continue →'}
+                </button>
+              </form>
+              <p className={styles.switchText}>
+                Already have an account? <Link to="/login">Sign in</Link>
+              </p>
+              <p className={styles.switchText} style={{ marginTop: 4 }}>
+                No access code? <Link to="/#waitlist">Join the waitlist</Link>
+              </p>
+            </>
+          ) : success ? (
             <>
               <div className={styles.kicker}>Almost there</div>
               <h1 className={styles.h1}>Check your email</h1>
