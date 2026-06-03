@@ -53,7 +53,18 @@ export default function Dashboard() {
   }
 
   const handleDeleteNeg = async (negId) => {
-    if (!confirm('Delete this entire negotiation and all its documents?')) return
+    if (!confirm('Delete this entire negotiation and all its documents? This cannot be undone.')) return
+    // Get all documents for this negotiation
+    const { data: docs } = await supabase.from('documents').select('id, file_path').eq('negotiation_id', negId)
+    if (docs?.length) {
+      // Delete files from storage
+      const filePaths = docs.map(d => d.file_path).filter(Boolean)
+      if (filePaths.length) await supabase.storage.from('documents').remove(filePaths)
+      // Delete reports (clauses cascade from documents via FK)
+      const docIds = docs.map(d => d.id)
+      await supabase.from('reports').delete().in('document_id', docIds)
+      await supabase.from('jobs').delete().eq('negotiation_id', negId)
+    }
     await supabase.from('negotiations').delete().eq('id', negId)
     setNegotiations(prev => prev.filter(n => n.id !== negId))
   }

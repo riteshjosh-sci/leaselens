@@ -115,6 +115,10 @@ export default function Analyser() {
         setError('No scan credits remaining. Purchase another report to continue.')
         return
       }
+      if ((plan === 'monthly' || plan === 'annual') && (profile.monthly_scans_used || 0) >= 10) {
+        setError('You have reached your 10 scan limit for this month. Your limit resets on the 1st of next month.')
+        return
+      }
     }
 
     setLoading(true)
@@ -167,6 +171,10 @@ export default function Analyser() {
         } else if (profile.plan === 'one_off') {
           await supabase.from('profiles').update({
             scan_credits: Math.max(0, (profile.scan_credits || 0) - 1)
+          }).eq('id', user.id)
+        } else if (profile.plan === 'monthly' || profile.plan === 'annual') {
+          await supabase.from('profiles').update({
+            monthly_scans_used: (profile.monthly_scans_used || 0) + 1
           }).eq('id', user.id)
         }
       }
