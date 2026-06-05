@@ -21,7 +21,13 @@ export default function Analyser() {
   const negotiationId = location.state?.negotiationId || null
 
   const [profile, setProfile] = useState(null)
+  const [leaseData, setLeaseData] = useState(null)
   const [assetClass, setAssetClass] = useState('retail')
+  const [propertyType, setPropertyType] = useState('')
+  const [landlordType, setLandlordType] = useState('')
+  const [suburb, setSuburb] = useState('')
+  const [postcode, setPostcode] = useState('')
+  const [finalised, setFinalised] = useState(false)
   const [file, setFile] = useState(null)
   const [pasteText, setPasteText] = useState('')
   const [showPaste, setShowPaste] = useState(false)
@@ -84,6 +90,21 @@ export default function Analyser() {
   }
 
   const handleJobUpdate = (jobData, subscription, negId) => {
+    // Show lease summary as soon as pattern extraction completes
+    if (jobData.stage === 'extracted' && jobData.stage_data) {
+      try {
+        const ld = typeof jobData.stage_data === 'string'
+          ? JSON.parse(jobData.stage_data)
+          : jobData.stage_data
+        setLeaseData(ld)
+        setLoadingStage(2) // Advance to "Risk Analysis Running"
+      } catch (e) {}
+    }
+
+    if (jobData.stage === 'analysing') {
+      setLoadingStage(3)
+    }
+
     if (jobData.status === 'complete') {
       stopLoadingCycle()
       if (subscription) subscription.unsubscribe()
@@ -188,20 +209,16 @@ export default function Analyser() {
         negotiation_id: negId || null,
         status: 'pending',
         asset_class: assetClass,
+        property_type: propertyType || null,
+        landlord_type: landlordType || null,
+        suburb: suburb || null,
+        postcode: postcode || null,
+        finalised: finalised,
       }).select().single()
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
 
-      // Trigger Railway worker (fire and forget)
-      const workerUrl = import.meta.env.VITE_WORKER_URL
-      if (workerUrl) {
-        fetch(`${workerUrl}/process`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ jobId: job.id }),
-        }).catch(console.error)
-      }
-      // Worker also polls automatically — no trigger needed if URL not set
+      // Worker polls automatically every 5 seconds — no manual trigger needed
 
       // Subscribe to job updates via Realtime
       const subscription = supabase
@@ -224,7 +241,7 @@ export default function Analyser() {
       const checkJob = async () => {
         const { data: jobData } = await supabase
           .from('jobs')
-          .select('status, report_json, error')
+          .select('status, stage, stage_data, report_json, error')
           .eq('id', job.id)
           .single()
         if (jobData?.status === 'complete' || jobData?.status === 'failed') {
@@ -313,15 +330,65 @@ export default function Analyser() {
               onChange={e => handleFile(e.target.files[0])}
             />
 
-            <div className={styles.assetClassRow}>
-              <label className={styles.assetClassLabel}>Asset class</label>
-              <select className="input" value={assetClass} onChange={e => setAssetClass(e.target.value)} style={{ maxWidth: 220 }}>
-                <option value="retail">Retail</option>
-                <option value="office">Office</option>
-                <option value="industrial">Industrial</option>
-                <option value="childcare">Childcare</option>
-                <option value="medical">Medical</option>
-              </select>
+            <div className={styles.metaInputs}>
+              <div className={styles.metaRow}>
+                <div className={styles.metaField}>
+                  <label className={styles.metaLabel}>Asset class</label>
+                  <select className="input" value={assetClass} onChange={e => setAssetClass(e.target.value)}>
+                    <option value="retail">Retail</option>
+                    <option value="office">Office</option>
+                    <option value="industrial">Industrial</option>
+                    <option value="childcare">Childcare</option>
+                    <option value="medical">Medical</option>
+                  </select>
+                </div>
+                <div className={styles.metaField}>
+                  <label className={styles.metaLabel}>Property type</label>
+                  <select className="input" value={propertyType} onChange={e => setPropertyType(e.target.value)}>
+                    <option value="">Select...</option>
+                    <option value="shopping_centre">Shopping Centre</option>
+                    <option value="retail_strip">Retail Strip</option>
+                    <option value="standalone">Standalone</option>
+                    <option value="mixed_use">Mixed Use</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div className={styles.metaField}>
+                  <label className={styles.metaLabel}>Landlord type</label>
+                  <select className="input" value={landlordType} onChange={e => setLandlordType(e.target.value)}>
+                    <option value="">Select...</option>
+                    <option value="institutional">Institutional</option>
+                    <option value="private">Private</option>
+                    <option value="government">Government</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+              </div>
+              <div className={styles.metaRow}>
+                <div className={styles.metaField}>
+                  <label className={styles.metaLabel}>Suburb</label>
+                  <input className="input" type="text" value={suburb} onChange={e => setSuburb(e.target.value)} placeholder="e.g. Fremantle" />
+                </div>
+                <div className={styles.metaField}>
+                  <label className={styles.metaLabel}>Postcode</label>
+                  <input className="input" type="text" value={postcode} onChange={e => setPostcode(e.target.value)} placeholder="e.g. 6160" maxLength={4} />
+                </div>
+                <div className={styles.metaField}>
+                  <label className={styles.metaLabel}>Finalised</label>
+                  <div className={styles.toggleRow}>
+                    <button
+                      type="button"
+                      className={`${styles.toggleBtn} ${!finalised ? styles.toggleActive : ''}`}
+                      onClick={() => setFinalised(false)}
+                    >No</button>
+                    <button
+                      type="button"
+                      className={`${styles.toggleBtn} ${finalised ? styles.toggleActive : ''}`}
+                      onClick={() => setFinalised(true)}
+                    >Yes</button>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className={styles.pasteToggle}>
@@ -397,6 +464,70 @@ export default function Analyser() {
               </p>
             )}
           </div>
+
+          {/* LEASE SUMMARY CARD — shown as soon as pattern extraction completes */}
+          {leaseData && loading && (
+            <div className={styles.leaseSummaryCard}>
+              <div className={styles.leaseSummaryHeader}>
+                <div className={styles.leaseSummaryKicker}>
+                  {leaseData.security_clear !== false ? '✓ Document processed' : '⚠ Security flag detected'}
+                </div>
+                <div className={styles.leaseSummaryTitle}>
+                  {leaseData.document_type || 'Lease'} — Commercial Terms Identified
+                </div>
+              </div>
+              <div className={styles.leaseSummaryGrid}>
+                {leaseData.term_years && (
+                  <div className={styles.leaseSummaryItem}>
+                    <span className={styles.leaseSummaryLabel}>Lease term</span>
+                    <span className={styles.leaseSummaryValue}>{leaseData.term_years} years{leaseData.option_terms ? ` + ${leaseData.option_terms}` : ''}</span>
+                  </div>
+                )}
+                {leaseData.base_rent_annual && (
+                  <div className={styles.leaseSummaryItem}>
+                    <span className={styles.leaseSummaryLabel}>Base rent</span>
+                    <span className={styles.leaseSummaryValue}>${leaseData.base_rent_annual.toLocaleString()} pa</span>
+                  </div>
+                )}
+                {leaseData.outgoings_annual && (
+                  <div className={styles.leaseSummaryItem}>
+                    <span className={styles.leaseSummaryLabel}>Outgoings</span>
+                    <span className={styles.leaseSummaryValue}>${leaseData.outgoings_annual.toLocaleString()} pa</span>
+                  </div>
+                )}
+                {leaseData.total_annual_deal_value && (
+                  <div className={styles.leaseSummaryItem}>
+                    <span className={styles.leaseSummaryLabel}>Total deal value</span>
+                    <span className={styles.leaseSummaryValue}>${leaseData.total_annual_deal_value.toLocaleString()} pa</span>
+                  </div>
+                )}
+                {leaseData.bank_guarantee_months && (
+                  <div className={styles.leaseSummaryItem}>
+                    <span className={styles.leaseSummaryLabel}>Bank guarantee</span>
+                    <span className={styles.leaseSummaryValue}>{leaseData.bank_guarantee_months} months</span>
+                  </div>
+                )}
+                {leaseData.rent_review_type && (
+                  <div className={styles.leaseSummaryItem}>
+                    <span className={styles.leaseSummaryLabel}>Rent review</span>
+                    <span className={styles.leaseSummaryValue}>
+                      {leaseData.rent_review_type.toUpperCase()}{leaseData.rent_review_rate ? ` ${leaseData.rent_review_rate}%` : ''}
+                    </span>
+                  </div>
+                )}
+                {leaseData.state && (
+                  <div className={styles.leaseSummaryItem}>
+                    <span className={styles.leaseSummaryLabel}>State</span>
+                    <span className={styles.leaseSummaryValue}>{leaseData.state}</span>
+                  </div>
+                )}
+              </div>
+              <div className={styles.leaseSummaryStatus}>
+                <span className={styles.leaseSummaryCheck}>✓ Commercial terms identified</span>
+                <span className={styles.leaseSummaryPending}>◉ AI risk analysis running...</span>
+              </div>
+            </div>
+          )}
 
           {/* PROPERTY NAME PROMPT */}
           {showPropertyPrompt && report && (
