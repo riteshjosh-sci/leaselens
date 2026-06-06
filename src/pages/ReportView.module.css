@@ -68,3 +68,8 @@
   .reportHeader { flex-direction: column; }
   .nextSteps { padding: 20px; }
 }
+/* WORKSPACE SIDEBAR CARD */
+.wsInfo { display: flex; flex-direction: column; gap: 6px; }
+.wsLogo { max-height: 40px; max-width: 140px; object-fit: contain; margin-bottom: 4px; }
+.wsName { font-size: 13px; font-weight: 500; color: var(--ink); }
+.wsClient { font-size: 12px; color: var(--ink-light); }

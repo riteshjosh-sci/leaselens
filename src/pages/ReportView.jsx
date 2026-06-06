@@ -14,6 +14,8 @@ export default function ReportView() {
   const [report, setReport] = useState(null)
   const [document, setDocument] = useState(null)
   const [negotiation, setNegotiation] = useState(null)
+  const [workspace, setWorkspace] = useState(null)
+  const [logoUrl, setLogoUrl] = useState(null)
   const [allVersions, setAllVersions] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -30,7 +32,10 @@ export default function ReportView() {
         id, created_at, report_json,
         documents (
           id, filename, version_number, uploaded_at, overall_risk,
-          negotiations ( id, property_name )
+          negotiations (
+            id, property_name,
+            workspaces ( id, name, client_name, logo_path )
+          )
         )
       `)
       .eq('id', id)
@@ -46,6 +51,15 @@ export default function ReportView() {
     setDocument(reportData.documents)
     setNegotiation(reportData.documents?.negotiations)
 
+    const ws = reportData.documents?.negotiations?.workspaces
+    setWorkspace(ws || null)
+
+    // Resolve logo public URL if workspace has one
+    if (ws?.logo_path) {
+      const { data: urlData } = supabase.storage.from('logos').getPublicUrl(ws.logo_path)
+      setLogoUrl(urlData?.publicUrl || null)
+    }
+
     // Fetch all versions for this negotiation
     if (reportData.documents?.negotiations?.id) {
       const { data: versions } = await supabase
@@ -59,9 +73,49 @@ export default function ReportView() {
     setLoading(false)
   }
 
-  const handleDownloadPDF = () => {
+  const handleDownloadPDF = async () => {
     if (!report) return
     const data = report.report_json
+
+    // Convert logo to base64 so it works in print window (cross-origin img won't print)
+    let logoBase64 = null
+    if (logoUrl) {
+      try {
+        const res = await fetch(logoUrl)
+        const blob = await res.blob()
+        logoBase64 = await new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onloadend = () => resolve(reader.result)
+          reader.readAsDataURL(blob)
+        })
+      } catch (e) {
+        // logo fetch failed — fall back to text header
+      }
+    }
+
+    const headerHTML = logoBase64
+      ? `<div class="header branded">
+           <div class="header-row">
+             <img src="${logoBase64}" class="logo-img" alt="Logo" />
+             <div class="header-divider"></div>
+             <div class="brand-sub">Lease<em>Lens</em></div>
+           </div>
+           ${workspace?.client_name ? `<div class="client-name">${workspace.client_name}</div>` : ''}
+           <div class="meta">
+             ${negotiation?.property_name || 'Document analysis'} · 
+             Version ${document?.version_number} · 
+             ${new Date(document?.uploaded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}
+           </div>
+         </div>`
+      : `<div class="header">
+           <div class="brand">Lease<em>Lens</em></div>
+           <div class="meta">
+             ${negotiation?.property_name || 'Document analysis'} · 
+             Version ${document?.version_number} · 
+             ${new Date(document?.uploaded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}
+           </div>
+         </div>`
+
     const win = window.open('', '_blank')
     win.document.write(`
       <!DOCTYPE html>
@@ -72,10 +126,22 @@ export default function ReportView() {
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
           body { font-family: 'Inter', sans-serif; color: #1a1a18; font-size: 13px; line-height: 1.6; padding: 48px; max-width: 800px; margin: 0 auto; }
+
+          /* Header — default (no logo) */
           .header { border-bottom: 2px solid #1a3a2a; padding-bottom: 24px; margin-bottom: 32px; }
           .brand { font-family: 'DM Serif Display', serif; font-size: 24px; color: #0f0f0d; margin-bottom: 8px; }
           .brand em { font-style: italic; color: #2a5c42; }
           .meta { font-size: 11px; color: #7a7a74; }
+
+          /* Header — branded (with logo) */
+          .header.branded { border-bottom: 2px solid #1a3a2a; padding-bottom: 20px; margin-bottom: 32px; }
+          .header-row { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+          .logo-img { max-height: 48px; max-width: 180px; object-fit: contain; }
+          .header-divider { width: 1px; height: 36px; background: #e2e0da; }
+          .brand-sub { font-family: 'DM Serif Display', serif; font-size: 18px; color: #7a7a74; }
+          .brand-sub em { font-style: italic; color: #2a5c42; }
+          .client-name { font-size: 12px; font-weight: 600; color: #3a3a36; letter-spacing: 0.04em; margin-bottom: 4px; }
+
           .summary { background: #f0f5f2; border-left: 3px solid #1a3a2a; padding: 16px 20px; margin-bottom: 32px; font-size: 14px; color: #3a3a36; line-height: 1.75; }
           .risk-badge { display: inline-block; padding: 4px 12px; border-radius: 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; margin-bottom: 24px; }
           .risk-HIGH { background: #fdf2f2; color: #8b2020; }
@@ -102,14 +168,7 @@ export default function ReportView() {
         </style>
       </head>
       <body>
-        <div class="header">
-          <div class="brand">Lease<em>Lens</em></div>
-          <div class="meta">
-            ${negotiation?.property_name || 'Document analysis'} · 
-            Version ${document?.version_number} · 
-            ${new Date(document?.uploaded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}
-          </div>
-        </div>
+        ${headerHTML}
 
         <div class="risk-badge risk-${data.overall_risk}">● ${data.overall_risk} RISK</div>
         <div class="summary">${data.summary}</div>
@@ -143,7 +202,7 @@ export default function ReportView() {
         </div>
 
         <div class="footer">
-          <span>LeaseLens · leaselens.au</span>
+          <span>${workspace?.client_name ? `${workspace.client_name} · via ` : ''}LeaseLens · leaselens.au</span>
           <span>Generated ${new Date().toLocaleDateString('en-AU')}</span>
         </div>
       </body>
@@ -249,6 +308,19 @@ export default function ReportView() {
 
           {/* SIDEBAR */}
           <div className={styles.sidebar}>
+
+            {/* Workspace badge — show if not Default Workspace */}
+            {workspace && workspace.name !== 'Default Workspace' && (
+              <div className={styles.sideCard}>
+                <div className={styles.sideTitle}>Workspace</div>
+                <div className={styles.wsInfo}>
+                  {logoUrl && <img src={logoUrl} alt="Logo" className={styles.wsLogo} />}
+                  <div className={styles.wsName}>{workspace.name}</div>
+                  {workspace.client_name && <div className={styles.wsClient}>{workspace.client_name}</div>}
+                </div>
+              </div>
+            )}
+
             {/* Version history */}
             {allVersions.length > 1 && (
               <div className={styles.sideCard}>
