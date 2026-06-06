@@ -22,6 +22,8 @@ export default async function handler(req, res) {
       reports: () => supabase.from('reports').select('id, created_at, document_id, user_id').order('created_at', { ascending: false }).limit(200),
       beta_codes: () => supabase.from('beta_codes').select('*').order('created_at', { ascending: false }),
       waitlist: () => supabase.from('waitlist').select('*').order('created_at', { ascending: false }),
+      workspaces: () => supabase.from('workspaces').select('id, name, client_name, logo_path, delivery_email, created_at, user_id, negotiations(id)').order('created_at', { ascending: false }),
+
     }
 
     if (!queries[resource]) return res.status(400).json({ error: 'Invalid resource' })
