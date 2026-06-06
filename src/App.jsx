@@ -20,8 +20,10 @@ import Admin from './pages/Admin'
 import AdminReportView from './pages/AdminReportView'
 
 import { lazy, Suspense } from 'react'
-const Privacy = lazy(() => import('./pages/Privacy'))
-const Terms   = lazy(() => import('./pages/Terms'))
+const Privacy           = lazy(() => import('./pages/Privacy'))
+const Terms             = lazy(() => import('./pages/Terms'))
+const WorkspaceSettings = lazy(() => import('./pages/WorkspaceSettings'))
+const SharedReport      = lazy(() => import('./pages/SharedReport'))
 
 export default function App() {
   return (
@@ -39,11 +41,13 @@ export default function App() {
             <Route path="/pricing"                element={<Pricing />} />
             <Route path="/privacy"                element={<Privacy />} />
             <Route path="/terms"                  element={<Terms />} />
+            <Route path="/shared/:token"          element={<SharedReport />} />
 
             {/* ── User protected routes ── */}
             <Route path="/dashboard"              element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/report/:id"             element={<ProtectedRoute><ReportView /></ProtectedRoute>} />
             <Route path="/compare/:negotiationId" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
+            <Route path="/workspace/:id"          element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
 
             {/* ── Admin routes — completely isolated ── */}
             <Route path="/admin/login"            element={<AdminLogin />} />
