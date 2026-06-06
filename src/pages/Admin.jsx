@@ -155,13 +155,8 @@ export default function Admin() {
     const w = waitlistData || []
 
     // Fetch workspaces directly (no sensitive data, just structure)
-    const { data: wsData } = await supabase
-      .from('workspaces')
-      .select(`
-        id, name, client_name, logo_path, delivery_email, created_at, user_id,
-        negotiations ( id )
-      `)
-      .order('created_at', { ascending: false })
+    const wsRaw = await adminFetch('workspaces', token)
+    const wsData = wsRaw || []
 
     const ws = wsData || []
 
