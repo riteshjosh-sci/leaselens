@@ -19,6 +19,7 @@ export default function Analyser() {
   const navigate = useNavigate()
   const location = useLocation()
   const negotiationId = location.state?.negotiationId || null
+  const workspaceId   = location.state?.workspaceId   || null
 
   const [profile, setProfile] = useState(null)
   const [leaseData, setLeaseData] = useState(null)
@@ -182,6 +183,7 @@ export default function Analyser() {
           user_id: user.id,
           property_name: defaultName,
           status: 'active',
+          workspace_id: workspaceId || null,
         }).select().single()
         if (negData) {
           negId = negData.id
