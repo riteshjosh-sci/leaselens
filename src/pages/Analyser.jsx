@@ -39,6 +39,8 @@ export default function Analyser() {
   const [showPropertyPrompt, setShowPropertyPrompt] = useState(false)
   const fileInputRef = useRef()
   const stageIntervalRef = useRef(null)
+  const pollIntervalRef = useRef(null)   // FIX: ref instead of const
+  const fallbackTimerRef = useRef(null)  // FIX: ref so it can be cleared
   const jobSubscriptionRef = useRef(null)
 
   useEffect(() => {
@@ -48,6 +50,8 @@ export default function Analyser() {
     }
     return () => {
       if (stageIntervalRef.current) clearInterval(stageIntervalRef.current)
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)   // FIX
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current)  // FIX
       if (jobSubscriptionRef.current) jobSubscriptionRef.current.unsubscribe()
     }
   }, [user])
@@ -56,14 +60,13 @@ export default function Analyser() {
     setLoadingStage(0)
     stageIntervalRef.current = setInterval(() => {
       setLoadingStage(prev => {
-        // Stop at second to last stage — last stage only shows when almost done
         if (prev >= LOADING_STAGES.length - 2) {
           clearInterval(stageIntervalRef.current)
           return LOADING_STAGES.length - 2
         }
         return prev + 1
       })
-    }, 18000) // 18 seconds per stage — 4 stages = ~72 seconds total
+    }, 18000)
   }
 
   const stopLoadingCycle = () => {
@@ -71,6 +74,20 @@ export default function Analyser() {
       clearInterval(stageIntervalRef.current)
       stageIntervalRef.current = null
     }
+  }
+
+  // FIX: single cleanup function that clears everything
+  const cleanupJob = (subscription) => {
+    stopLoadingCycle()
+    if (pollIntervalRef.current) {
+      clearInterval(pollIntervalRef.current)
+      pollIntervalRef.current = null
+    }
+    if (fallbackTimerRef.current) {
+      clearTimeout(fallbackTimerRef.current)
+      fallbackTimerRef.current = null
+    }
+    if (subscription) subscription.unsubscribe()
   }
 
   const handleFile = (f) => {
@@ -90,14 +107,13 @@ export default function Analyser() {
   }
 
   const handleJobUpdate = (jobData, subscription, negId) => {
-    // Show lease summary as soon as pattern extraction completes
     if (jobData.stage === 'extracted' && jobData.stage_data) {
       try {
         const ld = typeof jobData.stage_data === 'string'
           ? JSON.parse(jobData.stage_data)
           : jobData.stage_data
         setLeaseData(ld)
-        setLoadingStage(2) // Advance to "Risk Analysis Running"
+        setLoadingStage(2)
       } catch (e) {}
     }
 
@@ -106,14 +122,12 @@ export default function Analyser() {
     }
 
     if (jobData.status === 'complete') {
-      stopLoadingCycle()
-      if (subscription) subscription.unsubscribe()
+      cleanupJob(subscription)  // FIX: single cleanup
       setReport(jobData.report_json)
       setLoading(false)
       if (negId && !negotiationId) setShowPropertyPrompt(true)
     } else if (jobData.status === 'failed') {
-      stopLoadingCycle()
-      if (subscription) subscription.unsubscribe()
+      cleanupJob(subscription)  // FIX: single cleanup
       setError(jobData.error || 'Analysis failed. Please try again.')
       setLoading(false)
     }
@@ -125,7 +139,6 @@ export default function Analyser() {
       return
     }
 
-    // Feature gating
     if (user && profile) {
       const plan = profile.plan || 'free'
       if (plan === 'free' && (profile.free_scans_used || 0) >= 1) {
@@ -152,24 +165,17 @@ export default function Analyser() {
       let fileType = null
       let negId = negotiationId
 
-      // Upload file to Supabase Storage
       if (file) {
         fileType = file.name.split('.').pop().toLowerCase()
-
-        if (fileType === 'doc') {
-          throw new Error('LEGACY_DOC')
-        }
-
+        if (fileType === 'doc') throw new Error('LEGACY_DOC')
         const uploadPath = `temp/${user?.id || 'anon'}/${Date.now()}_${file.name}`
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from('documents')
           .upload(uploadPath, file, { upsert: true })
-
         if (uploadError) throw new Error('Upload failed: ' + uploadError.message)
         filePath = uploadData.path
       }
 
-      // Create or get negotiation
       if (user && !negId) {
         const defaultName = file?.name?.replace(/\.[^/.]+$/, '') || 'New negotiation'
         const { data: negData } = await supabase.from('negotiations').insert({
@@ -183,7 +189,6 @@ export default function Analyser() {
         }
       }
 
-      // Update scan usage
       if (user && profile) {
         if (profile.plan === 'free') {
           await supabase.from('profiles').update({
@@ -200,7 +205,6 @@ export default function Analyser() {
         }
       }
 
-      // Create job in Supabase
       const { data: job, error: jobError } = await supabase.from('jobs').insert({
         user_id: user?.id || null,
         file_path: filePath,
@@ -218,8 +222,6 @@ export default function Analyser() {
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
 
-      // Worker polls automatically every 5 seconds — no manual trigger needed
-
       // Subscribe to job updates via Realtime
       const subscription = supabase
         .channel(`job-${job.id}`)
@@ -229,36 +231,27 @@ export default function Analyser() {
           table: 'jobs',
           filter: `id=eq.${job.id}`,
         }, async (payload) => {
-          const updatedJob = payload.new
-          handleJobUpdate(updatedJob, subscription, negId)
+          handleJobUpdate(payload.new, subscription, negId)
         })
         .subscribe()
 
       jobSubscriptionRef.current = subscription
 
-      // Poll every 5 seconds as fallback in case Realtime misses the event
-      // Check immediately first
-      const checkJob = async () => {
+      // FIX: store interval in ref so checkJob can reliably clear it
+      pollIntervalRef.current = setInterval(async () => {
         const { data: jobData } = await supabase
           .from('jobs')
           .select('status, stage, stage_data, report_json, error')
           .eq('id', job.id)
           .single()
         if (jobData?.status === 'complete' || jobData?.status === 'failed') {
-          clearInterval(pollInterval)
           handleJobUpdate(jobData, subscription, negId)
-          return true
         }
-        return false
-      }
-      // Start polling every 5 seconds
-      const pollInterval = setInterval(async () => {
-        await checkJob()
       }, 5000)
 
-      // Fallback timeout — 10 minutes max
-      setTimeout(() => {
-        stopLoadingCycle()
+      // FIX: store fallback timeout in ref so it can be cleared on success
+      fallbackTimerRef.current = setTimeout(() => {
+        cleanupJob(subscription)
         setError('Analysis is taking longer than expected. Please try again.')
         setLoading(false)
       }, 600000)
@@ -465,7 +458,7 @@ export default function Analyser() {
             )}
           </div>
 
-          {/* LEASE SUMMARY CARD — shown as soon as pattern extraction completes */}
+          {/* LEASE SUMMARY CARD */}
           {leaseData && loading && (
             <div className={styles.leaseSummaryCard}>
               <div className={styles.leaseSummaryHeader}>
