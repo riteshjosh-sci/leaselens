@@ -12,7 +12,6 @@ import {
 
 const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL
 
-// ── Admin API helpers ──
 async function adminFetch(resource, token) {
   const res = await fetch(`/api/admin-data?resource=${resource}`, {
     headers: { Authorization: `Bearer ${token}` }
@@ -31,13 +30,10 @@ async function adminAction(action, payload, token) {
   return res.json()
 }
 
-
 const PLANS = ['free', 'one_off', 'monthly', 'annual', 'adviser']
 
-// ── Animated counter ──
 function Counter({ value, prefix = '', suffix = '' }) {
   const [display, setDisplay] = useState(0)
-  const ref = useRef(null)
   useEffect(() => {
     let start = 0
     const end = parseInt(value) || 0
@@ -54,7 +50,6 @@ function Counter({ value, prefix = '', suffix = '' }) {
   return <span>{prefix}{display.toLocaleString()}{suffix}</span>
 }
 
-// ── Sparkline chart (Recharts) ──
 function Sparkline({ data, color }) {
   const chartData = (data || []).map(d => ({ name: d.label, value: d.count }))
   return (
@@ -73,7 +68,6 @@ function Sparkline({ data, color }) {
   )
 }
 
-// ── Bar chart (Recharts) ──
 function BarChartComp({ data, color }) {
   const chartData = (data || []).map(d => ({ name: d.label, value: d.count }))
   const CustomTooltip = ({ active, payload, label }) => {
@@ -98,7 +92,6 @@ function BarChartComp({ data, color }) {
   )
 }
 
-// ── Donut chart (Recharts) ──
 function Donut({ segments }) {
   const data = segments.filter(s => s.value > 0).map(s => ({ value: s.value, color: s.color, label: s.label }))
   const total = segments.reduce((a, s) => a + s.value, 0)
@@ -127,6 +120,7 @@ export default function Admin() {
   const [reports, setReports] = useState([])
   const [betaCodes, setBetaCodes] = useState([])
   const [waitlist, setWaitlist] = useState([])
+  const [workspaces, setWorkspaces] = useState([])
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
@@ -145,28 +139,41 @@ export default function Admin() {
     const { data: { session } } = await supabase.auth.getSession()
     const token = session?.access_token
     if (!token) { setLoading(false); return }
-    const [profiles, docs, reports, codes, waitlistData] = await Promise.all([
+
+    const [profiles, docs, reportsData, codes, waitlistData] = await Promise.all([
       adminFetch('profiles', token),
       adminFetch('documents', token),
       adminFetch('reports', token),
       adminFetch('beta_codes', token),
       adminFetch('waitlist', token),
     ])
-    const profilesRes = { data: profiles }
-    const docsRes = { data: docs }
-    const reportsRes = { data: reports }
-    const codesRes = { data: codes }
-    const waitlistRes = { data: waitlistData }
 
-    const u = profilesRes.data || []
-    const d = docsRes.data || []
-    const r = reportsRes.data || []
-    const c = codesRes.data || []
-    const w = waitlistRes.data || []
+    const u = profiles || []
+    const d = docs || []
+    const r = reportsData || []
+    const c = codes || []
+    const w = waitlistData || []
+
+    // Fetch workspaces directly (no sensitive data, just structure)
+    const { data: wsData } = await supabase
+      .from('workspaces')
+      .select(`
+        id, name, client_name, logo_path, delivery_email, created_at, user_id,
+        negotiations ( id )
+      `)
+      .order('created_at', { ascending: false })
+
+    const ws = wsData || []
+
+    // Enrich workspaces with owner email from profiles
+    const wsEnriched = ws.map(w => ({
+      ...w,
+      ownerEmail: u.find(p => p.id === w.user_id)?.email || '—',
+      negCount: w.negotiations?.length || 0,
+    }))
 
     const riskCounts = d.reduce((acc, doc) => { acc[doc.overall_risk] = (acc[doc.overall_risk] || 0) + 1; return acc }, {})
     const planCounts = PLANS.reduce((acc, p) => { acc[p] = u.filter(x => x.plan === p).length; return acc }, {})
-
     const paidUsers = u.filter(x => ['one_off','monthly','annual','adviser'].includes(x.plan))
     const mrr = u.filter(x => x.plan === 'monthly').length * 99
       + u.filter(x => x.plan === 'annual').length * (99 * 0.8)
@@ -187,12 +194,14 @@ export default function Admin() {
       betaUsed: c.filter(x => x.used).length,
       betaTotal: c.length,
       waitlistCount: w.length,
+      totalWorkspaces: ws.length,
     })
     setUsers(u)
     setDocuments(d)
     setReports(r)
     setBetaCodes(c)
     setWaitlist(w)
+    setWorkspaces(wsEnriched)
     setLoading(false)
   }
 
@@ -211,7 +220,6 @@ export default function Admin() {
   }
 
   const formatDate = (d) => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
-  const formatCurrency = (n) => `$${n.toLocaleString()}`
 
   const riskBadge = (risk) => {
     if (!risk) return <span className="badge badge-medium">—</span>
@@ -224,7 +232,6 @@ export default function Admin() {
     return <span className={`${styles.planBadge} ${map[plan] || styles.planFree}`}>{plan || 'free'}</span>
   }
 
-  // ── Actions ──
   const handleChangePlan = async (userId, plan) => {
     const { data: { session } } = await supabase.auth.getSession()
     await adminAction('updatePlan', { userId, plan }, session?.access_token)
@@ -277,6 +284,12 @@ export default function Admin() {
     !search || u.email?.toLowerCase().includes(search.toLowerCase())
   )
 
+  const filteredWorkspaces = workspaces.filter(w =>
+    !search || w.name?.toLowerCase().includes(search.toLowerCase()) ||
+    w.ownerEmail?.toLowerCase().includes(search.toLowerCase()) ||
+    w.client_name?.toLowerCase().includes(search.toLowerCase())
+  )
+
   if (loading) return (
     <div className={styles.loadingWrap}>
       <div className={styles.loadingRing} />
@@ -301,21 +314,18 @@ export default function Admin() {
               <div className={styles.liveTag}>● Live</div>
             </div>
 
-            {/* Primary stat cards */}
             <div className={styles.statGrid}>
               {[
                 { label: 'Total users', value: stats.totalUsers, sub: `${stats.paidUsers} paid`, color: 'var(--accent-mid)', sparkData: stats.monthlySignups },
                 { label: 'MRR', value: stats.mrr, prefix: '$', sub: 'monthly recurring', color: 'var(--gold)', sparkData: stats.monthlySignups },
                 { label: 'Documents analysed', value: stats.totalDocs, sub: 'all time', color: 'var(--accent-mid)', sparkData: stats.monthlyDocs },
-                { label: 'Reports generated', value: stats.totalReports, sub: 'all time', color: 'var(--gold)', sparkData: stats.monthlyDocs },
+                { label: 'Workspaces', value: stats.totalWorkspaces, sub: 'across all advisers', color: 'var(--gold)', sparkData: stats.monthlyDocs },
               ].map((s, i) => (
                 <div key={i} className={styles.statCard} style={{ animationDelay: `${i * 80}ms` }}>
                   <div className={styles.statTop}>
                     <div>
                       <div className={styles.statLabel}>{s.label}</div>
-                      <div className={styles.statValue}>
-                        <Counter value={s.value} prefix={s.prefix} />
-                      </div>
+                      <div className={styles.statValue}><Counter value={s.value} prefix={s.prefix} /></div>
                       <div className={styles.statSub}>{s.sub}</div>
                     </div>
                     <Sparkline data={s.sparkData} color={s.color} />
@@ -324,7 +334,6 @@ export default function Admin() {
               ))}
             </div>
 
-            {/* Charts row */}
             <div className={styles.chartsRow}>
               <div className={styles.chartCard}>
                 <div className={styles.chartHeader}>
@@ -333,7 +342,6 @@ export default function Admin() {
                 </div>
                 <BarChartComp data={stats.monthlySignups} color="var(--accent-mid)" />
               </div>
-
               <div className={styles.chartCard}>
                 <div className={styles.chartHeader}>
                   <div className={styles.chartTitle}>Documents uploaded</div>
@@ -341,7 +349,6 @@ export default function Admin() {
                 </div>
                 <BarChartComp data={stats.monthlyDocs} color="var(--gold)" />
               </div>
-
               <div className={styles.chartCard}>
                 <div className={styles.chartHeader}>
                   <div className={styles.chartTitle}>Plan distribution</div>
@@ -349,11 +356,11 @@ export default function Admin() {
                 </div>
                 <div className={styles.planDistList}>
                   {[
-                    { label: 'Free',     val: stats.planCounts.free,    color: 'var(--rule-soft)' },
-                    { label: 'One-off',  val: stats.planCounts.one_off,  color: '#60a5fa' },
-                    { label: 'Monthly',  val: stats.planCounts.monthly,  color: 'var(--accent-mid)' },
-                    { label: 'Annual',   val: stats.planCounts.annual,   color: 'var(--risk-l)' },
-                    { label: 'Adviser',  val: stats.planCounts.adviser,  color: 'var(--gold)' },
+                    { label: 'Free',    val: stats.planCounts.free,    color: 'var(--rule-soft)' },
+                    { label: 'One-off', val: stats.planCounts.one_off,  color: '#60a5fa' },
+                    { label: 'Monthly', val: stats.planCounts.monthly,  color: 'var(--accent-mid)' },
+                    { label: 'Annual',  val: stats.planCounts.annual,   color: 'var(--risk-l)' },
+                    { label: 'Adviser', val: stats.planCounts.adviser,  color: 'var(--gold)' },
                   ].map(l => (
                     <div key={l.label} className={styles.planDistRow}>
                       <span className={styles.legendDot} style={{ background: l.color }} />
@@ -371,9 +378,7 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* Bottom row */}
             <div className={styles.bottomRow}>
-              {/* Risk distribution */}
               <div className={styles.riskCard}>
                 <div className={styles.chartHeader}>
                   <div className={styles.chartTitle}>Risk distribution</div>
@@ -381,9 +386,9 @@ export default function Admin() {
                 </div>
                 <div className={styles.riskBars}>
                   {[
-                    { label: 'High', value: stats.highRisk, color: 'var(--risk-h)', bg: 'var(--risk-h-bg)' },
-                    { label: 'Medium', value: stats.medRisk, color: 'var(--gold)', bg: 'var(--risk-m-bg)' },
-                    { label: 'Low', value: stats.lowRisk, color: 'var(--risk-l)', bg: 'var(--risk-l-bg)' },
+                    { label: 'High',   value: stats.highRisk, color: 'var(--risk-h)', bg: 'var(--risk-h-bg)' },
+                    { label: 'Medium', value: stats.medRisk,  color: 'var(--gold)',   bg: 'var(--risk-m-bg)' },
+                    { label: 'Low',    value: stats.lowRisk,  color: 'var(--risk-l)', bg: 'var(--risk-l-bg)' },
                   ].map(r => (
                     <div key={r.label} className={styles.riskBarRow}>
                       <span className={styles.riskBarLabel}>{r.label}</span>
@@ -399,15 +404,14 @@ export default function Admin() {
                 </div>
               </div>
 
-              {/* Platform health */}
               <div className={styles.healthCard}>
                 <div className={styles.chartHeader}>
                   <div className={styles.chartTitle}>Platform health</div>
                 </div>
                 <div className={styles.healthItems}>
                   {[
-                    { label: 'Beta codes issued', value: stats.betaTotal, sub: `${stats.betaUsed} used` },
-                    { label: 'Waitlist signups', value: stats.waitlistCount, sub: 'pending launch' },
+                    { label: 'Beta codes issued',  value: stats.betaTotal,      sub: `${stats.betaUsed} used` },
+                    { label: 'Waitlist signups',   value: stats.waitlistCount,  sub: 'pending launch' },
                     { label: 'Est. API cost (mo)', value: `~$${Math.round(stats.totalDocs * 0.08)}`, sub: 'based on avg tokens' },
                   ].map((h, i) => (
                     <div key={i} className={styles.healthItem}>
@@ -419,7 +423,6 @@ export default function Admin() {
                 </div>
               </div>
 
-              {/* Recent users */}
               <div className={styles.recentCard}>
                 <div className={styles.chartHeader}>
                   <div className={styles.chartTitle}>Recent signups</div>
@@ -455,7 +458,6 @@ export default function Admin() {
                 <button className="btn-primary" onClick={() => { setModal({ type: 'addUser' }); setForm({}); setError('') }}>+ Add user</button>
               </div>
             </div>
-
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
@@ -485,12 +487,9 @@ export default function Admin() {
                       <td className={styles.hideMobile}>
                         {['monthly', 'annual'].includes(u.plan)
                           ? `${u.monthly_scans_used || 0}/10`
-                          : u.plan === 'one_off'
-                          ? `${u.scan_credits || 0} credits`
-                          : u.plan === 'adviser'
-                          ? 'Unlimited'
-                          : `${u.free_scans_used || 0}/1`
-                        }
+                          : u.plan === 'one_off' ? `${u.scan_credits || 0} credits`
+                          : u.plan === 'adviser' ? 'Unlimited'
+                          : `${u.free_scans_used || 0}/1`}
                       </td>
                       <td>
                         <span className={u.suspended ? styles.tagSuspended : styles.tagActive}>
@@ -509,10 +508,58 @@ export default function Admin() {
                             {u.suspended ? 'Reactivate' : 'Suspend'}
                           </button>
                           {u.email !== ADMIN_EMAIL && (
-                          <button className={styles.deleteBtn} onClick={() => handleDeleteUser(u.id)}>Delete</button>
-                        )}
+                            <button className={styles.deleteBtn} onClick={() => handleDeleteUser(u.id)}>Delete</button>
+                          )}
                         </div>
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── WORKSPACES ── */}
+        {tab === 'workspaces' && (
+          <div className={styles.content}>
+            <div className={styles.pageHeader}>
+              <div>
+                <div className={styles.kicker}>Admin · Workspaces</div>
+                <h1 className={styles.h1}>Workspaces <span className={styles.count}>{workspaces.length}</span></h1>
+              </div>
+              <div className={styles.headerActions}>
+                <input className={`input ${styles.searchInput}`} placeholder="Search by name or email..." value={search} onChange={e => setSearch(e.target.value)} />
+              </div>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Workspace</th>
+                    <th>Owner</th>
+                    <th className={styles.hideMobile}>Client</th>
+                    <th>Negotiations</th>
+                    <th className={styles.hideMobile}>Logo</th>
+                    <th className={styles.hideMobile}>Created</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredWorkspaces.map(ws => (
+                    <tr key={ws.id}>
+                      <td>
+                        <div className={styles.wsNameCell}>{ws.name}</div>
+                        <div className={styles.uidCell}>{ws.id.slice(0, 8)}...</div>
+                      </td>
+                      <td className={styles.emailCell}>{ws.ownerEmail}</td>
+                      <td className={styles.hideMobile}>{ws.client_name || <span style={{ color: 'var(--ink-light)' }}>—</span>}</td>
+                      <td>{ws.negCount}</td>
+                      <td className={styles.hideMobile}>
+                        {ws.logo_path
+                          ? <span className={styles.tagActive}>Yes</span>
+                          : <span style={{ color: 'var(--ink-light)', fontSize: 12 }}>—</span>}
+                      </td>
+                      <td className={styles.hideMobile}>{formatDate(ws.created_at)}</td>
                     </tr>
                   ))}
                 </tbody>

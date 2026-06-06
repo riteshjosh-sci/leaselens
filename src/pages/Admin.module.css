@@ -246,3 +246,5 @@
 @media (max-width: 480px) {
   .statGrid { grid-template-columns: 1fr !important; }
 }
+
+.wsNameCell { font-size: 13px; font-weight: 500; color: var(--ink); }

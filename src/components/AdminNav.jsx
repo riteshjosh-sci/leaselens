@@ -11,12 +11,13 @@ export default function AdminNav({ activeTab, setTab }) {
   const handleSignOut = async () => { await signOut(); navigate('/') }
 
   const tabs = [
-    { id: 'overview',   label: 'Overview',   icon: '▦' },
-    { id: 'users',      label: 'Users',      icon: '◉' },
-    { id: 'documents',  label: 'Documents',  icon: '◈' },
-    { id: 'reports',    label: 'Reports',    icon: '◎' },
-    { id: 'beta',       label: 'Beta codes', icon: '◆' },
-    { id: 'waitlist',   label: 'Waitlist',   icon: '◇' },
+    { id: 'overview',    label: 'Overview',    icon: '▦' },
+    { id: 'users',       label: 'Users',       icon: '◉' },
+    { id: 'workspaces',  label: 'Workspaces',  icon: '◫' },
+    { id: 'documents',   label: 'Documents',   icon: '◈' },
+    { id: 'reports',     label: 'Reports',     icon: '◎' },
+    { id: 'beta',        label: 'Beta codes',  icon: '◆' },
+    { id: 'waitlist',    label: 'Waitlist',    icon: '◇' },
   ]
 
   const handleTab = (id) => {
