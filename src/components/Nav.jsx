@@ -31,7 +31,7 @@ export default function Nav() {
           <li><Link to="/privacy">Privacy</Link></li>
           {user ? (
             <>
-              <li><Link to="/dashboard" className={styles.dashLink}>My documents</Link></li>
+              <li><Link to="/dashboard" className={styles.dashLink}>Dashboard</Link></li>
               <li><button onClick={handleSignOut} className={styles.cta}>Sign out</button></li>
             </>
           ) : (
