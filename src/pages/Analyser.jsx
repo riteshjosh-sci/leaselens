@@ -40,8 +40,8 @@ export default function Analyser() {
   const [showPropertyPrompt, setShowPropertyPrompt] = useState(false)
   const fileInputRef = useRef()
   const stageIntervalRef = useRef(null)
-  const pollIntervalRef = useRef(null)   // FIX: ref instead of const
-  const fallbackTimerRef = useRef(null)  // FIX: ref so it can be cleared
+  const pollIntervalRef = useRef(null)
+  const fallbackTimerRef = useRef(null)
   const jobSubscriptionRef = useRef(null)
 
   useEffect(() => {
@@ -51,8 +51,8 @@ export default function Analyser() {
     }
     return () => {
       if (stageIntervalRef.current) clearInterval(stageIntervalRef.current)
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)   // FIX
-      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current)  // FIX
+      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current)
+      if (fallbackTimerRef.current) clearTimeout(fallbackTimerRef.current)
       if (jobSubscriptionRef.current) jobSubscriptionRef.current.unsubscribe()
     }
   }, [user])
@@ -77,17 +77,10 @@ export default function Analyser() {
     }
   }
 
-  // FIX: single cleanup function that clears everything
   const cleanupJob = (subscription) => {
     stopLoadingCycle()
-    if (pollIntervalRef.current) {
-      clearInterval(pollIntervalRef.current)
-      pollIntervalRef.current = null
-    }
-    if (fallbackTimerRef.current) {
-      clearTimeout(fallbackTimerRef.current)
-      fallbackTimerRef.current = null
-    }
+    if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null }
+    if (fallbackTimerRef.current) { clearTimeout(fallbackTimerRef.current); fallbackTimerRef.current = null }
     if (subscription) subscription.unsubscribe()
   }
 
@@ -98,37 +91,26 @@ export default function Analyser() {
       setError('Please upload a PDF, Word, or text document.')
       return
     }
-    setFile(f)
-    setError('')
+    setFile(f); setError('')
   }
 
-  const handleDrop = (e) => {
-    e.preventDefault()
-    handleFile(e.dataTransfer.files[0])
-  }
+  const handleDrop = (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]) }
 
   const handleJobUpdate = (jobData, subscription, negId) => {
     if (jobData.stage === 'extracted' && jobData.stage_data) {
       try {
-        const ld = typeof jobData.stage_data === 'string'
-          ? JSON.parse(jobData.stage_data)
-          : jobData.stage_data
-        setLeaseData(ld)
-        setLoadingStage(2)
+        const ld = typeof jobData.stage_data === 'string' ? JSON.parse(jobData.stage_data) : jobData.stage_data
+        setLeaseData(ld); setLoadingStage(2)
       } catch (e) {}
     }
-
-    if (jobData.stage === 'analysing') {
-      setLoadingStage(3)
-    }
-
+    if (jobData.stage === 'analysing') setLoadingStage(3)
     if (jobData.status === 'complete') {
-      cleanupJob(subscription)  // FIX: single cleanup
+      cleanupJob(subscription)
       setReport(jobData.report_json)
       setLoading(false)
       if (negId && !negotiationId) setShowPropertyPrompt(true)
     } else if (jobData.status === 'failed') {
-      cleanupJob(subscription)  // FIX: single cleanup
+      cleanupJob(subscription)
       setError(jobData.error || 'Analysis failed. Please try again.')
       setLoading(false)
     }
@@ -143,22 +125,17 @@ export default function Analyser() {
     if (user && profile) {
       const plan = profile.plan || 'free'
       if (plan === 'free' && (profile.free_scans_used || 0) >= 1) {
-        setError('You have used your free scan this month. Upgrade to continue.')
-        return
+        setError('You have used your free scan this month. Upgrade to continue.'); return
       }
       if (plan === 'one_off' && (profile.scan_credits || 0) <= 0) {
-        setError('No scan credits remaining. Purchase another report to continue.')
-        return
+        setError('No scan credits remaining. Purchase another report to continue.'); return
       }
       if ((plan === 'monthly' || plan === 'annual') && (profile.monthly_scans_used || 0) >= 10) {
-        setError('You have reached your 10 scan limit for this month. Your limit resets on the 1st of next month.')
-        return
+        setError('You have reached your 10 scan limit for this month. Your limit resets on the 1st of next month.'); return
       }
     }
 
-    setLoading(true)
-    setError('')
-    setReport(null)
+    setLoading(true); setError(''); setReport(null)
     startLoadingCycle()
 
     try {
@@ -171,8 +148,7 @@ export default function Analyser() {
         if (fileType === 'doc') throw new Error('LEGACY_DOC')
         const uploadPath = `temp/${user?.id || 'anon'}/${Date.now()}_${file.name}`
         const { data: uploadData, error: uploadError } = await supabase.storage
-          .from('documents')
-          .upload(uploadPath, file, { upsert: true })
+          .from('documents').upload(uploadPath, file, { upsert: true })
         if (uploadError) throw new Error('Upload failed: ' + uploadError.message)
         filePath = uploadData.path
       }
@@ -185,25 +161,16 @@ export default function Analyser() {
           status: 'active',
           workspace_id: workspaceId || null,
         }).select().single()
-        if (negData) {
-          negId = negData.id
-          setPropertyName(defaultName)
-        }
+        if (negData) { negId = negData.id; setPropertyName(defaultName) }
       }
 
       if (user && profile) {
         if (profile.plan === 'free') {
-          await supabase.from('profiles').update({
-            free_scans_used: (profile.free_scans_used || 0) + 1
-          }).eq('id', user.id)
+          await supabase.from('profiles').update({ free_scans_used: (profile.free_scans_used || 0) + 1 }).eq('id', user.id)
         } else if (profile.plan === 'one_off') {
-          await supabase.from('profiles').update({
-            scan_credits: Math.max(0, (profile.scan_credits || 0) - 1)
-          }).eq('id', user.id)
+          await supabase.from('profiles').update({ scan_credits: Math.max(0, (profile.scan_credits || 0) - 1) }).eq('id', user.id)
         } else if (profile.plan === 'monthly' || profile.plan === 'annual') {
-          await supabase.from('profiles').update({
-            monthly_scans_used: (profile.monthly_scans_used || 0) + 1
-          }).eq('id', user.id)
+          await supabase.from('profiles').update({ monthly_scans_used: (profile.monthly_scans_used || 0) + 1 }).eq('id', user.id)
         }
       }
 
@@ -224,34 +191,22 @@ export default function Analyser() {
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
 
-      // Subscribe to job updates via Realtime
       const subscription = supabase
         .channel(`job-${job.id}`)
-        .on('postgres_changes', {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'jobs',
-          filter: `id=eq.${job.id}`,
-        }, async (payload) => {
-          handleJobUpdate(payload.new, subscription, negId)
-        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jobs', filter: `id=eq.${job.id}` },
+          async (payload) => { handleJobUpdate(payload.new, subscription, negId) })
         .subscribe()
 
       jobSubscriptionRef.current = subscription
 
-      // FIX: store interval in ref so checkJob can reliably clear it
       pollIntervalRef.current = setInterval(async () => {
         const { data: jobData } = await supabase
-          .from('jobs')
-          .select('status, stage, stage_data, report_json, error')
-          .eq('id', job.id)
-          .single()
+          .from('jobs').select('status, stage, stage_data, report_json, error').eq('id', job.id).single()
         if (jobData?.status === 'complete' || jobData?.status === 'failed') {
           handleJobUpdate(jobData, subscription, negId)
         }
       }, 5000)
 
-      // FIX: store fallback timeout in ref so it can be cleared on success
       fallbackTimerRef.current = setTimeout(() => {
         cleanupJob(subscription)
         setError('Analysis is taking longer than expected. Please try again.')
@@ -268,24 +223,16 @@ export default function Analyser() {
   const handleCreateNegotiation = async () => {
     if (!propertyName.trim()) return
     const { data: negs } = await supabase
-      .from('negotiations').select('id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .from('negotiations').select('id').eq('user_id', user.id)
+      .order('created_at', { ascending: false }).limit(1)
     if (negs?.[0]) {
-      await supabase.from('negotiations')
-        .update({ property_name: propertyName.trim() })
-        .eq('id', negs[0].id)
+      await supabase.from('negotiations').update({ property_name: propertyName.trim() }).eq('id', negs[0].id)
     }
     setShowPropertyPrompt(false)
   }
 
   const riskBadge = (risk) => {
-    const map = {
-      HIGH: ['badge-high', '● High Risk'],
-      MEDIUM: ['badge-medium', '● Medium Risk'],
-      LOW: ['badge-low', '● Low Risk']
-    }
+    const map = { HIGH: ['badge-high', '● High Risk'], MEDIUM: ['badge-medium', '● Medium Risk'], LOW: ['badge-low', '● Low Risk'] }
     const [cls, label] = map[risk] || map['MEDIUM']
     return <span className={`badge ${cls}`} style={{ fontSize: 12, padding: '5px 12px' }}>{label}</span>
   }
@@ -312,18 +259,11 @@ export default function Analyser() {
               <h3>{file ? 'File ready for analysis' : 'Drop your HOA or lease here'}</h3>
               <p>{file ? file.name : 'or click to browse · PDF, DOCX, TXT'}</p>
               {file && (
-                <button className={styles.removeFile} onClick={e => { e.stopPropagation(); setFile(null) }}>
-                  ✕ Remove
-                </button>
+                <button className={styles.removeFile} onClick={e => { e.stopPropagation(); setFile(null) }}>✕ Remove</button>
               )}
             </div>
-            <input
-              ref={fileInputRef}
-              type="file"
-              style={{ display: 'none' }}
-              accept=".pdf,.docx,.txt"
-              onChange={e => handleFile(e.target.files[0])}
-            />
+            <input ref={fileInputRef} type="file" style={{ display: 'none' }} accept=".pdf,.docx,.txt"
+              onChange={e => handleFile(e.target.files[0])} />
 
             <div className={styles.metaInputs}>
               <div className={styles.metaRow}>
@@ -371,33 +311,19 @@ export default function Analyser() {
                 <div className={styles.metaField}>
                   <label className={styles.metaLabel}>Finalised</label>
                   <div className={styles.toggleRow}>
-                    <button
-                      type="button"
-                      className={`${styles.toggleBtn} ${!finalised ? styles.toggleActive : ''}`}
-                      onClick={() => setFinalised(false)}
-                    >No</button>
-                    <button
-                      type="button"
-                      className={`${styles.toggleBtn} ${finalised ? styles.toggleActive : ''}`}
-                      onClick={() => setFinalised(true)}
-                    >Yes</button>
+                    <button type="button" className={`${styles.toggleBtn} ${!finalised ? styles.toggleActive : ''}`} onClick={() => setFinalised(false)}>No</button>
+                    <button type="button" className={`${styles.toggleBtn} ${finalised ? styles.toggleActive : ''}`} onClick={() => setFinalised(true)}>Yes</button>
                   </div>
                 </div>
               </div>
             </div>
 
             <div className={styles.pasteToggle}>
-              <button onClick={() => setShowPaste(!showPaste)}>
-                {showPaste ? 'Hide text paste' : 'or paste text instead'}
-              </button>
+              <button onClick={() => setShowPaste(!showPaste)}>{showPaste ? 'Hide text paste' : 'or paste text instead'}</button>
             </div>
             {showPaste && (
-              <textarea
-                className={`input ${styles.textarea}`}
-                value={pasteText}
-                onChange={e => setPasteText(e.target.value)}
-                placeholder="Paste the full text of your HOA here..."
-              />
+              <textarea className={`input ${styles.textarea}`} value={pasteText}
+                onChange={e => setPasteText(e.target.value)} placeholder="Paste the full text of your HOA here..." />
             )}
 
             <p className={styles.disclaimer}>
@@ -417,25 +343,16 @@ export default function Analyser() {
               </div>
             )}
 
-            <button
-              className="btn-primary"
-              style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}
-              onClick={handleAnalyse}
-              disabled={loading}
-            >
-              {loading
-                ? <><span className={styles.spinner} />{currentStageMsg}</>
-                : 'Analyse my document'
-              }
+            <button className="btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: 16 }}
+              onClick={handleAnalyse} disabled={loading}>
+              {loading ? <><span className={styles.spinner} />{currentStageMsg}</> : 'Analyse my document'}
             </button>
 
             {loading && (
               <div className={styles.loadingStages}>
                 <div className={styles.progressBarTrack}>
-                  <div
-                    className={styles.progressBarFill}
-                    style={{ width: `${Math.round(((loadingStage + 1) / LOADING_STAGES.length) * 100)}%` }}
-                  />
+                  <div className={styles.progressBarFill}
+                    style={{ width: `${Math.round(((loadingStage + 1) / LOADING_STAGES.length) * 100)}%` }} />
                 </div>
                 <div className={styles.progressMeta}>
                   <span className={styles.progressStage}>{LOADING_STAGES[loadingStage]}</span>
@@ -444,8 +361,7 @@ export default function Analyser() {
                 <div className={styles.loadingProgress}>
                   {LOADING_STAGES.map((stage, i) => (
                     <div key={i} className={`${styles.stageStep} ${i === loadingStage ? styles.stageActive : ''} ${i < loadingStage ? styles.stageDone : ''}`}>
-                      <div className={styles.stageDot} />
-                      <span>{stage}</span>
+                      <div className={styles.stageDot} /><span>{stage}</span>
                     </div>
                   ))}
                 </div>
@@ -530,21 +446,62 @@ export default function Analyser() {
               <h3>Report saved ✓</h3>
               <p>Give this negotiation a name so you can find it easily (e.g. "Shop 4, Westfield Perth").</p>
               <div className={styles.propertyRow}>
-                <input
-                  className="input"
-                  value={propertyName}
-                  onChange={e => setPropertyName(e.target.value)}
-                  placeholder="Property or negotiation name"
-                />
-                <button className="btn-primary" onClick={handleCreateNegotiation} disabled={!propertyName.trim()}>
-                  Rename
-                </button>
+                <input className="input" value={propertyName} onChange={e => setPropertyName(e.target.value)}
+                  placeholder="Property or negotiation name" />
+                <button className="btn-primary" onClick={handleCreateNegotiation} disabled={!propertyName.trim()}>Rename</button>
               </div>
             </div>
           )}
 
-          {/* FREE TIER RESULT */}
-          {report && profile?.plan === 'free' && (
+          {/* GUEST PREVIEW — unauthenticated user */}
+          {report && !user && (
+            <div className={styles.report}>
+              <div className={styles.reportHeader}>
+                <h2>Analysis Report</h2>
+                {riskBadge(report.overall_risk)}
+              </div>
+              <div className={styles.summary}>{report.summary}</div>
+
+              {/* Stats cards — fully visible */}
+              <div className={styles.freeStats}>
+                {[
+                  { label: 'High risk',     value: (report.clauses||[]).filter(c=>c.danger==='HIGH').length,   color: 'var(--risk-h)', bg: 'var(--risk-h-bg)' },
+                  { label: 'Medium risk',   value: (report.clauses||[]).filter(c=>c.danger==='MEDIUM').length, color: 'var(--gold)',   bg: 'var(--risk-m-bg)' },
+                  { label: 'Low risk',      value: (report.clauses||[]).filter(c=>c.danger==='LOW').length,    color: 'var(--risk-l)', bg: 'var(--risk-l-bg)' },
+                  { label: 'Total clauses', value: (report.clauses||[]).length,                                color: 'var(--ink)',    bg: 'var(--white)'     },
+                ].map(s => (
+                  <div key={s.label} className={styles.freeStat} style={{ background: s.bg }}>
+                    <div className={styles.freeStatValue} style={{ color: s.color }}>{s.value}</div>
+                    <div className={styles.freeStatLabel}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Blurred lock gate */}
+              <div className={styles.guestGate}>
+                <div className={styles.guestBlur} aria-hidden="true">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className={styles.fakeClause}>
+                      <div className={styles.fakeClauseHeader} />
+                      <div className={styles.fakeClauseBody} />
+                    </div>
+                  ))}
+                </div>
+                <div className={styles.guestOverlay}>
+                  <div className={styles.guestLockIcon}>🔒</div>
+                  <h3 className={styles.guestTitle}>See the full clause-by-clause report</h3>
+                  <p className={styles.guestSub}>Create a free account to view every clause, the risk explained, and suggested counter positions.</p>
+                  <div className={styles.guestActions}>
+                    <a href="/signup" className="btn-primary" style={{ textDecoration: 'none' }}>Create free account →</a>
+                    <a href="/login" className={styles.guestLogin}>Already have an account? Sign in</a>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* FREE TIER RESULT — logged in, free plan */}
+          {report && user && profile?.plan === 'free' && (
             <div className={styles.freeResult}>
               <div className={styles.freeHeader}>
                 <div className={styles.kicker}>Free scan complete</div>
@@ -553,9 +510,9 @@ export default function Analyser() {
               </div>
               <div className={styles.freeStats}>
                 {[
-                  { label: 'High risk', value: (report.clauses||[]).filter(c=>c.danger==='HIGH').length, color: 'var(--risk-h)', bg: 'var(--risk-h-bg)' },
-                  { label: 'Medium risk', value: (report.clauses||[]).filter(c=>c.danger==='MEDIUM').length, color: 'var(--gold)', bg: 'var(--risk-m-bg)' },
-                  { label: 'Low risk', value: (report.clauses||[]).filter(c=>c.danger==='LOW').length, color: 'var(--risk-l)', bg: 'var(--risk-l-bg)' },
+                  { label: 'High risk',   value: (report.clauses||[]).filter(c=>c.danger==='HIGH').length,   color: 'var(--risk-h)', bg: 'var(--risk-h-bg)' },
+                  { label: 'Medium risk', value: (report.clauses||[]).filter(c=>c.danger==='MEDIUM').length, color: 'var(--gold)',   bg: 'var(--risk-m-bg)' },
+                  { label: 'Low risk',    value: (report.clauses||[]).filter(c=>c.danger==='LOW').length,    color: 'var(--risk-l)', bg: 'var(--risk-l-bg)' },
                 ].map(s => (
                   <div key={s.label} className={styles.freeStat} style={{ background: s.bg }}>
                     <div className={styles.freeStatValue} style={{ color: s.color }}>{s.value}</div>
@@ -571,8 +528,8 @@ export default function Analyser() {
             </div>
           )}
 
-          {/* FULL REPORT */}
-          {report && (!user || profile?.plan !== 'free') && (
+          {/* FULL REPORT — paid user */}
+          {report && user && profile?.plan !== 'free' && (
             <div className={styles.report}>
               <div className={styles.reportHeader}>
                 <h2>Analysis Report</h2>
@@ -587,21 +544,15 @@ export default function Analyser() {
                 <h3>Recommended next steps</h3>
                 <ol>{(report.next_steps || []).map((s, i) => <li key={i}>{s}</li>)}</ol>
               </div>
-              {user && (
-                <div className={styles.savedNote}>
-                  ✓ Report saved to your account. <a href="/dashboard">View all documents →</a>
-                </div>
-              )}
-              {!user && (
-                <div className={styles.savedNote} style={{ background: 'var(--gold-light)', borderColor: '#e0d5c0', color: 'var(--risk-m)' }}>
-                  <a href="/signup">Create a free account</a> to save this report and track future revisions.
-                </div>
-              )}
+              <div className={styles.savedNote}>
+                ✓ Report saved to your account. <a href="/dashboard">View all documents →</a>
+              </div>
               <div className={styles.legalDisclaimer}>
                 DISCLAIMER: LeaseLens is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.
               </div>
             </div>
           )}
+
         </div>
       </div>
     </>
