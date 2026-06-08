@@ -238,7 +238,7 @@ export default function Analyser() {
 
       // 10 min fallback timeout
       fallbackTimerRef.current = setTimeout(() => {
-        if (completedRef.current) return
+        
         cleanupJob()
         setError('Analysis is taking longer than expected. Please try again.')
         setLoading(false)
