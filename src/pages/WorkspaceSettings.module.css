@@ -63,3 +63,22 @@
   .layout { grid-template-columns: 1fr; }
   .sidebar { position: static; }
 }
+/* ── RESPONSIVE — WorkspaceSettings ── */
+
+@media (max-width: 768px) {
+  .page { padding: 72px 16px 60px; }
+  .layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
+  .h1 { font-size: 24px; margin-bottom: 20px; }
+  .tokenRow { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .tokenUrl { max-width: 100%; }
+  .tokenActions { width: 100%; }
+  .copyBtn { flex: 1; text-align: center; }
+  .uploadBtn { width: 100%; text-align: center; }
+}
+
+@media (max-width: 480px) {
+  .section { padding: 16px; }
+  .saveRow { flex-direction: column-reverse; align-items: stretch; }
+  .saveRow button { width: 100%; justify-content: center; }
+}

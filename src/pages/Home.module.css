@@ -174,4 +174,29 @@
   background: var(--paper);
   border-top: 1px solid var(--rule);
   border-bottom: 1px solid var(--rule);
+}/* ── RESPONSIVE — Home (additions to existing) ── */
+
+/* 480px — missing from current file */
+@media (max-width: 480px) {
+  .hero { padding: 100px 16px 56px; gap: 32px; }
+  .h1 { font-size: 34px; }
+  .heroSub { font-size: 15px; }
+  .heroActions { flex-direction: column; align-items: stretch; gap: 12px; }
+  .heroActions a, .heroActions button { width: 100%; justify-content: center; text-align: center; }
+  .heroTrust { gap: 14px; }
+  .valueInner { grid-template-columns: 1fr; }
+  .vsTile { border-right: none !important; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .vsTile:last-child { border-bottom: none; }
+  .h2 { font-size: 34px; }
+  .trustGrid { grid-template-columns: 1fr; }
+  .ctaH2 { font-size: 34px; }
+  .pricingGrid { grid-template-columns: 1fr; }
+  .section, .pricingSection, .whatSection, .trustSection { padding: 56px 16px; }
+}
+
+/* 360px */
+@media (max-width: 360px) {
+  .h1 { font-size: 28px; }
+  .h2 { font-size: 28px; }
+  .pricingPrice { font-size: 40px; }
 }

@@ -390,4 +390,26 @@
 .guestSub { font-size: 14px; color: var(--ink-light); max-width: 380px; line-height: 1.6; margin-bottom: 20px; }
 .guestActions { display: flex; flex-direction: column; align-items: center; gap: 12px; }
 .guestLogin { font-size: 13px; color: var(--ink-light); text-decoration: none; }
-.guestLogin:hover { color: var(--ink); text-decoration: underline; }
+.guestLogin:hover { color: var(--ink); text-decoration: underline; }/* ── RESPONSIVE — Analyser (additions) ── */
+
+@media (max-width: 480px) {
+  .main { padding: 72px 14px 40px; }
+  .h1 { font-size: 26px; }
+  .sub { font-size: 14px; margin-bottom: 24px; }
+  .card { padding: 16px; }
+  .zone { padding: 32px 16px; }
+  .metaRow { grid-template-columns: 1fr 1fr; }
+  .metaRow:first-child { grid-template-columns: 1fr; }
+  .freeStats { grid-template-columns: 1fr 1fr; }
+  .freeStatValue { font-size: 32px; }
+  .leaseSummaryGrid { grid-template-columns: 1fr 1fr; }
+  .guestTitle { font-size: 18px; }
+  .guestSub { font-size: 13px; }
+  .guestActions { width: 100%; }
+  .guestActions a { width: 100%; justify-content: center; text-align: center; }
+}
+
+@media (max-width: 360px) {
+  .metaRow { grid-template-columns: 1fr; }
+  .freeStats { grid-template-columns: 1fr; }
+}

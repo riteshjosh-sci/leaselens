@@ -46,3 +46,16 @@
 @media (max-width: 768px) {
   .footer { padding: 32px 24px; }
 }
+/* ── RESPONSIVE additions — Footer ── */
+
+@media (max-width: 640px) {
+  .footer { padding: 28px 20px; }
+  .inner { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .links { gap: 16px; flex-wrap: wrap; }
+  .copy { font-size: 11px; }
+}
+
+@media (max-width: 400px) {
+  .links { gap: 12px; }
+  .links a { font-size: 11px; }
+}

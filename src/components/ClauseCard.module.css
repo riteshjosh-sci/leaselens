@@ -26,3 +26,10 @@
 
 .legislationBox { background: #f0f4f8; border: 1px solid #c0cdd8; border-radius: 2px; padding: 14px 16px; }
 .legislationBox p { font-size: 13px; line-height: 1.7; color: #2a3d50; font-weight: 300; }
+/* ── RESPONSIVE — ClauseCard ── */
+@media (max-width: 480px) {
+  .header { padding: 12px 14px; gap: 10px; }
+  .title { font-size: 13px; }
+  .body { padding: 0 14px 16px; }
+  .section p, .quoteBox p, .counterBox p { font-size: 13px; }
+}

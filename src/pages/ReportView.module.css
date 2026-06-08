@@ -161,4 +161,42 @@
   .docBarInner { flex-direction: column; align-items: flex-start; }
 }
 .btnInk { display: flex; align-items: center; gap: 6px; background: var(--ink); border: 1px solid var(--ink); color: var(--white); border-radius: 2px; padding: 7px 14px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.15s; }
-.btnInk:hover { background: var(--accent); border-color: var(--accent); }
+.btnInk:hover { background: var(--accent); border-color: var(--accent); }/* ── RESPONSIVE — ReportView ── */
+
+/* Tablet 900px */
+@media (max-width: 900px) {
+  .appMain { grid-template-columns: 1fr; padding: 24px 16px 60px; }
+  .summaryCol { position: static; }
+  .docBarInner { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .docActions { width: 100%; flex-wrap: wrap; }
+  .btnOutline, .btnInk { flex: 1; justify-content: center; min-width: 100px; }
+}
+
+/* Mobile 640px */
+@media (max-width: 640px) {
+  .appBar { padding: 0 14px; height: 48px; }
+  .appNav { display: none; }
+  .wordmark { font-size: 15px; }
+  .docBarInner { padding: 10px 14px; }
+  .docTitle { font-size: 15px; }
+  .docActions { gap: 6px; }
+  .btnOutline, .btnInk { padding: 6px 10px; font-size: 11px; }
+  .appMain { padding: 16px 14px 60px; }
+  .briefingHead { flex-direction: column; align-items: flex-start; }
+  .filterTabs { width: 100%; justify-content: space-between; }
+  .filterTab { flex: 1; justify-content: center; padding: 5px 6px; font-size: 11px; }
+  .clauseSummary { gap: 8px; padding: 12px 12px; }
+  .clauseName { font-size: 13px; }
+  .pill { display: none; }
+  .clauseDetail { padding: 0 12px 12px; }
+  .scoreRow { flex-wrap: wrap; }
+  .nextSteps { padding: 18px 16px; }
+}
+
+/* Small mobile 400px */
+@media (max-width: 400px) {
+  .docTitle { font-size: 13px; }
+  .docMeta { font-size: 11px; }
+  .briefingTitle { font-size: 17px; }
+  .sCard { padding: 14px; }
+}

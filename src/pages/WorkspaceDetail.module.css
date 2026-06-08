@@ -127,3 +127,31 @@
   .negControls { opacity: 1; flex-wrap: wrap; }
   .negRow { flex-wrap: wrap; gap: 8px; }
 }
+/* ── RESPONSIVE — WorkspaceDetail ── */
+
+/* Tablet 768px */
+@media (max-width: 768px) {
+  .page { padding: 72px 16px 60px; }
+  .hero { flex-direction: column; gap: 16px; }
+  .heroRight { align-items: flex-start; width: 100%; }
+  .heroActions { width: 100%; }
+  .heroActions button { flex: 1; justify-content: center; }
+  .heroPills { width: 100%; }
+  .heroPill { flex: 1; padding: 10px 12px; }
+  .heroTitle { font-size: 26px; }
+  .negControls { opacity: 1; flex-wrap: wrap; gap: 4px; }
+  .negRow { flex-wrap: wrap; gap: 8px; padding: 12px 14px; }
+  .negIndex { display: none; }
+}
+
+/* Mobile 480px */
+@media (max-width: 480px) {
+  .heroTitle { font-size: 22px; }
+  .negRow { padding: 12px; }
+  .negControls { width: 100%; justify-content: flex-start; }
+  .controlBtn { padding: 4px 8px; font-size: 10px; }
+  .docSection { padding: 8px 12px 12px; }
+  .docRow { flex-wrap: wrap; gap: 8px; }
+  .docActions { width: 100%; justify-content: flex-end; }
+  .viewReportBtn { flex: 1; text-align: center; }
+}
