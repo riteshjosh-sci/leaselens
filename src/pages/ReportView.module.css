@@ -23,7 +23,7 @@
 .navSep { color: rgba(255,255,255,0.2); font-size: 14px; }
 .navCrumb { font-size: 13px; color: rgba(255,255,255,0.75); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px; }
 .appBarRight { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
-.wsLogoSmall { height: 24px; max-width: 80px; object-fit: contain; filter: brightness(0) invert(1); opacity: 0.7; }
+.wsLogoSmall { height: 24px; max-width: 80px; object-fit: contain; opacity: 0.9; }
 .avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-mid); color: var(--white); font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center; }
 
 /* ── DOCUMENT BAR ── */
