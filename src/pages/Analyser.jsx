@@ -43,6 +43,9 @@ export default function Analyser() {
   const pollIntervalRef = useRef(null)
   const fallbackTimerRef = useRef(null)
   const jobSubscriptionRef = useRef(null)
+  // Refs to avoid stale closures in poll/timeout callbacks
+  const negIdRef = useRef(null)
+  const completedRef = useRef(false)
 
   useEffect(() => {
     if (user) {
@@ -77,11 +80,11 @@ export default function Analyser() {
     }
   }
 
-  const cleanupJob = (subscription) => {
+  const cleanupJob = () => {
     stopLoadingCycle()
     if (pollIntervalRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null }
     if (fallbackTimerRef.current) { clearTimeout(fallbackTimerRef.current); fallbackTimerRef.current = null }
-    if (subscription) subscription.unsubscribe()
+    if (jobSubscriptionRef.current) { jobSubscriptionRef.current.unsubscribe(); jobSubscriptionRef.current = null }
   }
 
   const handleFile = (f) => {
@@ -96,21 +99,30 @@ export default function Analyser() {
 
   const handleDrop = (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]) }
 
-  const handleJobUpdate = (jobData, subscription, negId) => {
+  const handleJobUpdate = (jobData) => {
+    // Guard: don't process if already completed
+    if (completedRef.current) return
+
     if (jobData.stage === 'extracted' && jobData.stage_data) {
       try {
         const ld = typeof jobData.stage_data === 'string' ? JSON.parse(jobData.stage_data) : jobData.stage_data
-        setLeaseData(ld); setLoadingStage(2)
+        setLeaseData(ld)
+        setLoadingStage(2)
       } catch (e) {}
     }
+
     if (jobData.stage === 'analysing') setLoadingStage(3)
-    if (jobData.status === 'complete') {
-      cleanupJob(subscription)
+
+    if (jobData.status === 'complete' && jobData.report_json) {
+      completedRef.current = true
+      cleanupJob()
+      setLoadingStage(LOADING_STAGES.length - 1)
       setReport(jobData.report_json)
       setLoading(false)
-      if (negId && !negotiationId) setShowPropertyPrompt(true)
+      if (negIdRef.current && !negotiationId) setShowPropertyPrompt(true)
     } else if (jobData.status === 'failed') {
-      cleanupJob(subscription)
+      completedRef.current = true
+      cleanupJob()
       setError(jobData.error || 'Analysis failed. Please try again.')
       setLoading(false)
     }
@@ -135,7 +147,11 @@ export default function Analyser() {
       }
     }
 
-    setLoading(true); setError(''); setReport(null)
+    // Reset completion guard
+    completedRef.current = false
+    negIdRef.current = null
+
+    setLoading(true); setError(''); setReport(null); setLeaseData(null)
     startLoadingCycle()
 
     try {
@@ -164,6 +180,8 @@ export default function Analyser() {
         if (negData) { negId = negData.id; setPropertyName(defaultName) }
       }
 
+      negIdRef.current = negId
+
       if (user && profile) {
         if (profile.plan === 'free') {
           await supabase.from('profiles').update({ free_scans_used: (profile.free_scans_used || 0) + 1 }).eq('id', user.id)
@@ -191,25 +209,37 @@ export default function Analyser() {
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
 
+      // Realtime subscription
       const subscription = supabase
         .channel(`job-${job.id}`)
-        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jobs', filter: `id=eq.${job.id}` },
-          async (payload) => { handleJobUpdate(payload.new, subscription, negId) })
+        .on('postgres_changes', {
+          event: 'UPDATE', schema: 'public', table: 'jobs', filter: `id=eq.${job.id}`
+        }, (payload) => {
+          handleJobUpdate(payload.new)
+        })
         .subscribe()
 
       jobSubscriptionRef.current = subscription
 
+      // Poll every 2 seconds as reliable fallback
       pollIntervalRef.current = setInterval(async () => {
-        const { data: jobData } = await supabase
-          .from('jobs').select('status, stage, stage_data, report_json, error').eq('id', job.id).single()
-        if (jobData?.status === 'complete' || jobData?.status === 'failed') {
-          handleJobUpdate(jobData, subscription, negId)
+        if (completedRef.current) {
+          clearInterval(pollIntervalRef.current)
+          pollIntervalRef.current = null
+          return
         }
-      }, 5000)
+        const { data: jobData } = await supabase
+          .from('jobs')
+          .select('status, stage, stage_data, report_json, error')
+          .eq('id', job.id)
+          .single()
+        if (jobData) handleJobUpdate(jobData)
+      }, 2000)
 
+      // 10 min fallback timeout
       fallbackTimerRef.current = setTimeout(() => {
-        if (!pollIntervalRef.current) return
-        cleanupJob(subscription)
+        if (completedRef.current) return
+        cleanupJob()
         setError('Analysis is taking longer than expected. Please try again.')
         setLoading(false)
       }, 600000)
@@ -377,7 +407,7 @@ export default function Analyser() {
             )}
           </div>
 
-          {/* LEASE SUMMARY CARD */}
+          {/* LEASE SUMMARY CARD — shows while loading after extraction */}
           {leaseData && loading && (
             <div className={styles.leaseSummaryCard}>
               <div className={styles.leaseSummaryHeader}>
@@ -454,7 +484,7 @@ export default function Analyser() {
             </div>
           )}
 
-          {/* GUEST PREVIEW — unauthenticated user */}
+          {/* GUEST PREVIEW */}
           {report && !user && (
             <div className={styles.report}>
               <div className={styles.reportHeader}>
@@ -462,8 +492,6 @@ export default function Analyser() {
                 {riskBadge(report.overall_risk)}
               </div>
               <div className={styles.summary}>{report.summary}</div>
-
-              {/* Stats cards — fully visible */}
               <div className={styles.freeStats}>
                 {[
                   { label: 'High risk',     value: (report.clauses||[]).filter(c=>c.danger==='HIGH').length,   color: 'var(--risk-h)', bg: 'var(--risk-h-bg)' },
@@ -477,8 +505,6 @@ export default function Analyser() {
                   </div>
                 ))}
               </div>
-
-              {/* Blurred lock gate */}
               <div className={styles.guestGate}>
                 <div className={styles.guestBlur} aria-hidden="true">
                   {[...Array(4)].map((_, i) => (
@@ -501,7 +527,7 @@ export default function Analyser() {
             </div>
           )}
 
-          {/* FREE TIER RESULT — logged in, free plan */}
+          {/* FREE TIER */}
           {report && user && profile?.plan === 'free' && (
             <div className={styles.freeResult}>
               <div className={styles.freeHeader}>
@@ -529,7 +555,7 @@ export default function Analyser() {
             </div>
           )}
 
-          {/* FULL REPORT — paid user */}
+          {/* FULL REPORT */}
           {report && user && profile?.plan !== 'free' && (
             <div className={styles.report}>
               <div className={styles.reportHeader}>
