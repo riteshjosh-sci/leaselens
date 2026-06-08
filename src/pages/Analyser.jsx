@@ -208,6 +208,7 @@ export default function Analyser() {
       }, 5000)
 
       fallbackTimerRef.current = setTimeout(() => {
+        if (!pollIntervalRef.current) return
         cleanupJob(subscription)
         setError('Analysis is taking longer than expected. Please try again.')
         setLoading(false)
