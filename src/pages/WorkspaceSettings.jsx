@@ -125,7 +125,7 @@ export default function WorkspaceSettings() {
         <div className={styles.breadcrumb}>
           <button onClick={() => navigate('/dashboard')}>← Dashboard</button>
           <span>/</span>
-          <span>{ws.name}</span>
+          <button onClick={() => navigate(`/workspace/${id}`)}>{ws.name}</button>
           <span>/</span>
           <span>Settings</span>
         </div>
