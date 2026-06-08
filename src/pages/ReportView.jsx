@@ -257,6 +257,20 @@ export default function ReportView() {
               </svg>
               Export PDF
             </button>
+            <button className={styles.btnOutline} onClick={() => {
+              const url = `${window.location.origin}/report/${id}`
+              navigator.clipboard.writeText(url)
+                .then(() => alert('Report link copied to clipboard'))
+            }}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M11 5a2 2 0 100-4 2 2 0 000 4zM5 10a2 2 0 100-4 2 2 0 000 4zm6 5a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" strokeWidth="1.5"/>
+                <path d="M6.7 9l2.6 1.5M9.3 5.5L6.7 7" stroke="currentColor" strokeWidth="1.5"/>
+              </svg>
+              Share
+            </button>
+            <button className={styles.btnInk} onClick={() => navigate('/analyser', { state: { negotiationId: negotiation?.id, workspaceId: workspace?.id } })}>
+              Re-run analysis
+            </button>
           </div>
         </div>
       </div>

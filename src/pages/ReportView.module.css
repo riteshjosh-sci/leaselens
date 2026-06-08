@@ -160,3 +160,5 @@
   .summaryCol { position: static; }
   .docBarInner { flex-direction: column; align-items: flex-start; }
 }
+.btnInk { display: flex; align-items: center; gap: 6px; background: var(--ink); border: 1px solid var(--ink); color: var(--white); border-radius: 2px; padding: 7px 14px; font-size: 12px; font-weight: 500; cursor: pointer; font-family: 'Inter', sans-serif; transition: background 0.15s; }
+.btnInk:hover { background: var(--accent); border-color: var(--accent); }
