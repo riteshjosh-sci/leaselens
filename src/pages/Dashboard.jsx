@@ -296,7 +296,7 @@ export default function Dashboard() {
               : null
 
             return (
-              <div key={ws.id} className={styles.wsCard} onClick={() => navigate(`/workspace/${ws.id}/settings`)}>
+              <div key={ws.id} className={styles.wsCard} onClick={() => navigate(`/workspace/${ws.id}`)}>
                 <div className={styles.wsCardTop}>
                   {logoUrl
                     ? <img src={logoUrl} alt="logo" className={styles.wsCardLogo} />
