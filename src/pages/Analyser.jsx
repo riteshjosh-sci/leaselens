@@ -20,15 +20,16 @@ export default function Analyser() {
   const location = useLocation()
   const negotiationId = location.state?.negotiationId || null
   const workspaceId   = location.state?.workspaceId   || null
+  const prefill       = location.state?.prefill       || {}
 
   const [profile, setProfile] = useState(null)
   const [leaseData, setLeaseData] = useState(null)
-  const [assetClass, setAssetClass] = useState('retail')
-  const [propertyType, setPropertyType] = useState('')
-  const [landlordType, setLandlordType] = useState('')
-  const [suburb, setSuburb] = useState('')
-  const [postcode, setPostcode] = useState('')
-  const [finalised, setFinalised] = useState(false)
+  const [docType, setDocType]   = useState('hoa')  // 'hoa' | 'lease' — replaces finalised toggle
+  const [assetClass, setAssetClass] = useState(prefill.asset_class || 'retail')
+  const [propertyType, setPropertyType] = useState(prefill.property_type || '')
+  const [landlordType, setLandlordType] = useState(prefill.landlord_type || '')
+  const [suburb, setSuburb] = useState(prefill.suburb || '')
+  const [postcode, setPostcode] = useState(prefill.postcode || '')
   const [file, setFile] = useState(null)
   const [pasteText, setPasteText] = useState('')
   const [showPaste, setShowPaste] = useState(false)
@@ -43,7 +44,6 @@ export default function Analyser() {
   const pollIntervalRef = useRef(null)
   const fallbackTimerRef = useRef(null)
   const jobSubscriptionRef = useRef(null)
-  // Refs to avoid stale closures in poll/timeout callbacks
   const negIdRef = useRef(null)
   const completedRef = useRef(false)
 
@@ -74,10 +74,7 @@ export default function Analyser() {
   }
 
   const stopLoadingCycle = () => {
-    if (stageIntervalRef.current) {
-      clearInterval(stageIntervalRef.current)
-      stageIntervalRef.current = null
-    }
+    if (stageIntervalRef.current) { clearInterval(stageIntervalRef.current); stageIntervalRef.current = null }
   }
 
   const cleanupJob = () => {
@@ -91,8 +88,7 @@ export default function Analyser() {
     if (!f) return
     const ext = f.name.split('.').pop().toLowerCase()
     if (!['pdf', 'doc', 'docx', 'txt'].includes(ext)) {
-      setError('Please upload a PDF, Word, or text document.')
-      return
+      setError('Please upload a PDF, Word, or text document.'); return
     }
     setFile(f); setError('')
   }
@@ -100,19 +96,14 @@ export default function Analyser() {
   const handleDrop = (e) => { e.preventDefault(); handleFile(e.dataTransfer.files[0]) }
 
   const handleJobUpdate = (jobData) => {
-    // Guard: don't process if already completed
     if (completedRef.current) return
-
     if (jobData.stage === 'extracted' && jobData.stage_data) {
       try {
         const ld = typeof jobData.stage_data === 'string' ? JSON.parse(jobData.stage_data) : jobData.stage_data
-        setLeaseData(ld)
-        setLoadingStage(2)
+        setLeaseData(ld); setLoadingStage(2)
       } catch (e) {}
     }
-
     if (jobData.stage === 'analysing') setLoadingStage(3)
-
     if (jobData.status === 'complete' && jobData.report_json) {
       completedRef.current = true
       cleanupJob()
@@ -130,8 +121,7 @@ export default function Analyser() {
 
   const handleAnalyse = async () => {
     if (!file && pasteText.length < 100) {
-      setError('Please upload a file or paste document text.')
-      return
+      setError('Please upload a file or paste document text.'); return
     }
 
     if (user && profile) {
@@ -147,10 +137,8 @@ export default function Analyser() {
       }
     }
 
-    // Reset completion guard
     completedRef.current = false
     negIdRef.current = null
-
     setLoading(true); setError(''); setReport(null); setLeaseData(null)
     startLoadingCycle()
 
@@ -204,41 +192,35 @@ export default function Analyser() {
         landlord_type: landlordType || null,
         suburb: suburb || null,
         postcode: postcode || null,
-        finalised: finalised,
+        finalised: docType === 'lease', // lease = terms agreed, HOA = still negotiating
       }).select().single()
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
 
-      // Realtime subscription
       const subscription = supabase
         .channel(`job-${job.id}`)
-        .on('postgres_changes', {
-          event: 'UPDATE', schema: 'public', table: 'jobs', filter: `id=eq.${job.id}`
-        }, (payload) => {
-          handleJobUpdate(payload.new)
-        })
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jobs', filter: `id=eq.${job.id}` },
+          (payload) => { handleJobUpdate(payload.new) })
         .subscribe()
 
       jobSubscriptionRef.current = subscription
 
-      // Poll every 2 seconds as reliable fallback
-      pollIntervalRef.current = setInterval(async () => {
-        if (completedRef.current) {
-          clearInterval(pollIntervalRef.current)
-          pollIntervalRef.current = null
-          return
-        }
+      // Immediate first poll at 3s to catch extracted stage
+      setTimeout(async () => {
         const { data: jobData } = await supabase
-          .from('jobs')
-          .select('status, stage, stage_data, report_json, error')
-          .eq('id', job.id)
-          .single()
+          .from('jobs').select('status, stage, stage_data, report_json, error').eq('id', job.id).single()
+        if (jobData && !completedRef.current) handleJobUpdate(jobData)
+      }, 3000)
+
+      pollIntervalRef.current = setInterval(async () => {
+        if (completedRef.current) { clearInterval(pollIntervalRef.current); pollIntervalRef.current = null; return }
+        const { data: jobData } = await supabase
+          .from('jobs').select('status, stage, stage_data, report_json, error').eq('id', job.id).single()
         if (jobData) handleJobUpdate(jobData)
       }, 2000)
 
-      // 10 min fallback timeout
       fallbackTimerRef.current = setTimeout(() => {
-        
+        if (completedRef.current) return
         cleanupJob()
         setError('Analysis is taking longer than expected. Please try again.')
         setLoading(false)
@@ -299,6 +281,17 @@ export default function Analyser() {
             <div className={styles.metaInputs}>
               <div className={styles.metaRow}>
                 <div className={styles.metaField}>
+                  <label className={styles.metaLabel}>Document type</label>
+                  <div className={styles.toggleRow}>
+                    <button type="button"
+                      className={`${styles.toggleBtn} ${docType === 'hoa' ? styles.toggleActive : ''}`}
+                      onClick={() => setDocType('hoa')}>HOA</button>
+                    <button type="button"
+                      className={`${styles.toggleBtn} ${docType === 'lease' ? styles.toggleActive : ''}`}
+                      onClick={() => setDocType('lease')}>Lease</button>
+                  </div>
+                </div>
+                <div className={styles.metaField}>
                   <label className={styles.metaLabel}>Asset class</label>
                   <select className="input" value={assetClass} onChange={e => setAssetClass(e.target.value)}>
                     <option value="retail">Retail</option>
@@ -319,6 +312,8 @@ export default function Analyser() {
                     <option value="other">Other</option>
                   </select>
                 </div>
+              </div>
+              <div className={styles.metaRow}>
                 <div className={styles.metaField}>
                   <label className={styles.metaLabel}>Landlord type</label>
                   <select className="input" value={landlordType} onChange={e => setLandlordType(e.target.value)}>
@@ -329,8 +324,6 @@ export default function Analyser() {
                     <option value="other">Other</option>
                   </select>
                 </div>
-              </div>
-              <div className={styles.metaRow}>
                 <div className={styles.metaField}>
                   <label className={styles.metaLabel}>Suburb</label>
                   <input className="input" type="text" value={suburb} onChange={e => setSuburb(e.target.value)} placeholder="e.g. Fremantle" />
@@ -338,13 +331,6 @@ export default function Analyser() {
                 <div className={styles.metaField}>
                   <label className={styles.metaLabel}>Postcode</label>
                   <input className="input" type="text" value={postcode} onChange={e => setPostcode(e.target.value)} placeholder="e.g. 6160" maxLength={4} />
-                </div>
-                <div className={styles.metaField}>
-                  <label className={styles.metaLabel}>Finalised</label>
-                  <div className={styles.toggleRow}>
-                    <button type="button" className={`${styles.toggleBtn} ${!finalised ? styles.toggleActive : ''}`} onClick={() => setFinalised(false)}>No</button>
-                    <button type="button" className={`${styles.toggleBtn} ${finalised ? styles.toggleActive : ''}`} onClick={() => setFinalised(true)}>Yes</button>
-                  </div>
                 </div>
               </div>
             </div>
@@ -407,8 +393,8 @@ export default function Analyser() {
             )}
           </div>
 
-          {/* LEASE SUMMARY CARD — shows while loading after extraction */}
-          {leaseData && loading && (
+          {/* LEASE SUMMARY CARD */}
+          {leaseData && (loading || report) && (
             <div className={styles.leaseSummaryCard}>
               <div className={styles.leaseSummaryHeader}>
                 <div className={styles.leaseSummaryKicker}>
@@ -466,7 +452,7 @@ export default function Analyser() {
               </div>
               <div className={styles.leaseSummaryStatus}>
                 <span className={styles.leaseSummaryCheck}>✓ Commercial terms identified</span>
-                <span className={styles.leaseSummaryPending}>◉ AI risk analysis running...</span>
+                {loading && <span className={styles.leaseSummaryPending}>◉ AI risk analysis running...</span>}
               </div>
             </div>
           )}

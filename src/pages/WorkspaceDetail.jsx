@@ -39,7 +39,6 @@ export default function WorkspaceDetail() {
     const negs = negsRes.data || []
     setNeg(negs)
 
-    // Auto-expand first negotiation
     if (negs.length > 0) setExpanded({ [negs[0].id]: true })
 
     if (wsRes.data.logo_path) {
@@ -48,6 +47,46 @@ export default function WorkspaceDetail() {
     }
 
     setLoading(false)
+  }
+
+  // Fetch meta from the most recent job in a negotiation to prefill the analyser
+  const getMetaForNeg = async (negId) => {
+    const { data } = await supabase
+      .from('jobs')
+      .select('asset_class, property_type, landlord_type, suburb, postcode')
+      .eq('negotiation_id', negId)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    return data || {}
+  }
+
+  // Navigate to analyser — workspace level (no existing negotiation)
+  const handleAnalyseNew = async () => {
+    // Try to get meta from the most recent negotiation in this workspace
+    const lastNeg = negotiations[0]
+    let meta = {}
+    if (lastNeg) {
+      meta = await getMetaForNeg(lastNeg.id)
+    }
+    navigate('/analyser', {
+      state: {
+        workspaceId: id,
+        prefill: meta,
+      }
+    })
+  }
+
+  // Navigate to analyser — adding a new version to existing negotiation
+  const handleAnalyseVersion = async (negId) => {
+    const meta = await getMetaForNeg(negId)
+    navigate('/analyser', {
+      state: {
+        negotiationId: negId,
+        workspaceId: id,
+        prefill: meta,
+      }
+    })
   }
 
   const handleRename = async (negId) => {
@@ -79,6 +118,7 @@ export default function WorkspaceDetail() {
 
   const toggleExpanded = (negId) => setExpanded(prev => ({ ...prev, [negId]: !prev[negId] }))
 
+
   const formatDate = d => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
   const stripTimestamp = f => f?.replace(/^\d+_/, '') || ''
 
@@ -99,14 +139,12 @@ export default function WorkspaceDetail() {
       <Nav />
       <div className={styles.page}>
 
-        {/* BREADCRUMB */}
         <div className={styles.breadcrumb}>
           <button onClick={() => navigate('/dashboard')}>Dashboard</button>
           <span className={styles.breadSep}>›</span>
           <span>{ws.name}</span>
         </div>
 
-        {/* HERO HEADER */}
         <div className={styles.hero}>
           <div className={styles.heroLeft}>
             <div className={styles.heroMeta}>
@@ -118,7 +156,6 @@ export default function WorkspaceDetail() {
           </div>
 
           <div className={styles.heroRight}>
-            {/* Stats pills */}
             <div className={styles.heroPills}>
               <div className={styles.heroPill}>
                 <span className={styles.heroPillVal}>{negotiations.length}</span>
@@ -140,26 +177,24 @@ export default function WorkspaceDetail() {
               )}
             </div>
 
-            {/* Actions */}
             <div className={styles.heroActions}>
               <button className={styles.settingsBtn} onClick={() => navigate(`/workspace/${id}/settings`)}>
                 ⚙ Settings
               </button>
-              <button className="btn-primary" onClick={() => navigate('/analyser', { state: { workspaceId: id } })}>
+              <button className="btn-primary" onClick={handleAnalyseNew}>
                 + Analyse document
               </button>
             </div>
           </div>
         </div>
 
-        {/* EMPTY STATE */}
         {negotiations.length === 0 ? (
           <div className={styles.empty}>
             <div className={styles.emptyLine} />
             <div className={styles.emptyInner}>
               <div className={styles.emptyTitle}>No negotiations yet</div>
               <div className={styles.emptySub}>Upload your first lease or HOA to begin analysis.</div>
-              <button className="btn-primary" onClick={() => navigate('/analyser', { state: { workspaceId: id } })}>
+              <button className="btn-primary" onClick={handleAnalyseNew}>
                 Analyse document →
               </button>
             </div>
@@ -173,15 +208,10 @@ export default function WorkspaceDetail() {
 
               return (
                 <div key={neg.id} className={`${styles.negCard} ${isOpen ? styles.negCardOpen : ''}`}>
-
-                  {/* NEG HEADER ROW */}
                   <div className={styles.negRow} onClick={() => toggleExpanded(neg.id)}>
-                    {/* Index number */}
                     <div className={styles.negIndex}>
                       {String(idx + 1).padStart(2, '0')}
                     </div>
-
-                    {/* Title */}
                     <div className={styles.negMain}>
                       {renaming === neg.id ? (
                         <div className={styles.renameRow} onClick={e => e.stopPropagation()}>
@@ -199,8 +229,6 @@ export default function WorkspaceDetail() {
                         {formatDate(neg.created_at)} · {docs.length} version{docs.length !== 1 ? 's' : ''}
                       </div>
                     </div>
-
-                    {/* Risk badge */}
                     {latestRisk && (
                       <div className={styles.negRisk}>
                         <span className={`badge ${riskConfig[latestRisk]?.cls?.split(' ')[1] || 'badge-medium'}`}>
@@ -208,15 +236,13 @@ export default function WorkspaceDetail() {
                         </span>
                       </div>
                     )}
-
-                    {/* Chevron + actions */}
                     <div className={styles.negControls} onClick={e => e.stopPropagation()}>
                       {docs.length >= 2 && (
                         <button className={styles.controlBtn}
                           onClick={() => navigate(`/compare/${neg.id}`)}>Compare</button>
                       )}
                       <button className={styles.controlBtn}
-                        onClick={() => navigate('/analyser', { state: { negotiationId: neg.id, workspaceId: id } })}>
+                        onClick={() => handleAnalyseVersion(neg.id)}>
                         + Version
                       </button>
                       <button className={styles.controlBtn}
@@ -225,11 +251,9 @@ export default function WorkspaceDetail() {
                       </button>
                       <button className={styles.controlDanger} onClick={() => handleDeleteNeg(neg.id)}>✕</button>
                     </div>
-
                     <div className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ''}`}>›</div>
                   </div>
 
-                  {/* DOCUMENTS — revealed on expand */}
                   {isOpen && (
                     <div className={styles.docSection}>
                       {docs.map((doc, di) => (
