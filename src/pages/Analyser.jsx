@@ -457,6 +457,27 @@ export default function Analyser() {
             </div>
           )}
 
+          {/* ANALYSIS COMPLETE BANNER */}
+          {report && (
+            <div style={{
+              background: 'var(--risk-l-bg)',
+              border: '1px solid #b8d8c4',
+              borderLeft: '3px solid var(--risk-l)',
+              borderRadius: 2,
+              padding: '12px 20px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              marginBottom: 8,
+              fontSize: 14,
+              color: 'var(--risk-l)',
+              fontWeight: 500,
+            }}>
+              <span style={{ fontSize: 18 }}>✓</span>
+              Analysis complete — scroll down to view your report.
+            </div>
+          )}
+
           {/* PROPERTY NAME PROMPT */}
           {showPropertyPrompt && report && (
             <div className={styles.propertyPrompt}>
