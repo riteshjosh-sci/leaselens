@@ -5,95 +5,40 @@ import { useAuth } from '../context/AuthContext'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
 import styles from './Dashboard.module.css'
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, PieChart, Pie, Cell
-} from 'recharts'
 
 export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [workspaces, setWorkspaces]   = useState([])
-  const [profile, setProfile]         = useState(null)
-  const [loading, setLoading]         = useState(true)
-  const [wsModal, setWsModal]         = useState(false)
-  const [wsName, setWsName]           = useState('')
-  const [wsClient, setWsClient]       = useState('')
-  const [wsSaving, setWsSaving]       = useState(false)
-
-  // derived analytics
-  const [stats, setStats]             = useState(null)
-  const [monthlyData, setMonthlyData] = useState([])
-  const [recentReports, setRecentReports] = useState([])
+  const [workspaces, setWorkspaces] = useState([])
+  const [profile, setProfile] = useState(null)
+  const [loading, setLoading] = useState(true)
+  const [wsModal, setWsModal] = useState(false)
+  const [wsName, setWsName] = useState('')
+  const [wsClient, setWsClient] = useState('')
+  const [wsSaving, setWsSaving] = useState(false)
 
   useEffect(() => { if (!user) return; fetchAll() }, [user])
 
   const fetchAll = async () => {
-    const [wsRes, profileRes, reportsRes] = await Promise.all([
+    const [wsRes, profileRes] = await Promise.all([
       supabase
         .from('workspaces')
         .select(`
           id, name, client_name, logo_path, created_at,
           negotiations (
-            id,
+            id, status,
             documents (
               id, uploaded_at, overall_risk,
-              reports ( id, created_at )
+              reports ( id )
             )
           )
         `)
         .eq('user_id', user.id)
         .order('created_at', { ascending: false }),
       supabase.from('profiles').select('*').eq('id', user.id).single(),
-      supabase
-        .from('reports')
-        .select(`
-          id, created_at,
-          documents (
-            id, filename, overall_risk, uploaded_at,
-            negotiations ( id, property_name, workspace_id )
-          )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(5),
     ])
-
-    const ws = wsRes.data || []
-    const prof = profileRes.data
-    const recent = reportsRes.data || []
-
-    setWorkspaces(ws)
-    setProfile(prof)
-    setRecentReports(recent)
-
-    // Compute stats
-    const allDocs = ws.flatMap(w => w.negotiations.flatMap(n => n.documents))
-    const high   = allDocs.filter(d => d.overall_risk === 'HIGH').length
-    const medium = allDocs.filter(d => d.overall_risk === 'MEDIUM').length
-    const low    = allDocs.filter(d => d.overall_risk === 'LOW').length
-
-    // Monthly docs — last 6 months
-    const months = []
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(); d.setMonth(d.getMonth() - i)
-      const label = d.toLocaleDateString('en-AU', { month: 'short' })
-      const count = allDocs.filter(doc => {
-        const rd = new Date(doc.uploaded_at)
-        return rd.getMonth() === d.getMonth() && rd.getFullYear() === d.getFullYear()
-      }).length
-      months.push({ label, count })
-    }
-
-    setStats({
-      totalDocs: allDocs.length,
-      totalWorkspaces: ws.length,
-      highRisk: high,
-      scansUsed: prof?.free_scans_used || prof?.monthly_scans_used || 0,
-      scansLimit: prof?.plan === 'professional' ? '∞' : prof?.plan === 'one_off' ? prof?.scan_credits || 0 : prof?.plan === 'free' ? 1 : 10,
-      high, medium, low,
-    })
-    setMonthlyData(months)
+    setWorkspaces(wsRes.data || [])
+    setProfile(profileRes.data)
     setLoading(false)
   }
 
@@ -113,275 +58,175 @@ export default function Dashboard() {
   }
 
   const formatDate = d => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
-  const stripTimestamp = f => f?.replace(/^\d+_/, '') || ''
-  const riskClass = { HIGH: 'badge badge-high', MEDIUM: 'badge badge-medium', LOW: 'badge badge-low' }
 
-  const RISK_COLORS = {
-    HIGH: '#8b2020',
-    MEDIUM: '#b8975a',
-    LOW: '#1a5c30',
+  // Derive workspace status from negotiations/docs
+  const getStatus = (ws) => {
+    const docs = ws.negotiations.flatMap(n => n.documents || [])
+    if (docs.length === 0) return { label: 'No documents', cls: '' }
+    const hasHigh = docs.some(d => d.overall_risk === 'HIGH')
+    if (hasHigh) return { label: 'Needs attention', cls: 'raise' }
+    return { label: 'Reviewing', cls: '' }
   }
 
-  const donutData = stats ? [
-    { name: 'High', value: stats.high,   color: RISK_COLORS.HIGH },
-    { name: 'Medium', value: stats.medium, color: RISK_COLORS.MEDIUM },
-    { name: 'Low', value: stats.low,    color: RISK_COLORS.LOW },
-  ].filter(d => d.value > 0) : []
+  // Derive doc summary
+  const getDocSummary = (ws) => {
+    const allDocs = ws.negotiations.flatMap(n => n.documents || [])
+    const hoaCount = ws.negotiations.filter(n =>
+      n.documents?.some(d => d.filename?.toLowerCase().includes('hoa'))
+    ).length
+    const leaseCount = ws.negotiations.filter(n =>
+      n.documents?.some(d => !d.filename?.toLowerCase().includes('hoa'))
+    ).length
+    const parts = []
+    if (leaseCount > 0) parts.push(`${leaseCount} lease${leaseCount > 1 ? 's' : ''}`)
+    if (hoaCount > 0) parts.push(`${hoaCount} HOA${hoaCount > 1 ? 's' : ''}`)
+    if (parts.length === 0 && allDocs.length > 0) parts.push(`${allDocs.length} document${allDocs.length > 1 ? 's' : ''}`)
+    return parts.join(' · ') || 'No documents'
+  }
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload?.length) return (
-      <div style={{ background: '#0f0f0d', color: 'white', padding: '8px 12px', borderRadius: 2, fontSize: 12 }}>
-        <div style={{ color: '#b8975a', marginBottom: 2 }}>{label}</div>
-        <div>{payload[0].value} document{payload[0].value !== 1 ? 's' : ''}</div>
+  const getLatestDate = (ws) => {
+    const docs = ws.negotiations.flatMap(n => n.documents || [])
+    if (!docs.length) return null
+    const latest = docs.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))[0]
+    return latest?.uploaded_at
+  }
+
+  const totalDocs = workspaces.reduce((a, w) =>
+    a + w.negotiations.reduce((b, n) => b + (n.documents?.length || 0), 0), 0)
+  const totalNeg = workspaces.reduce((a, w) => a + w.negotiations.length, 0)
+
+  // Separate active from finalised (no auto-detection yet, all active for now)
+  const active = workspaces
+  const finalised = []
+
+  if (loading) return <><Nav /><div className={styles.loading}>Loading…</div></>
+
+  const WCard = ({ ws }) => {
+    const status = getStatus(ws)
+    const docSummary = getDocSummary(ws)
+    const latestDate = getLatestDate(ws)
+    const allDocs = ws.negotiations.flatMap(n => n.documents || [])
+    const docCount = allDocs.length
+
+    return (
+      <div className={styles.wcard} onClick={() => navigate(`/workspace/${ws.id}`)}>
+        <div className={styles.wcTop}>
+          <div className={styles.wcBadge}>{ws.name[0]?.toUpperCase()}</div>
+          <div className={styles.wcId}>
+            <div className={styles.wcName}>{ws.name}</div>
+            {ws.client_name && <div className={styles.wcTn}>{ws.client_name}</div>}
+          </div>
+          {status.cls === 'raise' ? (
+            <span className={`${styles.statusChip} ${styles.statusRaise}`}>
+              <span className={styles.d} />Needs attention
+            </span>
+          ) : (
+            <span className={styles.statusChip}>
+              <span className={styles.d} />Reviewing
+            </span>
+          )}
+        </div>
+        <div className={styles.wcSummary}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M4 1.5h5l3 3v10H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+            <path d="M9 1.5v3h3" stroke="currentColor" strokeWidth="1.4"/>
+          </svg>
+          {docSummary}
+          {docCount > 0 && <span className={styles.docsN}>· {docCount} document{docCount > 1 ? 's' : ''}</span>}
+        </div>
+        <div className={styles.wcFoot}>
+          <span className={styles.wcUp}>{latestDate ? `Updated ${formatDate(latestDate)}` : 'No activity'}</span>
+          <span className={styles.wcOpen}>Open →</span>
+        </div>
       </div>
     )
-    return null
   }
-
-  if (loading) return (
-    <><Nav /><div className={styles.loading}>Loading dashboard...</div></>
-  )
 
   return (
     <>
       <Nav />
       <div className={styles.page}>
 
-        {/* TOP BAR */}
-        <div className={styles.topBar}>
+        {/* HEAD */}
+        <div className={styles.head}>
           <div>
-            <h1 className={styles.pageTitle}>Dashboard</h1>
-            <div className={styles.pageSub}>{user?.email}</div>
+            <h1 className={styles.h1}>Properties</h1>
+            <div className={styles.summaryLine}>
+              {active.length} in negotiation · {finalised.length} finalised · {totalDocs} document{totalDocs !== 1 ? 's' : ''} analysed
+            </div>
           </div>
-          <div className={styles.topActions}>
-            <button className={styles.newWsBtn} onClick={() => setWsModal(true)}>+ New workspace</button>
-            <button className="btn-primary" onClick={() => navigate('/analyser')}>+ Analyse document</button>
+          <div className={styles.headActions}>
+            <button className="btn-outline btn-sm" onClick={() => setWsModal(true)}>+ New property</button>
+            <button className="btn-ink btn-sm" onClick={() => navigate('/analyser')}>+ Analyse document</button>
           </div>
         </div>
 
-        {/* STATS ROW */}
-        {stats && (
-          <div className={styles.statsRow}>
-            {[
-              {
-                label: 'Documents analysed',
-                value: stats.totalDocs,
-                sub: 'all time',
-                color: 'var(--accent-mid)',
-              },
-              {
-                label: 'High risk documents',
-                value: stats.highRisk,
-                sub: 'require attention',
-                color: 'var(--risk-h)',
-                bg: stats.highRisk > 0 ? 'var(--risk-h-bg)' : undefined,
-              },
-              {
-                label: 'Active workspaces',
-                value: stats.totalWorkspaces,
-                sub: 'client portfolios',
-                color: 'var(--gold)',
-              },
-              {
-                label: profile?.plan === 'professional' ? 'Plan' : 'Scans used',
-                value: profile?.plan === 'professional' ? '∞' : `${stats.scansUsed}/${stats.scansLimit}`,
-                sub: profile?.plan || 'free plan',
-                color: 'var(--ink)',
-                isText: profile?.plan === 'professional',
-              },
-            ].map((s, i) => (
-              <div key={i} className={styles.statCard} style={{ background: s.bg }}>
-                <div className={styles.statValue} style={{ color: s.color, fontSize: s.isText ? 28 : undefined }}>{s.value}</div>
-                <div className={styles.statLabel}>{s.label}</div>
-                <div className={styles.statSub}>{s.sub}</div>
-              </div>
-            ))}
+        {/* ACTIVE */}
+        <div className={styles.dsec}>
+          <div className={styles.sh}>
+            <span className={styles.shLbl}>Active</span>
+            <span className={styles.shCnt}>{active.length} in negotiation</span>
+            <span className={styles.shLn} />
           </div>
-        )}
-
-        {/* CHARTS + RECENT ROW */}
-        {stats && stats.totalDocs > 0 && (
-          <div className={styles.chartsRow}>
-
-            {/* Monthly bar chart */}
-            <div className={styles.chartCard}>
-              <div className={styles.chartHeader}>
-                <div className={styles.chartTitle}>Documents uploaded</div>
-                <div className={styles.chartSub}>Last 6 months</div>
-              </div>
-              <ResponsiveContainer width="100%" height={140}>
-                <BarChart data={monthlyData} barSize={20} margin={{ top: 4, right: 0, bottom: 0, left: -24 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--rule)" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fill: 'var(--ink-light)' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: 'var(--ink-light)' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.04)' }} />
-                  <Bar dataKey="count" fill="var(--accent-mid)" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+          <div className={styles.wsGrid}>
+            {active.map(ws => <WCard key={ws.id} ws={ws} />)}
+            <div className={`${styles.wcard} ${styles.wcardNew}`} onClick={() => setWsModal(true)}>
+              <div className={styles.plus}>+</div>
+              <div className={styles.nt}>New property</div>
+              <div className={styles.ns}>Start a workspace for a new tenancy</div>
             </div>
+          </div>
+        </div>
 
-            {/* Risk donut */}
-            <div className={styles.chartCard}>
-              <div className={styles.chartHeader}>
-                <div className={styles.chartTitle}>Risk distribution</div>
-                <div className={styles.chartSub}>{stats.totalDocs} documents</div>
-              </div>
-              <div className={styles.donutWrap}>
-                <PieChart width={120} height={120}>
-                  <Pie data={donutData} cx={55} cy={55} innerRadius={36} outerRadius={52}
-                    dataKey="value" startAngle={90} endAngle={-270}>
-                    {donutData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                  </Pie>
-                  <Tooltip formatter={(val, name) => [val, name]} contentStyle={{ fontSize: 12, background: '#0f0f0d', border: 'none', color: 'white', borderRadius: 2 }} />
-                </PieChart>
-                <div className={styles.donutLegend}>
-                  {[
-                    { label: 'High risk',   value: stats.high,   color: RISK_COLORS.HIGH },
-                    { label: 'Medium risk', value: stats.medium, color: RISK_COLORS.MEDIUM },
-                    { label: 'Low risk',    value: stats.low,    color: RISK_COLORS.LOW },
-                  ].map(l => (
-                    <div key={l.label} className={styles.legendRow}>
-                      <span className={styles.legendDot} style={{ background: l.color }} />
-                      <span className={styles.legendLabel}>{l.label}</span>
-                      <span className={styles.legendVal}>{l.value}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+        {/* FINALISED */}
+        {finalised.length > 0 && (
+          <div className={styles.dsec}>
+            <div className={styles.sh}>
+              <span className={styles.shLbl}>Finalised</span>
+              <span className={styles.shCnt}>{finalised.length} signed</span>
+              <span className={styles.shLn} />
             </div>
-
-            {/* Recent reports */}
-            <div className={styles.chartCard}>
-              <div className={styles.chartHeader}>
-                <div className={styles.chartTitle}>Recent reports</div>
-              </div>
-              <div className={styles.recentList}>
-                {recentReports.length === 0 ? (
-                  <div className={styles.recentEmpty}>No reports yet.</div>
-                ) : recentReports.map(r => (
-                  <div key={r.id} className={styles.recentRow} onClick={() => navigate(`/report/${r.id}`)}>
-                    <div className={styles.recentInfo}>
-                      <div className={styles.recentName}>
-                        {r.documents?.negotiations?.property_name || stripTimestamp(r.documents?.filename)}
-                      </div>
-                      <div className={styles.recentDate}>{formatDate(r.created_at)}</div>
-                    </div>
-                    {r.documents?.overall_risk && (
-                      <span className={riskClass[r.documents.overall_risk]} style={{ fontSize: 10 }}>
-                        {r.documents.overall_risk}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
+            <div className={styles.wsGrid}>
+              {finalised.map(ws => <WCard key={ws.id} ws={ws} />)}
             </div>
           </div>
         )}
 
-        {/* WORKSPACES GRID */}
-        <div className={styles.sectionHeader}>
-          <div className={styles.sectionTitle}>Workspaces</div>
-          <button className={styles.newWsLink} onClick={() => setWsModal(true)}>+ New workspace</button>
-        </div>
-
-        <div className={styles.wsGrid}>
-          {workspaces.map(ws => {
-            const allDocs = ws.negotiations.flatMap(n => n.documents)
-            const negCount = ws.negotiations.length
-            const docCount = allDocs.length
-            const highCount = allDocs.filter(d => d.overall_risk === 'HIGH').length
-            const latestDoc = allDocs.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))[0]
-            const logoUrl = ws.logo_path
-              ? supabase.storage.from('logos').getPublicUrl(ws.logo_path).data?.publicUrl
-              : null
-
-            return (
-              <div key={ws.id} className={styles.wsCard} onClick={() => navigate(`/workspace/${ws.id}`)}>
-                <div className={styles.wsCardTop}>
-                  {logoUrl
-                    ? <img src={logoUrl} alt="logo" className={styles.wsCardLogo} />
-                    : <div className={styles.wsCardInitial}>{ws.name[0]?.toUpperCase()}</div>
-                  }
-                  <div className={styles.wsCardMeta}>
-                    <div className={styles.wsCardName}>{ws.name}</div>
-                    {ws.client_name && <div className={styles.wsCardClient}>{ws.client_name}</div>}
-                  </div>
-                  {highCount > 0 && (
-                    <span className="badge badge-high" style={{ fontSize: 10, marginLeft: 'auto' }}>
-                      {highCount} HIGH
-                    </span>
-                  )}
-                </div>
-                <div className={styles.wsCardStats}>
-                  <div className={styles.wsCardStat}>
-                    <span className={styles.wsCardStatVal}>{negCount}</span>
-                    <span className={styles.wsCardStatLabel}>negotiation{negCount !== 1 ? 's' : ''}</span>
-                  </div>
-                  <div className={styles.wsCardDivider} />
-                  <div className={styles.wsCardStat}>
-                    <span className={styles.wsCardStatVal}>{docCount}</span>
-                    <span className={styles.wsCardStatLabel}>document{docCount !== 1 ? 's' : ''}</span>
-                  </div>
-                  {latestDoc && (
-                    <>
-                      <div className={styles.wsCardDivider} />
-                      <div className={styles.wsCardStat}>
-                        <span className={styles.wsCardStatLabel}>Last upload</span>
-                        <span className={styles.wsCardStatVal} style={{ fontSize: 11 }}>{formatDate(latestDoc.uploaded_at)}</span>
-                      </div>
-                    </>
-                  )}
-                </div>
-                <div className={styles.wsCardFooter}>
-                  Open workspace →
-                </div>
-              </div>
-            )
-          })}
-
-          {/* New workspace card */}
-          <div className={`${styles.wsCard} ${styles.wsCardNew}`} onClick={() => setWsModal(true)}>
-            <div className={styles.wsCardNewIcon}>+</div>
-            <div className={styles.wsCardNewLabel}>New workspace</div>
-            <div className={styles.wsCardNewSub}>Create a client or portfolio workspace</div>
-          </div>
-        </div>
-
-        {/* UPGRADE NUDGE */}
+        {/* UPGRADE */}
         {(profile?.plan === 'free' || profile?.plan === 'one_off') && (
           <div className={styles.upgradeBar}>
             <div>
               <strong>Upgrade to Professional</strong>
-              <span> — unlimited scans, branded PDFs, client workspaces, and more.</span>
+              <span> — unlimited scans, branded PDFs, client workspaces and more.</span>
             </div>
-            <button className="btn-primary" onClick={() => navigate('/pricing')}>View plans →</button>
+            <button className="btn-primary btn-sm" onClick={() => navigate('/pricing')}>View plans →</button>
           </div>
         )}
 
       </div>
 
-      {/* CREATE WORKSPACE MODAL */}
+      {/* CREATE MODAL */}
       {wsModal && (
         <div className={styles.overlay} onClick={() => setWsModal(false)}>
           <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalTitle}>New workspace</div>
+            <div className={styles.modalTitle}>New property</div>
             <div className={styles.fields}>
               <div className={styles.field}>
-                <label>Workspace name *</label>
-                <input className="input" placeholder="e.g. Collins Street Portfolio" value={wsName}
+                <label>Property name *</label>
+                <input className="input" placeholder="e.g. Bondi Florist" value={wsName}
                   onChange={e => setWsName(e.target.value)} autoFocus
                   onKeyDown={e => e.key === 'Enter' && handleCreateWorkspace()} />
               </div>
               <div className={styles.field}>
-                <label>Client name <span style={{ fontWeight: 300, color: 'var(--ink-light)' }}>(optional)</span></label>
-                <input className="input" placeholder="e.g. Acme Retail Pty Ltd" value={wsClient}
+                <label>Tenant name <span style={{ fontWeight: 400, color: 'var(--muted)' }}>(optional)</span></label>
+                <input className="input" placeholder="e.g. Sydney Flowers Pty Ltd" value={wsClient}
                   onChange={e => setWsClient(e.target.value)} />
               </div>
             </div>
             <div className={styles.modalActions}>
               <button className="btn-ghost" onClick={() => setWsModal(false)}>Cancel</button>
               <button className="btn-primary" onClick={handleCreateWorkspace} disabled={wsSaving || !wsName.trim()}>
-                {wsSaving ? 'Creating…' : 'Create workspace'}
+                {wsSaving ? 'Creating…' : 'Create property'}
               </button>
             </div>
           </div>
