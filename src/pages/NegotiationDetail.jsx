@@ -98,14 +98,29 @@ export default function NegotiationDetail() {
   const toDecide    = allClauses.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
   const highCount   = docs.filter(d => d.overall_risk === 'HIGH').length
 
+  // Lifted open state — only one clause open at a time
+  const [openClauseKey, setOpenClauseKey] = useState(null)
+
+  // Set first HIGH clause open on load
+  useEffect(() => {
+    if (allClauses.length > 0 && openClauseKey === null) {
+      const firstHigh = allClauses.find(c => c.danger === 'HIGH')
+      setOpenClauseKey(firstHigh?.clauseKey || allClauses[0]?.clauseKey || null)
+    }
+  }, [allClauses.length])
+
   // Clause item component
-  const ClauseItem = ({ c, isFirst = false }) => {
-    const [open, setOpen] = useState(isFirst)
+  const ClauseItem = ({ c }) => {
+    const open = openClauseKey === c.clauseKey
     const dec = decisions[c.clauseKey] || 'open'
+
+    const handleToggle = () => {
+      setOpenClauseKey(prev => prev === c.clauseKey ? null : c.clauseKey)
+    }
 
     return (
       <div className={`${styles.negItem} ${open ? styles.negItemOpen : ''}`}>
-        <div className={styles.negRow} onClick={() => setOpen(o => !o)}>
+        <div className={styles.negRow} onClick={handleToggle}>
           <span className={styles.prio} style={{ background: riskColor[c.danger] }} />
           <div className={styles.tt}>
             {c.location && <div className={styles.ref}>{c.location}</div>}
@@ -151,10 +166,10 @@ export default function NegotiationDetail() {
                 <p>{c.legislation}</p>
               </div>
             )}
-            <div className={styles.decide} onClick={e => e.stopPropagation()}>
+            <div className={styles.decide}>
               <button
                 className={`${styles.dcBtn} ${styles.dcAgree} ${dec === 'accepted' ? styles.dcOn : ''}`}
-                onClick={() => toggleDecision(c.clauseKey, 'accepted')}>
+                onClick={e => { e.stopPropagation(); toggleDecision(c.clauseKey, 'accepted') }}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                   <path d="M3 8l3 3 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -162,7 +177,7 @@ export default function NegotiationDetail() {
               </button>
               <button
                 className={`${styles.dcBtn} ${styles.dcCounter} ${dec === 'countering' ? styles.dcOn : ''}`}
-                onClick={() => toggleDecision(c.clauseKey, 'countering')}>
+                onClick={e => { e.stopPropagation(); toggleDecision(c.clauseKey, 'countering') }}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                   <path d="M10 4L6 8l4 4M6 8h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -304,7 +319,7 @@ export default function NegotiationDetail() {
                   {highClauses.length > 0 && (
                     <div className={styles.negGroup}>
                       <div className={styles.gh}>High priority <span className={styles.gc}>· {highClauses.length}</span></div>
-                      {highClauses.map((c, i) => <ClauseItem key={c.clauseKey} c={c} isFirst={i === 0} />)}
+                      {highClauses.map(c => <ClauseItem key={c.clauseKey} c={c} />)}
                     </div>
                   )}
                   {medClauses.length > 0 && (
