@@ -73,7 +73,7 @@ function BarChartComp({ data, color }) {
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload?.length) return (
       <div style={{ background: 'var(--ink)', color: 'white', padding: '8px 12px', borderRadius: 2, fontSize: 12 }}>
-        <div style={{ color: 'var(--gold)', marginBottom: 2 }}>{label}</div>
+        <div style={{ color: 'var(--accent)', marginBottom: 2 }}>{label}</div>
         <div>{payload[0].value}</div>
       </div>
     )
@@ -312,9 +312,9 @@ export default function Admin() {
             <div className={styles.statGrid}>
               {[
                 { label: 'Total users', value: stats.totalUsers, sub: `${stats.paidUsers} paid`, color: 'var(--accent-mid)', sparkData: stats.monthlySignups },
-                { label: 'MRR', value: stats.mrr, prefix: '$', sub: 'monthly recurring', color: 'var(--gold)', sparkData: stats.monthlySignups },
+                { label: 'MRR', value: stats.mrr, prefix: '$', sub: 'monthly recurring', color: 'var(--accent-lt)', sparkData: stats.monthlySignups },
                 { label: 'Documents analysed', value: stats.totalDocs, sub: 'all time', color: 'var(--accent-mid)', sparkData: stats.monthlyDocs },
-                { label: 'Workspaces', value: stats.totalWorkspaces, sub: 'across all advisers', color: 'var(--gold)', sparkData: stats.monthlyDocs },
+                { label: 'Workspaces', value: stats.totalWorkspaces, sub: 'across all advisers', color: 'var(--accent-lt)', sparkData: stats.monthlyDocs },
               ].map((s, i) => (
                 <div key={i} className={styles.statCard} style={{ animationDelay: `${i * 80}ms` }}>
                   <div className={styles.statTop}>
@@ -342,7 +342,7 @@ export default function Admin() {
                   <div className={styles.chartTitle}>Documents uploaded</div>
                   <div className={styles.chartSub}>Last 6 months</div>
                 </div>
-                <BarChartComp data={stats.monthlyDocs} color="var(--gold)" />
+                <BarChartComp data={stats.monthlyDocs} color="var(--accent-lt)" />
               </div>
               <div className={styles.chartCard}>
                 <div className={styles.chartHeader}>
@@ -355,7 +355,7 @@ export default function Admin() {
                     { label: 'One-off', val: stats.planCounts.one_off,  color: '#60a5fa' },
                     { label: 'Monthly', val: stats.planCounts.monthly,  color: 'var(--accent-mid)' },
                     { label: 'Annual',  val: stats.planCounts.annual,   color: 'var(--risk-l)' },
-                    { label: 'Adviser', val: stats.planCounts.adviser,  color: 'var(--gold)' },
+                    { label: 'Adviser', val: stats.planCounts.adviser,  color: 'var(--accent-lt)' },
                   ].map(l => (
                     <div key={l.label} className={styles.planDistRow}>
                       <span className={styles.legendDot} style={{ background: l.color }} />
@@ -382,7 +382,7 @@ export default function Admin() {
                 <div className={styles.riskBars}>
                   {[
                     { label: 'High',   value: stats.highRisk, color: 'var(--risk-h)', bg: 'var(--risk-h-bg)' },
-                    { label: 'Medium', value: stats.medRisk,  color: 'var(--gold)',   bg: 'var(--risk-m-bg)' },
+                    { label: 'Medium', value: stats.medRisk,  color: 'var(--risk-m)', bg: 'var(--risk-m-bg)' },
                     { label: 'Low',    value: stats.lowRisk,  color: 'var(--risk-l)', bg: 'var(--risk-l-bg)' },
                   ].map(r => (
                     <div key={r.label} className={styles.riskBarRow}>
