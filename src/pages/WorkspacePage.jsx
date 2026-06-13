@@ -166,11 +166,11 @@ export default function WorkspacePage() {
                     onClick={() => navigate(`/negotiation/${neg.id}`)}>
                     <div className={styles.wcTop}>
                       <div className={styles.wcBadge}>
-                        {(neg.property_name || 'N')[0]?.toUpperCase()}
+                        {(neg.property_name?.replace(/^\d+_/, '') || 'N')[0]?.toUpperCase()}
                       </div>
                       <div className={styles.wcId}>
-                        <div className={styles.wcName}>{neg.property_name || 'Unnamed negotiation'}</div>
-                        <div className={styles.wcTn}>{ws.client_name || ws.name}</div>
+                        <div className={styles.wcName}>{(neg.property_name || 'Unnamed').replace(/^\d+_/, '').replace(/\.[^.]+$/, '').replace(/_/g, ' ')}</div>
+                        {ws.client_name && <div className={styles.wcTn}>{ws.client_name}</div>}
                       </div>
                       <span className={`${styles.statusChip} ${status.cls}`}>
                         <span className={styles.d} />
