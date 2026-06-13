@@ -4,34 +4,35 @@
   align-items: center;
   justify-content: center;
   padding: 100px 24px 60px;
+  background: var(--paper);
 }
 
 .card {
   width: 100%;
   max-width: 440px;
-  background: var(--white);
-  border: 1px solid var(--rule-soft);
-  border-radius: 2px;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
   padding: 48px 40px;
 }
 
 .kicker {
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--accent);
   margin-bottom: 12px;
 }
 
 .h1 {
-  font-family: 'DM Serif Display', serif;
-  font-size: 32px;
-  font-weight: 400;
+  font-family: var(--font);
+  font-size: 30px;
+  font-weight: 600;
   color: var(--ink);
-  letter-spacing: -0.3px;
+  letter-spacing: -0.025em;
   margin-bottom: 28px;
-  line-height: 1.15;
+  line-height: 1.1;
 }
 
 .googleBtn {
@@ -41,45 +42,45 @@
   justify-content: center;
   gap: 10px;
   padding: 11px;
-  background: #fff;
-  border: 1px solid var(--rule-soft);
-  border-radius: 2px;
+  background: var(--paper);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-sm);
   font-size: 14px;
-  font-weight: 400;
-  color: var(--ink-mid);
-  font-family: 'Inter', sans-serif;
+  font-weight: 600;
+  color: var(--ink-soft);
+  font-family: var(--font);
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.googleBtn:hover { border-color: var(--ink); box-shadow: 0 1px 6px rgba(0,0,0,0.08); }
+.googleBtn:hover { border-color: var(--muted); box-shadow: 0 1px 6px rgba(0,0,0,0.06); }
 
 .divider {
   display: flex;
   align-items: center;
   gap: 12px;
   margin: 20px 0;
-  color: var(--ink-light);
+  color: var(--muted);
   font-size: 12px;
 }
 .divider::before, .divider::after {
   content: '';
   flex: 1;
   height: 1px;
-  background: var(--rule);
+  background: var(--hair);
 }
 
 .form { display: flex; flex-direction: column; gap: 16px; }
 
 .field { display: flex; flex-direction: column; gap: 6px; }
-.field label { font-size: 13px; font-weight: 500; color: var(--ink-mid); }
+.field label { font-size: 13.5px; font-weight: 600; color: var(--ink-soft); }
 
 .error {
   background: var(--risk-h-bg);
-  border: 1px solid #e8c0c0;
-  border-radius: 2px;
+  border: 1px solid rgba(44,80,214,0.2);
+  border-radius: var(--radius-sm);
   padding: 10px 14px;
   font-size: 13px;
-  color: var(--risk-h);
+  color: var(--accent-deep);
 }
 
 .links {
@@ -88,25 +89,26 @@
   justify-content: center;
   margin-top: 20px;
   font-size: 13px;
+  flex-wrap: wrap;
 }
-.links a { color: var(--accent-mid); text-decoration: none; }
-.links a:hover { text-decoration: underline; }
-.links span { color: var(--rule); }
+.links a { color: var(--accent); font-weight: 600; }
+.links a:hover { color: var(--accent-deep); }
+.links span { color: var(--faint); }
 
 .confirmText {
   font-size: 15px;
-  color: var(--ink-mid);
-  line-height: 1.75;
-  font-weight: 300;
+  color: var(--ink-soft);
+  line-height: 1.7;
+  margin-bottom: 8px;
 }
-.confirmText strong { font-weight: 500; color: var(--ink); }
+.confirmText strong { font-weight: 600; color: var(--ink); }
 
-.inputError { border-color: var(--risk-h) !important; }
+.inputError { border-color: var(--accent) !important; }
 
 .fieldError {
   font-size: 12px;
-  color: var(--risk-h);
-  margin-top: 4px;
+  color: var(--accent-deep);
+  margin-top: 2px;
   display: block;
 }
 
@@ -132,33 +134,28 @@
 
 .strengthLabel {
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   min-width: 44px;
 }
 
+.switchText {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 12px;
+  font-family: var(--font);
+}
+
+.switchText a {
+  color: var(--accent);
+  font-weight: 600;
+}
+.switchText a:hover { color: var(--accent-deep); }
+
 @media (max-width: 600px) {
   .page { padding: 88px 16px 40px; }
   .card { padding: 32px 24px; }
   .h1 { font-size: 26px; }
-}
-
-.switchText {
-  font-size: 13px;
-  color: var(--ink-light);
-  text-align: center;
-  margin-top: 12px;
-  font-family: 'Inter', sans-serif;
-  font-weight: 300;
-}
-
-.switchText a {
-  color: var(--accent-mid);
-  text-decoration: none;
-  font-weight: 500;
-}
-
-.switchText a:hover {
-  text-decoration: underline;
 }
