@@ -208,3 +208,9 @@
 
 .sfBtn { border:none; background:transparent; font-family:var(--font); font-size:13px; font-weight:600; color:var(--ink-soft); padding:6px 13px; border-radius:7px; cursor:pointer; transition:all 0.15s; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
 .sfBtn:hover { color:var(--ink); }
+
+.viewReportBtn { background:var(--accent-soft); border:none; color:var(--accent-deep); font-size:12px; font-weight:700; cursor:pointer; font-family:var(--font); padding:5px 10px; border-radius:6px; white-space:nowrap; transition:all 0.15s; flex-shrink:0; }
+.viewReportBtn:hover { background:var(--accent); color:#fff; }
+
+.compareBtn { width:100%; margin-top:10px; padding:9px; background:var(--paper); border:1px solid var(--hair); border-radius:var(--radius-sm); font-size:13px; font-weight:600; color:var(--ink-soft); cursor:pointer; font-family:var(--font); transition:all 0.15s; text-align:center; }
+.compareBtn:hover { border-color:var(--accent); color:var(--accent); }

@@ -214,6 +214,12 @@ export default function NegotiationDetail() {
               <span className={styles.statusD} />
               {highCount > 0 ? 'Needs attention' : 'Reviewing'}
             </span>
+            {docs.length >= 2 && (
+              <button className="btn-outline btn-sm"
+                onClick={() => navigate(`/compare/${negId}`)}>
+                Compare versions
+              </button>
+            )}
             <button className="btn-outline btn-sm" onClick={handleAnalyseVersion}>
               + Add version
             </button>
@@ -391,18 +397,30 @@ export default function NegotiationDetail() {
             <div className={styles.sCard}>
               <h3>Documents <span className={styles.mv} onClick={handleAnalyseVersion} style={{ cursor: 'pointer' }}>+ Add</span></h3>
               <div className={styles.docs}>
-                {docs.map(doc => (
+                {docs.map((doc, di) => (
                   <div key={doc.id} className={styles.docrow}>
                     <div className={styles.ficSm}>{doc.filename?.split('.').pop()?.toUpperCase() || 'DOC'}</div>
                     <div className={styles.dm}>
-                      <div className={styles.docRole}>v{doc.version_number}</div>
+                      <div className={styles.docRole}>v{doc.version_number} {di === 0 ? '· current' : ''}</div>
                       <div className={styles.docVmeta}>{stripTimestamp(doc.filename)}</div>
                     </div>
                     {doc.overall_risk && (
                       <span className={`${styles.pillSm} ${riskPillCls[doc.overall_risk]}`}>{doc.overall_risk}</span>
                     )}
+                    {doc.reports?.[0]?.id && (
+                      <button className={styles.viewReportBtn}
+                        onClick={() => navigate(`/report/${doc.reports[0].id}`)}>
+                        View report →
+                      </button>
+                    )}
                   </div>
                 ))}
+                {docs.length >= 2 && (
+                  <button className={styles.compareBtn}
+                    onClick={() => navigate(`/compare/${negId}`)}>
+                    Compare versions →
+                  </button>
+                )}
                 {docs.length === 0 && <p className={styles.emptyNote}>No documents yet.</p>}
               </div>
             </div>
