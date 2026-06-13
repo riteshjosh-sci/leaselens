@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import Footer from '../components/Footer'
+import Nav from '../components/Nav'
 import styles from './ReportView.module.css'
 
 export default function ReportView() {
@@ -196,31 +197,18 @@ export default function ReportView() {
   const lowCount  = clauses.filter(c => c.danger === 'LOW').length
 
   return (
-    <div className={styles.appShell}>
+    <div className={styles.page}>
 
-      {/* APP BAR */}
-      <div className={styles.appBar}>
-        <div className={styles.appBarLeft}>
-          <button className={styles.logoBtn} onClick={() => navigate('/dashboard')}>
-            <svg className={styles.mark} width="22" height="22" viewBox="0 0 40 40" fill="none">
-              <path d="M5 13 V7 a2 2 0 0 1 2-2 h6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-              <path d="M27 5 h6 a2 2 0 0 1 2 2 v6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-              <path d="M35 27 v6 a2 2 0 0 1 -2 2 h-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-              <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-              <circle cx="20" cy="20" r="5.4" fill="currentColor"/>
-            </svg>
-            <span className={styles.wordmark}>Lease<span className={styles.lens}>Lens</span></span>
-          </button>
-          <nav className={styles.appNav}>
-            <button onClick={() => navigate('/dashboard')} className={styles.navLink}>← Dashboard</button>
-            {negotiation && <span className={styles.navSep}>›</span>}
-            {negotiation && <span className={styles.navCrumb}>{negotiation.property_name}</span>}
-          </nav>
-        </div>
-        <div className={styles.appBarRight}>
-          {logoUrl && <img src={logoUrl} alt="logo" className={styles.wsLogoSmall} />}
-          <div className={styles.avatar}>{user?.email?.[0]?.toUpperCase()}</div>
-        </div>
+      <Nav />
+      {/* BREADCRUMB */}
+      <div className={styles.crumb}>
+        <button onClick={() => navigate('/dashboard')}>Dashboard</button>
+        {negotiation?.workspace_id && <span>›</span>}
+        {negotiation?.workspace_id && <button onClick={() => navigate(`/workspace/${negotiation.workspace_id}`)}>Workspace</button>}
+        {negotiation && <span>›</span>}
+        {negotiation && <button onClick={() => navigate(`/negotiation/${negotiation.id}`)}>{negotiation.property_name || 'Negotiation'}</button>}
+        <span>›</span>
+        <span>{stripTimestamp(document?.filename)}</span>
       </div>
 
       {/* DOCUMENT BAR */}
