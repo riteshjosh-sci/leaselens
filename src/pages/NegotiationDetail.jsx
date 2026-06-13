@@ -13,11 +13,13 @@ export default function NegotiationDetail() {
   const { user } = useAuth()
   const navigate = useNavigate()
 
-  const [neg, setNeg]         = useState(null)
-  const [ws, setWs]           = useState(null)
-  const [docs, setDocs]       = useState([])
-  const [loading, setLoading] = useState(true)
+  const [neg, setNeg]           = useState(null)
+  const [ws, setWs]             = useState(null)
+  const [docs, setDocs]         = useState([])
+  const [loading, setLoading]   = useState(true)
   const [decisions, setDecisions] = useState({})
+  const [lifecycle, setLifecycle] = useState('reviewing')
+  const [savingDecision, setSavingDecision] = useState(false)
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -52,14 +54,66 @@ export default function NegotiationDetail() {
       setWs(wsData)
     }
 
+    // Load saved decisions
+    const { data: savedDecisions } = await supabase
+      .from('clause_decisions')
+      .select('clause_key, decision')
+      .eq('negotiation_id', negId)
+
+    if (savedDecisions?.length) {
+      const decMap = {}
+      savedDecisions.forEach(d => { decMap[d.clause_key] = d.decision })
+      setDecisions(decMap)
+    }
+
+    setLifecycle(negData.lifecycle || 'reviewing')
     setLoading(false)
   }
 
-  const toggleDecision = (clauseKey, action) => {
-    setDecisions(prev => ({
-      ...prev,
-      [clauseKey]: prev[clauseKey] === action ? 'open' : action
-    }))
+  const toggleDecision = async (clauseKey, action, clauseName) => {
+    const newDecision = decisions[clauseKey] === action ? 'open' : action
+    
+    // Optimistic update
+    const newDecisions = { ...decisions, [clauseKey]: newDecision }
+    setDecisions(newDecisions)
+
+    // Persist to DB
+    setSavingDecision(true)
+    try {
+      if (newDecision === 'open') {
+        await supabase.from('clause_decisions')
+          .delete()
+          .eq('negotiation_id', negId)
+          .eq('clause_key', clauseKey)
+      } else {
+        await supabase.from('clause_decisions')
+          .upsert({
+            negotiation_id: negId,
+            clause_key: clauseKey,
+            clause_name: clauseName,
+            decision: newDecision,
+          }, { onConflict: 'negotiation_id,clause_key' })
+      }
+
+      // Auto-advance lifecycle based on decisions
+      const hasCountering = Object.values(newDecisions).some(d => d === 'countering')
+      const autoLifecycle = hasCountering ? 'counter_prepared' : 'reviewing'
+      
+      // Only auto-advance forward, not backward from manual stages
+      if (['reviewing', 'counter_prepared'].includes(lifecycle)) {
+        await updateLifecycle(autoLifecycle)
+      }
+    } catch (e) {
+      console.error('Failed to save decision:', e)
+    }
+    setSavingDecision(false)
+  }
+
+  const updateLifecycle = async (newStage) => {
+    setLifecycle(newStage)
+    await supabase.from('negotiations')
+      .update({ lifecycle: newStage })
+      .eq('id', negId)
   }
 
   const handleAnalyseVersion = () => {
@@ -169,7 +223,7 @@ export default function NegotiationDetail() {
             <div className={styles.decide}>
               <button
                 className={`${styles.dcBtn} ${styles.dcAgree} ${dec === 'accepted' ? styles.dcOn : ''}`}
-                onClick={e => { e.stopPropagation(); toggleDecision(c.clauseKey, 'accepted') }}>
+                onClick={e => { e.stopPropagation(); toggleDecision(c.clauseKey, 'accepted', c.name) }}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                   <path d="M3 8l3 3 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
@@ -177,14 +231,14 @@ export default function NegotiationDetail() {
               </button>
               <button
                 className={`${styles.dcBtn} ${styles.dcCounter} ${dec === 'countering' ? styles.dcOn : ''}`}
-                onClick={e => { e.stopPropagation(); toggleDecision(c.clauseKey, 'countering') }}>
+                onClick={e => { e.stopPropagation(); toggleDecision(c.clauseKey, 'countering', c.name) }}>
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
                   <path d="M10 4L6 8l4 4M6 8h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 Counter this
               </button>
               <span className={styles.decideNote}>
-                {dec === 'countering' ? 'Added to response brief' : dec === 'accepted' ? 'Marked as agreed' : 'Choose how to respond'}
+                {savingDecision ? 'Saving…' : dec === 'countering' ? 'Added to response brief' : dec === 'accepted' ? 'Marked as agreed' : 'Choose how to respond'}
               </span>
             </div>
             <div className={styles.detailMeta}>
@@ -266,18 +320,29 @@ export default function NegotiationDetail() {
           </div>
         )}
 
-        {/* LIFECYCLE */}
+        {/* LIFECYCLE — clickable, persisted to DB */}
         <div className={styles.lifecycle}>
           <div className={styles.lcTop}>
             <span className={styles.lcT}>Negotiation status</span>
-            {countering.length > 0 && <span className={styles.lcNext}>Next: <b>send counters to agent</b></span>}
+            {lifecycle === 'counter_prepared' && <span className={styles.lcNext}>Next: <b>send counters to agent</b></span>}
+            {lifecycle === 'sent' && <span className={styles.lcNext}>Waiting for landlord response</span>}
+            {lifecycle === 'awaiting' && <span className={styles.lcNext}>Chase if no response within 5 business days</span>}
+            {lifecycle === 'agreed' && <span className={styles.lcNext} style={{color:'var(--risk-l)'}}>✓ Negotiation complete</span>}
           </div>
           <div className={styles.rail}>
             {LIFECYCLE.map((s, i) => {
-              const cur = countering.length > 0 ? 1 : 0
+              const lcIndex = { reviewing: 0, counter_prepared: 1, sent: 2, awaiting: 3, agreed: 4 }
+              const cur = lcIndex[lifecycle] ?? 0
               const cls = i < cur ? styles.stageDone : i === cur ? styles.stageCurrent : styles.stageUpcoming
+              // Only allow clicking forward on manual stages (sent, awaiting, agreed)
+              const manualStages = ['sent', 'awaiting', 'agreed']
+              const stageKey = ['reviewing', 'counter_prepared', 'sent', 'awaiting', 'agreed'][i]
+              const isClickable = manualStages.includes(stageKey) && i >= cur
               return (
-                <div key={s} className={`${styles.stage} ${cls}`}>
+                <div key={s}
+                  className={`${styles.stage} ${cls} ${isClickable ? styles.stageClickable : ''}`}
+                  onClick={() => isClickable && updateLifecycle(stageKey)}
+                  title={isClickable ? `Mark as ${s}` : ''}>
                   <div className={styles.stageLine} />
                   <div className={styles.stageNode}>
                     {i < cur && (

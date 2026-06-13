@@ -47,6 +47,9 @@
 .stageCurrent .stageNm { color:var(--ink); font-weight:700; }
 .stageUpcoming .stageNode { opacity:0.5; }
 .stageUpcoming .stageNm { opacity:0.5; }
+.stageClickable { cursor:pointer; }
+.stageClickable:hover .stageNode { border-color:var(--accent); opacity:1; }
+.stageClickable:hover .stageNm { opacity:1; color:var(--accent); }
 
 /* MAIN BODY */
 .wsBody { display:grid; grid-template-columns:1fr 300px; gap:22px; align-items:start; }
