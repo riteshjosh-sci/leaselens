@@ -25,8 +25,11 @@ export default function Home() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const observerRef = useRef(null)
+  const [menuOpen, setMenuOpen] = useState(false)
 
   useSEO({ title: 'Retail Lease & HOA Analysis for Australian Tenants', path: '/' })
+
+  const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
     // Reveal on scroll
@@ -36,8 +39,7 @@ export default function Home() {
     document.querySelectorAll(`.${styles.reveal}`).forEach(el => observerRef.current.observe(el))
 
     // Sticky nav border
-    const nav = document.getElementById('homeNav')
-    const onScroll = () => nav?.classList.toggle(styles.scrolled, window.scrollY > 8)
+    const onScroll = () => setScrolled(window.scrollY > 8)
     onScroll()
     window.addEventListener('scroll', onScroll, { passive: true })
     return () => { window.removeEventListener('scroll', onScroll); observerRef.current?.disconnect() }
@@ -51,7 +53,7 @@ export default function Home() {
     <div className={styles.page}>
 
       {/* NAV */}
-      <header className={styles.nav} id="homeNav">
+      <header className={`${styles.nav} ${scrolled ? styles.scrolled : ''}`}>
         <div className={`${styles.wrap} ${styles.navInner}`}>
           <Link to="/" className={styles.navLogo}>
             <ViewfinderMark size={30} />
@@ -77,22 +79,27 @@ export default function Home() {
               </>
             )}
           </div>
-          <button className={styles.navBurger} id="navBurger" aria-label="Open menu" aria-expanded="false">
-            <span /><span /><span />
+          <button className={styles.navBurger}
+            aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(o => !o)}>
+            <span style={menuOpen ? {transform:'translateY(7px) rotate(45deg)'} : {}} />
+            <span style={menuOpen ? {opacity:0} : {}} />
+            <span style={menuOpen ? {transform:'translateY(-7px) rotate(-45deg)'} : {}} />
           </button>
         </div>
-        <div className={styles.mobileMenu} id="mobileMenu" hidden>
-          <a href="#how">How it works</a>
-          <a href="#report">What you get</a>
-          <a href="#who">Who it's for</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#trust">Privacy</a>
+        {menuOpen && <div className={styles.mobileMenu}>
+          <a href="#how" onClick={() => setMenuOpen(false)}>How it works</a>
+          <a href="#report" onClick={() => setMenuOpen(false)}>What you get</a>
+          <a href="#who" onClick={() => setMenuOpen(false)}>Who it's for</a>
+          <a href="#pricing" onClick={() => setMenuOpen(false)}>Pricing</a>
+          <a href="#trust" onClick={() => setMenuOpen(false)}>Privacy</a>
           {user
-            ? <button className={`${styles.btn} ${styles.btnInk}`} onClick={handleDashboard}>Dashboard</button>
-            : <><button className={styles.signinMobile} onClick={handleSignIn}>Sign in</button>
-               <button className={`${styles.btn} ${styles.btnInk}`} onClick={handleCTA}>Scan my document</button></>
+            ? <button className={`${styles.btn} ${styles.btnInk}`} onClick={() => { handleDashboard(); setMenuOpen(false) }}>Dashboard</button>
+            : <><button className={styles.signinMobile} onClick={() => { handleSignIn(); setMenuOpen(false) }}>Sign in</button>
+               <button className={`${styles.btn} ${styles.btnInk}`} onClick={() => { handleCTA(); setMenuOpen(false) }}>Scan my document</button></>
           }
-        </div>
+        </div>}
       </header>
 
       {/* HERO */}
