@@ -50,7 +50,7 @@
 .btnInk:hover { background:#000; }
 
 /* ── MAIN LAYOUT ── */
-.appMain { max-width:var(--maxw); margin:0 auto; padding:32px 28px 80px; display:grid; grid-template-columns:1fr 320px; gap:28px; align-items:start; }
+.appMain { max-width:var(--maxw); margin:0 auto; padding:32px 28px 80px; display:grid; grid-template-columns:1fr 320px; gap:28px; align-items:start; overflow-x:hidden; }
 
 /* ── BRIEFING ── */
 .briefingHead { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px; }
@@ -67,7 +67,7 @@
 /* ── CLAUSE LIST ── */
 .clauseList { display:flex; flex-direction:column; gap:10px; margin-bottom:28px; }
 
-.clauseItem { background:var(--card); border:1px solid var(--hair); border-radius:var(--radius); overflow:hidden; transition:border-color 0.2s, box-shadow 0.2s; }
+.clauseItem { background:var(--card); border:1px solid var(--hair); border-radius:var(--radius); overflow:hidden; transition:border-color 0.2s, box-shadow 0.2s; min-width:0; width:100%; }
 .clauseItem:hover { border-color:rgba(28,25,22,0.18); }
 .clauseOpen { border-color:rgba(28,25,22,0.18) !important; box-shadow:0 14px 40px -26px rgba(28,25,22,0.4); }
 
@@ -89,7 +89,7 @@
 /* ── CLAUSE DETAIL ── */
 .clauseDetail { padding:0 22px 22px; border-top:1px solid var(--hair-lt); }
 
-.docQuote { background:var(--paper); border-radius:10px; padding:16px 18px; margin:16px 0 8px; font-size:15.5px; font-weight:500; line-height:1.55; color:var(--ink); border:1px solid var(--hair-lt); }
+.docQuote { background:var(--paper); border-radius:10px; padding:16px 18px; margin:16px 0 8px; font-size:15.5px; font-weight:500; line-height:1.55; color:var(--ink); border:1px solid var(--hair-lt); word-break:break-word; overflow:hidden; }
 .qref { display:block; font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--accent); margin-bottom:9px; }
 
 .analysisBlock { padding:16px 2px 0; }
@@ -177,14 +177,42 @@
 @media (max-width:680px) {
   .appBar { padding:0 16px; height:52px; }
   .appNav { display:none; }
+  .wordmark { font-size:17px; }
+  .docBar { top:52px; }
   .docBarInner { padding:12px 16px; flex-direction:column; align-items:flex-start; gap:10px; }
+  .docTitle { font-size:16px; }
   .docActions { width:100%; flex-wrap:wrap; }
-  .btnOutline, .btnInk { flex:1; justify-content:center; }
-  .appMain { padding:16px 16px 60px; }
-  .clauseSummary { padding:14px 16px; gap:10px; }
-  .clauseName { font-size:14.5px; }
+  .btnOutline, .btnInk { flex:1; justify-content:center; min-width:0; font-size:12px; padding:8px 10px; }
+  .appMain { padding:16px 14px 60px; }
+  .clauseSummary { padding:14px 14px; gap:10px; }
+  .clauseName { font-size:14px; }
+  .clauseRef { font-size:10.5px; }
   .pill { display:none; }
-  .clauseDetail { padding:0 16px 16px; }
-  .filterTabs { width:100%; }
-  .filterTab { flex:1; justify-content:center; padding:6px 8px; font-size:12px; }
+  .clauseDetail { padding:0 14px 16px; overflow:hidden; }
+  .docQuote { font-size:14px; padding:12px 14px; word-break:break-word; overflow:hidden; }
+  .analysisBlock p { font-size:14px; }
+  .counterBlock { padding:12px 14px; }
+  .counterBlock p { font-size:14px; }
+  .legBlock { padding:10px 12px; }
+  .filterTabs { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .filterTabs::-webkit-scrollbar { display:none; }
+  .filterTab { flex-shrink:0; padding:6px 10px; font-size:12px; }
+  .briefingHead { flex-direction:column; align-items:flex-start; gap:10px; }
+  .summaryText { font-size:13px; }
+  .nextSteps { padding:18px 16px; }
+  .nextSteps li { font-size:13px; }
+  .clauseItem { min-width:0; overflow:hidden; }
+}
+
+@media (max-width:480px) {
+  .appBar { padding:0 14px; }
+  .appMain { padding:12px 12px 60px; }
+  .clauseSummary { padding:12px; gap:8px; }
+  .clauseDetail { padding:0 12px 14px; }
+  .docQuote { font-size:13px; padding:10px 12px; }
+  .summaryCol { flex-direction:column; }
+  .summaryCol > * { flex:none; width:100%; }
+  .scoreNum { font-size:32px; }
+  .sCard { padding:16px; }
+  .nextSteps { padding:16px 14px; }
 }
