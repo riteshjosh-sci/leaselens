@@ -1,296 +1,419 @@
-import { useNavigate } from 'react-router-dom'
-import { useState } from 'react'
-import { supabase } from '../lib/supabase'
-import Nav from '../components/Nav'
+import { useEffect, useRef } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import Footer from '../components/Footer'
 import styles from './Home.module.css'
+import { useSEO } from '../hooks/useSEO'
 
-function WaitlistForm() {
-  const [email, setEmail] = useState('')
-  const [status, setStatus] = useState('') // 'success' | 'error' | 'duplicate'
-  const [loading, setLoading] = useState(false)
+const ViewfinderMark = ({ size = 30, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 40 40" fill="none" style={{ color }}>
+    <path d="M5 13 V7 a2 2 0 0 1 2-2 h6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
+    <path d="M27 5 h6 a2 2 0 0 1 2 2 v6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
+    <path d="M35 27 v6 a2 2 0 0 1 -2 2 h-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
+    <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
+    <circle cx="20" cy="20" r="5.4" fill="currentColor"/>
+  </svg>
+)
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!email.trim()) return
-    setLoading(true)
-    setStatus('')
-
-    const { error } = await supabase.from('waitlist').insert({ email: email.trim().toLowerCase() })
-
-    if (error) {
-      if (error.code === '23505') {
-        setStatus('duplicate')
-      } else {
-        setStatus('error')
-      }
-    } else {
-      setStatus('success')
-      setEmail('')
-    }
-    setLoading(false)
-  }
-
-  return (
-    <div style={{ maxWidth: 560, margin: '0 auto', textAlign: 'center', padding: '0 24px' }}>
-      <div style={{ fontSize: 10, letterSpacing: '0.18em', textTransform: 'uppercase', color: 'var(--gold)', fontWeight: 500, marginBottom: 14 }}>
-        Early access
-      </div>
-      <h2 style={{ fontFamily: "'DM Serif Display', serif", fontSize: 36, fontWeight: 400, color: 'var(--ink)', marginBottom: 12, letterSpacing: '-0.3px' }}>
-        Join the waitlist
-      </h2>
-      <p style={{ fontSize: 16, color: 'var(--ink-mid)', lineHeight: 1.75, fontWeight: 300, marginBottom: 28 }}>
-        LeaseLens is currently in private beta. Join the waitlist and we will be in touch when access opens.
-      </p>
-      {status === 'success' ? (
-        <div style={{ background: 'var(--risk-l-bg)', border: '1px solid #c0e0c0', borderRadius: 2, padding: '16px 20px', fontSize: 14, color: 'var(--risk-l)', fontWeight: 500 }}>
-          You are on the list. We will be in touch soon.
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 10, maxWidth: 440, margin: '0 auto' }}>
-          <input
-            type="email"
-            className="input"
-            value={email}
-            onChange={e => { setEmail(e.target.value); setStatus('') }}
-            placeholder="your@email.com"
-            required
-            style={{ flex: 1 }}
-          />
-          <button className="btn-primary" disabled={loading} style={{ whiteSpace: 'nowrap' }}>
-            {loading ? 'Joining...' : 'Join waitlist'}
-          </button>
-        </form>
-      )}
-      {status === 'duplicate' && (
-        <p style={{ fontSize: 13, color: 'var(--ink-light)', marginTop: 10 }}>You are already on the waitlist.</p>
-      )}
-      {status === 'error' && (
-        <p style={{ fontSize: 13, color: 'var(--risk-h)', marginTop: 10 }}>Something went wrong. Please try again.</p>
-      )}
-    </div>
-  )
-}
+const CheckIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+    <path d="M3 8.5l3 3 7-7.5" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
 
 export default function Home() {
+  const { user } = useAuth()
   const navigate = useNavigate()
+  const observerRef = useRef(null)
+
+  useSEO({ title: 'Retail Lease & HOA Analysis for Australian Tenants', path: '/' })
+
+  useEffect(() => {
+    // Reveal on scroll
+    observerRef.current = new IntersectionObserver((entries) => {
+      entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add(styles.in); observerRef.current.unobserve(e.target) } })
+    }, { threshold: 0.12, rootMargin: '0px 0px -8% 0px' })
+    document.querySelectorAll(`.${styles.reveal}`).forEach(el => observerRef.current.observe(el))
+
+    // Sticky nav border
+    const nav = document.getElementById('homeNav')
+    const onScroll = () => nav?.classList.toggle(styles.scrolled, window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { window.removeEventListener('scroll', onScroll); observerRef.current?.disconnect() }
+  }, [])
+
+  const handleCTA = () => navigate('/analyser')
+  const handleSignIn = () => navigate('/login')
+  const handleDashboard = () => navigate('/dashboard')
 
   return (
-    <>
-      <Nav />
+    <div className={styles.page}>
+
+      {/* NAV */}
+      <header className={styles.nav} id="homeNav">
+        <div className={`${styles.wrap} ${styles.navInner}`}>
+          <Link to="/" className={styles.navLogo}>
+            <ViewfinderMark size={30} />
+            <span className={styles.wordmark}>Lease<span className={styles.lens}>Lens</span></span>
+          </Link>
+          <nav className={styles.navLinks}>
+            <a href="#how">How it works</a>
+            <a href="#report">What you get</a>
+            <a href="#who">Who it's for</a>
+            <a href="#pricing">Pricing</a>
+            <a href="#trust">Privacy</a>
+          </nav>
+          <div className={styles.navCta}>
+            {user ? (
+              <>
+                <button className={styles.signin} onClick={handleDashboard}>Dashboard</button>
+                <button className={`${styles.btn} ${styles.btnInk}`} onClick={handleCTA}>Scan my document</button>
+              </>
+            ) : (
+              <>
+                <button className={styles.signin} onClick={handleSignIn}>Sign in</button>
+                <button className={`${styles.btn} ${styles.btnInk}`} onClick={handleCTA}>Scan my document</button>
+              </>
+            )}
+          </div>
+          <button className={styles.navBurger} id="navBurger" aria-label="Open menu" aria-expanded="false">
+            <span /><span /><span />
+          </button>
+        </div>
+        <div className={styles.mobileMenu} id="mobileMenu" hidden>
+          <a href="#how">How it works</a>
+          <a href="#report">What you get</a>
+          <a href="#who">Who it's for</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#trust">Privacy</a>
+          {user
+            ? <button className={`${styles.btn} ${styles.btnInk}`} onClick={handleDashboard}>Dashboard</button>
+            : <><button className={styles.signinMobile} onClick={handleSignIn}>Sign in</button>
+               <button className={`${styles.btn} ${styles.btnInk}`} onClick={handleCTA}>Scan my document</button></>
+          }
+        </div>
+      </header>
 
       {/* HERO */}
-      <section className={styles.heroWrap}>
-        <div className={styles.hero}>
-          <div className={styles.heroContent}>
-            <div className={styles.kicker}>
-              <span className={styles.kickerLine} />
-              Lease intelligence for retail tenants
-            </div>
-            <h1 className={styles.h1}>
-              Level the playing field.<br /><em>An expert in your corner.</em>
+      <section className={styles.hero}>
+        <div className={`${styles.wrap} ${styles.heroGrid}`}>
+          <div className={styles.heroCopy}>
+            <span className={styles.eyebrow}>Lease intelligence</span>
+            <h1 className={styles.heroH1}>
+              <span className={styles.ln}>Read every clause</span>
+              <span className={styles.ln}>the way your</span>
+              <span className={`${styles.ln} ${styles.accent}`}>lawyer would.</span>
             </h1>
-            <p className={styles.heroSub}>
-              Guidance throughout the lease negotiation process for retailers. LeaseLens gives you the clarity on how to structure your retail lease to give your business the best chance of success.
-            </p>
+            <p className={styles.heroSub}>LeaseLens reads your retail lease or heads of agreement like an experienced negotiator — flagging what matters, explaining what it means, and showing you exactly how to respond.</p>
             <div className={styles.heroActions}>
-              <button className="btn-primary" onClick={() => navigate('/analyser')}>
-                Scan my document →
-              </button>
-              <a href="#how" className="btn-text">See how it works</a>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleCTA}>Scan my document →</button>
+              <a className={`${styles.btn} ${styles.btnGhost}`} href="#how"><span className={styles.ul}>See how it works</span></a>
             </div>
             <div className={styles.heroTrust}>
-              <div className={styles.trustPill}><span className={styles.dot} />Immediate feedback on Australian leases, HOAs and agreements</div>
-              <div className={styles.trustPill}><span className={styles.dot} />Your document stays private</div>
-              <div className={styles.trustPill}><span className={styles.dot} />All Australian states covered</div>
+              <div className={styles.trustDot}>Considered analysis of Australian leases, HOAs &amp; renewal offers</div>
+              <div className={styles.trustRow}>
+                <div className={styles.trustDot}>Your document stays private</div>
+                <div className={styles.trustDot}>Every state &amp; territory covered</div>
+              </div>
             </div>
           </div>
 
-          <div className={styles.heroVisual}>
-            <div className={styles.hvBar}>
-              <span className={styles.hvBarTitle}>Document analysis</span>
-              <span className={styles.hvStatus}>Scan complete</span>
+          {/* Analysis card */}
+          <div className={`${styles.card} ${styles.analysis}`}>
+            <div className={styles.analysisHead}>
+              <span className={styles.analysisT}>DOCUMENT ANALYSIS</span>
+              <span className={styles.analysisS}>Scan complete</span>
             </div>
-            <div className={styles.hvBody}>
-              <div className={styles.hvDocRow}>
-                <div className={styles.hvDocIcon}>
-                  <svg width="14" height="18" viewBox="0 0 14 18" fill="none" stroke="rgba(255,255,255,0.8)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M8 1H2a1 1 0 00-1 1v14a1 1 0 001 1h10a1 1 0 001-1V6L8 1z"/>
-                    <path d="M8 1v5h5"/>
-                  </svg>
-                </div>
-                <div>
-                  <div className={styles.hvDocName}>HOA_Melbourne_CBD_V2.pdf</div>
-                  <div className={styles.hvDocMeta}>Uploaded · 847kb · Analysed in 22s</div>
+            <div className={styles.analysisBody}>
+              <div className={styles.fileRow}>
+                <div className={styles.fileIco}>PDF</div>
+                <div className={styles.fileMeta}>
+                  <span className={styles.fileN}>HOA_Melbourne_CBD_v2.pdf</span>
+                  <span className={styles.fileD}>Uploaded · 847 kb · Analysed in 22s</span>
                 </div>
               </div>
-              <div className={styles.hvScanLabel}>Issues identified, 6 clauses reviewed</div>
+              <div className={styles.issuesLabel}>6 CLAUSES REVIEWED · 5 FLAGGED FOR ATTENTION</div>
+              <div className={styles.risks}>
+                {[
+                  { label: 'Ratchet rent review', tag: 'Counter to CPI or market', level: 'high' },
+                  { label: 'Incentive clawback', tag: 'Request removal', level: 'high' },
+                  { label: 'Make-good obligations', tag: 'Limit scope & condition', level: 'med' },
+                  { label: 'Outgoings — new build', tag: 'Negotiate a cap', level: 'med' },
+                  { label: 'Permitted use', tag: 'Standard — proceed', level: 'low' },
+                ].map((r, i) => (
+                  <div key={i} className={styles.risk}>
+                    <span className={styles.riskBar} style={{ background: r.level === 'high' ? 'var(--accent)' : r.level === 'med' ? 'var(--risk-m)' : 'var(--risk-l)' }} />
+                    <span className={styles.riskLbl}>{r.label}</span>
+                    <span className={styles.riskTag}>{r.tag}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className={styles.analysisFoot}>
+              <span className={styles.analysisSum}><b className={styles.accent}>2 high</b> · 2 medium · 1 low priority</span>
+              <button className={`${styles.accent} ${styles.analysisCta}`} onClick={handleCTA}>UNLOCK FULL REPORT →</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* HOW IT WORKS */}
+      <section id="how" className={styles.section}>
+        <div className={styles.wrap}>
+          <div className={`${styles.sectionHead} ${styles.reveal}`}>
+            <span className={styles.eyebrow}>How it works</span>
+            <h2>Three steps between an unread lease and a confident position.</h2>
+          </div>
+          <div className={styles.steps}>
+            {[
+              { n: '01', h: 'Upload your document', p: 'Drop in a retail lease, heads of agreement, or renewal offer — PDF or Word, from any Australian state. Nothing to install, no account required to start.' },
+              { n: '02', h: 'We read it like a negotiator', p: 'LeaseLens reviews every clause against retail tenancy legislation and the outcomes of thousands of real leases — separating what\'s standard from what\'s aggressive, and what\'s quietly negotiable.' },
+              { n: '03', h: 'Negotiate from knowledge', p: 'You get the exact clauses, the risk in plain English, and a considered counter-position for each — ready to take straight into the conversation.' },
+            ].map((s, i) => (
+              <div key={i} className={`${styles.step} ${styles.reveal}`}>
+                <span className={styles.stepNum}>{s.n}</span>
+                <div className={styles.stepRule} />
+                <h3>{s.h}</h3>
+                <p>{s.p}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* WHAT YOU GET */}
+      <section id="report" className={`${styles.section} ${styles.sectionAlt}`}>
+        <div className={styles.wrap}>
+          <div className={styles.report}>
+            <div className={`${styles.reportAside} ${styles.reveal}`}>
+              <span className={styles.eyebrow}>What you get</span>
+              <h2>Not a risk score. A briefing.</h2>
+              <p>Every flag is a complete picture: the clause quoted from your document, what it actually means, why it matters to you, and a specific response you can put on the table.</p>
+              <div className={styles.reportList}>
+                {[
+                  ['The clause, verbatim', '— quoted with its section reference, never paraphrased.'],
+                  ['Plain-English meaning', '— what it commits you to, without the legalese.'],
+                  ['Why it matters', '— the real-world cost or exposure, in context.'],
+                  ['A suggested counter', '— a concrete position, grounded in legislation.'],
+                ].map(([b, t], i) => (
+                  <div key={i} className={styles.reportItem}>
+                    <span className={styles.reportK}>✓</span>
+                    <span className={styles.reportTx}><b>{b}</b>{t}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className={`${styles.clauseCard} ${styles.reveal}`}>
+              <div className={styles.clauseTop}>
+                <span className={styles.clauseRef}>CLAUSE 4.2 — RENT REVIEW</span>
+                <span className={`${styles.pill} ${styles.pillHigh}`}>High priority</span>
+              </div>
+              <div className={styles.quote}>
+                "On each review date the annual rent shall be the greater of the rent payable in the preceding year increased by CPI, or the current market rent as determined by the Lessor's valuer."
+              </div>
               {[
-                { risk: 'h', name: 'Ratchet rent review', hint: 'Suggest counter to...' },
-                { risk: 'h', name: 'Incentive clawback', hint: 'Request removal of...' },
-                { risk: 'm', name: 'Make-good obligations', hint: 'Limit scope to...' },
-                { risk: 'm', name: 'Outgoings, new build', hint: 'Consider gross lease...' },
-                { risk: 'l', name: 'Personal guarantee', hint: 'Standard, propose...' },
-              ].map((c, i) => (
-                <div className={styles.hvClauseRow} key={i}>
-                  <div className={`${styles.hvRiskBar} ${styles['hvRb' + c.risk.toUpperCase()]}`} />
-                  <div className={styles.hvClauseName}>{c.name}</div>
-                  <div className={styles.hvBlurred}>{c.hint}</div>
+                { h: 'What this means', act: false, p: 'This is a "ratchet" clause. Rent can rise to market or CPI — whichever is higher — but the wording prevents it from ever falling, even if the market softens. The Lessor also nominates the valuer.' },
+                { h: 'Why it matters', act: false, p: 'Over a 5-year term in a declining market you could pay well above market rent with no mechanism to correct it. Ratchet clauses are prohibited in several states\' retail leasing legislation.' },
+                { h: 'Suggested counter', act: true, p: 'Request the "greater of" be struck so reviews track CPI or market alone, and that any market valuation use an independent valuer agreed by both parties. Cite the prohibition on ratchet provisions in your state\'s Retail Leases Act.' },
+              ].map((s, i) => (
+                <div key={i} className={styles.clauseSection}>
+                  <span className={`${styles.clauseH} ${s.act ? styles.clauseHAct : ''}`}>{s.h}</span>
+                  <p>{s.p}</p>
                 </div>
               ))}
             </div>
-            <div className={styles.hvFooter}>
-              <span className={styles.hvFooterText}>2 high · 2 medium · 1 low risk</span>
-              <span className={styles.hvFooterBtn} onClick={() => navigate('/analyser')}>Unlock full report →</span>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* VALUE STRIP */}
-      <div className={styles.valueStrip}>
-        <div className={styles.valueInner}>
-          {[
-            { kicker: 'Identify', title: 'Spot the traps before you sign', body: 'Clauses landlords routinely include, ratchet reviews, clawbacks, demolition rights, identified and explained before they become your problem.' },
-            { kicker: 'Protect', title: 'Secure flexibility in your terms', body: 'Know which clauses to push back on and what to ask for, exit rights, permitted use, make-good carve-outs, so you negotiate from a position of knowledge.' },
-            { kicker: 'Benchmark', title: 'See how your deal compares', body: 'Your rent, incentives and outgoings benchmarked against market, so you know whether you are being offered a fair deal or an unfair one.' },
-            { kicker: 'Grow', title: 'Protect the business you\'re building', body: 'A lease signed on the right terms is a foundation for growth. A lease signed on the wrong terms compounds against you for years.' },
-          ].map((v, i) => (
-            <div className={styles.vsTile} key={i}>
-              <div className={styles.vsKicker}>{v.kicker}</div>
-              <h3>{v.title}</h3>
-              <p>{v.body}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* HOW IT WORKS */}
-      <div className={styles.sectionWrap} id="how">
-        <div className={styles.section}>
-          <div className={styles.sectionKicker}><span className={styles.kickerLine} />How it works</div>
-          <h2 className={styles.h2}>Walk into every<br />negotiation prepared.</h2>
-          <p className={styles.sectionSub}>LeaseLens reads your HOA or lease the way an experienced professional would, identifying what matters, explaining what it means, and guiding you on how to respond.</p>
-          <div className={styles.steps}>
+      {/* WHO IT'S FOR */}
+      <section id="who" className={styles.section}>
+        <div className={styles.wrap}>
+          <div className={`${styles.sectionHead} ${styles.reveal}`}>
+            <span className={styles.eyebrow}>Who it's for</span>
+            <h2>Whether it's your first lease or your fortieth this year.</h2>
+          </div>
+          <div className={styles.audience}>
             {[
-              { num: '01', title: 'Upload your document', body: 'Drag and drop your HOA or lease. PDF or Word document. Your document is analysed in seconds and results are returned immediately.' },
-              { num: '02', title: 'Receive your risk scan', body: 'LeaseLens identifies how many clauses warrant attention and at what level. You see the shape of the issue before you commit to the full report.' },
-              { num: '03', title: 'Review the full analysis', body: 'Every relevant clause quoted directly from your document, the risk explained in plain English, and a considered response you can take into the negotiation.' },
-            ].map((s, i) => (
-              <div className={styles.step} key={i}>
-                <div className={styles.stepNum}>{s.num}</div>
-                <h3>{s.title}</h3>
-                <p>{s.body}</p>
+              {
+                role: 'Retailers & business owners',
+                h: 'Sign the biggest contract your business holds — with your eyes open.',
+                lead: 'You don\'t need a legal background. LeaseLens translates the lease into plain language and tells you what to push back on, so you walk in informed instead of hopeful.',
+                items: ['Understand exactly what you\'re agreeing to before you sign', 'Know which terms are standard and which are worth a fight', 'Spend your solicitor\'s time on the issues that actually matter'],
+              },
+              {
+                role: 'Tenant reps & negotiators',
+                h: 'Triage a lease in minutes, and back every position with evidence.',
+                lead: 'Built for the professionals who do this all day. Cut review time without cutting corners, and show clients precisely where you added value.',
+                items: ['First-pass review of a full lease in minutes, not hours', 'Legislation-referenced counters for every flagged clause', 'A clear, client-ready summary you can send as-is'],
+              },
+            ].map((a, i) => (
+              <div key={i} className={`${styles.audCard} ${styles.reveal}`}>
+                <span className={styles.audRole}>{a.role}</span>
+                <h3>{a.h}</h3>
+                <p className={styles.audLead}>{a.lead}</p>
+                <ul>
+                  {a.items.map((item, j) => <li key={j}>{item}</li>)}
+                </ul>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* WHAT YOU GET */}
-      <div className={styles.whatSection} id="what">
-        <div className={styles.whatInner}>
-          <div className={styles.sectionKicker}><span className={styles.kickerLine} />What you get</div>
-          <h2 className={styles.h2}>The insight you need at every stage of the process.</h2>
-          <p className={styles.sectionSub}>Built from a wide range of retail leasing data across Australian shopping centres, high streets, and mixed-use precincts.</p>
-          <div className={styles.whatGrid}>
-            {[
-              { num: '01', title: 'Clause-by-clause analysis', body: 'Every relevant clause quoted directly from your document with its section reference. The risk explained, the context provided, and a response suggested, in plain English.' },
-              { num: '02', title: 'Considered counter positions', body: 'Not warnings, responses. LeaseLens tells you what a reasonable counter looks like for each issue, framed the way an experienced tenant representative would frame it.' },
-              { num: '03', title: 'State legislation cross-referenced', body: 'Every analysis is checked against retail tenancy legislation in your state or territory. Where the law supports your position, you will know about it.' },
-              { num: '04', title: 'Analysis across every revision', body: 'The full lease negotiation process can be lengthy and run across multiple document versions. Analyse every revision as it arrives and track what has changed.' },
-            ].map((c, i) => (
-              <div className={styles.whatCard} key={i}>
-                <div className={styles.whatCardNum}>{c.num}</div>
-                <h3>{c.title}</h3>
-                <p>{c.body}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* PRICING */}
-      <div className={styles.pricingWrap} id="pricing">
-        <div className={styles.pricingSection}>
-          <div className={styles.sectionKicker}><span className={styles.kickerLine} />Pricing</div>
-          <h2 className={styles.h2}>A fraction of the cost of getting it wrong.</h2>
-          <p className={styles.sectionSub}>A single clause missed in a five-year lease can cost tens of thousands. LeaseLens costs less than one hour of specialist advice.</p>
-          <div className={styles.pricingGrid}>
-            <div className={styles.pricingCard}>
-              <div className={styles.pricingTier}>One-off report</div>
-              <div className={styles.pricingPrice}><sup>$</sup>49</div>
-              <p className={styles.pricingDesc}>A single full analysis. No subscription required.</p>
-              <div className={styles.pricingRule} />
-              <ul className={styles.pricingFeatures}>
-                {['Free risk scan included', 'Full clause-by-clause report', 'Counter positions for each issue', 'Downloadable PDF', 'All Australian states'].map(f => <li key={f}>{f}</li>)}
-              </ul>
-              <button className={styles.pricingBtn} onClick={() => navigate('/analyser')}>Get one report</button>
-            </div>
-            <div className={`${styles.pricingCard} ${styles.featured}`}>
-              <div className={styles.pricingTier}>Monthly</div>
-              <div className={styles.pricingPrice}><sup>$</sup>99<sub>/mo</sub></div>
-              <p className={styles.pricingDesc}>Unlimited analyses across the full lease negotiation process.</p>
-              <div className={styles.pricingRule} />
-              <ul className={styles.pricingFeatures}>
-                {['Unlimited HOA and lease analyses', 'Full reports on every revision', 'Document history and version tracking', 'Cancel anytime'].map(f => <li key={f}>{f}</li>)}
-              </ul>
-              <button className={`${styles.pricingBtn} ${styles.pricingBtnFeatured}`} onClick={() => navigate('/signup')}>Start monthly plan</button>
-            </div>
-            <div className={styles.pricingCard}>
-              <div className={styles.pricingTier}>Professional</div>
-              <div className={styles.pricingPrice}><sup>$</sup>299<sub>/mo</sub></div>
-              <p className={styles.pricingDesc}>For tenant representatives managing multiple client negotiations.</p>
-              <div className={styles.pricingRule} />
-              <ul className={styles.pricingFeatures}>
-                {['Everything in Monthly', 'Multiple client workspaces', 'Branded PDF reports', 'Priority analysis', 'Early access to new features'].map(f => <li key={f}>{f}</li>)}
-              </ul>
-              <button className={styles.pricingBtn}>Contact us</button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* TRUST */}
-      {/* WAITLIST */}
-      <div className={styles.waitlistSection} id="waitlist">
-        <WaitlistForm />
-      </div>
-
-      <div className={styles.trustSection}>
-        <div className={styles.trustInner}>
-          <div style={{ marginBottom: 48 }}>
-            <div className={styles.sectionKicker}><span className={styles.kickerLine} />Security and confidentiality</div>
-            <h2 className={styles.h2} style={{ fontSize: 40, marginBottom: 16 }}>Your document. Handled with care.</h2>
-            <p className={styles.sectionSub} style={{ marginBottom: 0 }}>A retail lease or heads of agreement is a confidential commercial document. LeaseLens is built on enterprise-grade security infrastructure.</p>
+      {/* TRUST — dark */}
+      <section id="trust" className={`${styles.section} ${styles.sectionDark}`}>
+        <div className={styles.wrap}>
+          <div className={`${styles.sectionHead} ${styles.reveal}`}>
+            <span className={`${styles.eyebrow} ${styles.eyebrowLt}`}>Why you can trust it</span>
+            <h2 style={{ color: 'var(--paper)' }}>Confidential by default. Grounded in law.</h2>
           </div>
           <div className={styles.trustGrid}>
             {[
-              { num: '01', title: 'Encrypted in transit', body: 'All documents are transmitted using TLS encryption, the same standard used by Australian banks and government services.' },
-              { num: '02', title: 'Practical intelligence, not legal advice', body: 'LeaseLens provides the practical guidance an experienced tenant representative gives a client. For formal review before execution, engage a qualified solicitor.' },
-              { num: '03', title: 'Your confidentiality obligations remain yours', body: 'Most HOAs and leases include a confidentiality clause. Before uploading, check whether your document restricts disclosure to third parties.' },
-              { num: '04', title: 'Built for Australia', body: 'Every analysis is cross-referenced against retail tenancy legislation across all eight Australian states and territories.' },
+              { h: 'Your document stays yours', p: 'Encrypted in transit and at rest. We never sell your documents and never use them to train models. Delete any file permanently, any time, with one click.' },
+              { h: 'Anchored in legislation', p: 'Every flag is cross-referenced to the Retail Leases Act that governs your state or territory — so each suggested position rests on the law, not opinion.' },
+              { h: 'Clear about its limits', p: 'LeaseLens makes you a sharper, better-prepared client. It doesn\'t pretend to be your solicitor — and it tells you plainly when an issue warrants formal legal advice.' },
             ].map((t, i) => (
-              <div className={styles.trustCard} key={i}>
-                <div className={styles.trustNum}>{t.num}</div>
-                <h3>{t.title}</h3>
-                <p>{t.body}</p>
+              <div key={i} className={`${styles.trustItem} ${styles.reveal}`}>
+                <h3>{t.h}</h3>
+                <div className={styles.trustRule} />
+                <p>{t.p}</p>
               </div>
             ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* CTA */}
-      <section className={styles.ctaSection}>
-        <h2 className={styles.ctaH2}>Read every word.<br /><em>Miss nothing.</em></h2>
-        <div className={styles.ctaRight}>
-          <p>Upload your document now. Free scan, results in seconds. Understand exactly where you stand before you respond to the landlord.</p>
-          <button className="btn-primary" onClick={() => navigate('/analyser')}>Scan my document free →</button>
+      {/* PRICING */}
+      <section id="pricing" className={styles.section}>
+        <div className={styles.wrap}>
+          <div className={`${styles.sectionHead} ${styles.reveal}`}>
+            <span className={styles.eyebrow}>Pricing</span>
+            <h2>Pay for a scan. Or negotiate all year.</h2>
+          </div>
+          <div className={styles.pricing}>
+            {[
+              {
+                tier: 'Single scan', amt: '$49', per: '/ document',
+                blurb: 'For the one lease in front of you, right now.',
+                items: ['Full clause-by-clause report', 'Suggested counters for every flag', 'Exportable PDF summary'],
+                cta: 'Scan one document', featured: false,
+              },
+              {
+                tier: 'Professional', amt: '$149', per: '/ month',
+                blurb: 'For reps and advisors reviewing leases regularly.',
+                items: ['Unlimited document scans', 'Client-ready branded summaries', 'Clause comparison across versions', 'Priority analysis & support'],
+                cta: 'Start free trial', featured: true, badge: 'Most popular',
+              },
+              {
+                tier: 'Firm', amt: 'Custom', per: '',
+                blurb: 'For brokerages and advisory teams.',
+                items: ['Everything in Professional', 'Seats for the whole team', 'Shared clause library & playbooks'],
+                cta: 'Talk to us', featured: false,
+              },
+            ].map((p, i) => (
+              <div key={i} className={`${styles.priceCard} ${p.featured ? styles.priceCardFeatured : ''} ${styles.reveal}`}>
+                {p.badge && <span className={styles.priceBadge}>{p.badge}</span>}
+                <span className={styles.priceTier}>{p.tier}</span>
+                <div className={styles.priceAmt}>{p.amt}{p.per && <span className={styles.pricePer}> {p.per}</span>}</div>
+                <p className={styles.priceBlurb}>{p.blurb}</p>
+                <ul>
+                  {p.items.map((item, j) => (
+                    <li key={j}><CheckIcon />{item}</li>
+                  ))}
+                </ul>
+                <button
+                  className={`${styles.btn} ${p.featured ? styles.btnPrimary : styles.btnInk}`}
+                  onClick={handleCTA}>
+                  {p.cta}
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      <Footer />
-    </>
+      {/* FAQ */}
+      <section id="faq" className={`${styles.section} ${styles.sectionAlt}`}>
+        <div className={styles.wrap}>
+          <div className={`${styles.sectionHead} ${styles.reveal}`}>
+            <span className={styles.eyebrow}>Questions</span>
+            <h2>The honest answers.</h2>
+          </div>
+          <div className={styles.faq}>
+            {[
+              { q: 'Does this replace a lawyer?', a: 'No — and it won\'t pretend to. LeaseLens makes you a sharper, better-prepared client: you\'ll know exactly what to ask and what to push on. For binding legal advice, see a solicitor. For knowing where to spend their time, start here.' },
+              { q: 'What documents can I upload?', a: 'Retail and commercial leases, heads of agreement, renewal and variation offers, and disclosure statements — as PDF or Word. If it governs your tenancy, LeaseLens can read it.' },
+              { q: 'Which states does it cover?', a: 'Every Australian state and territory. Each analysis is matched to the retail tenancy legislation that governs the premises in your document.' },
+              { q: 'Is my document kept private?', a: 'Yes. Files are encrypted in transit and at rest, never sold, and never used to train models. You can permanently delete any document at any time.' },
+            ].map((qa, i) => (
+              <div key={i} className={`${styles.qa} ${styles.reveal}`}>
+                <button className={styles.qaQ} aria-expanded="false" onClick={e => {
+                  const btn = e.currentTarget
+                  const open = btn.getAttribute('aria-expanded') === 'true'
+                  const answer = btn.nextElementSibling
+                  btn.setAttribute('aria-expanded', String(!open))
+                  answer.style.maxHeight = open ? null : answer.scrollHeight + 'px'
+                }}>
+                  <h3>{qa.q}</h3>
+                  <span className={styles.qaIcon} aria-hidden="true" />
+                </button>
+                <div className={styles.qaA}><p>{qa.a}</p></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className={`${styles.section} ${styles.sectionDark} ${styles.final}`}>
+        <div className={styles.wrap}>
+          <span className={`${styles.eyebrow} ${styles.eyebrowLt} ${styles.eyebrowCenter}`}>Lease intelligence</span>
+          <h2 style={{ color: 'var(--paper)', marginTop: 20 }}>Know what you're signing<br />before you sign it.</h2>
+          <p>Upload your lease and see the first flags in under a minute. No account needed to start.</p>
+          <div className={styles.finalActions}>
+            <button className={`${styles.btn} ${styles.btnFinalPrimary}`} onClick={handleCTA}>Scan my document →</button>
+            <button className={`${styles.btn} ${styles.btnFinalGhost}`}>Book a walkthrough</button>
+          </div>
+          <p className={styles.reassure}>Trusted by retailers and tenant representatives across Australia.</p>
+        </div>
+      </section>
+
+      {/* FOOTER */}
+      <footer className={styles.footer}>
+        <div className={styles.wrap}>
+          <div className={styles.footerTop}>
+            <div className={styles.footerBrand}>
+              <Link to="/" className={styles.footerLogo}>
+                <ViewfinderMark size={28} />
+                <span className={styles.wordmark} style={{ fontSize: 21 }}>Lease<span className={styles.lens}>Lens</span></span>
+              </Link>
+              <p className={styles.brandBlurb}>Lease intelligence for retailers and the professionals who negotiate on their behalf.</p>
+            </div>
+            <div className={styles.footerCol}>
+              <h4>Product</h4>
+              <a href="#how">How it works</a>
+              <a href="#report">What you get</a>
+              <a href="#pricing">Pricing</a>
+            </div>
+            <div className={styles.footerCol}>
+              <h4>Company</h4>
+              <Link to="/privacy">Privacy &amp; security</Link>
+              <Link to="/terms">Terms</Link>
+            </div>
+            <div className={styles.footerCol}>
+              <h4>Get started</h4>
+              <button onClick={handleCTA}>Scan a document</button>
+              <button onClick={handleSignIn}>Sign in</button>
+            </div>
+          </div>
+          <div className={styles.footerBottom}>
+            <span className={styles.legal}>© 2026 LeaseLens. All rights reserved.</span>
+            <span className={styles.disc}>LeaseLens provides informational analysis to support negotiation and does not constitute legal advice.</span>
+          </div>
+        </div>
+      </footer>
+    </div>
   )
 }
