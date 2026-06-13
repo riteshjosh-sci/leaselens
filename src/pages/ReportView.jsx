@@ -344,7 +344,7 @@ export default function ReportView() {
                       )}
                       {c.counter && (
                         <div className={`${styles.analysisBlock} ${styles.counterBlock}`}>
-                          <div className={`${styles.blockHead} ${styles.blockHeadGreen}`}>Suggested counter</div>
+                          <div className={`${styles.blockHead} ${styles.blockHeadAct}`}>Suggested counter</div>
                           <p>{c.counter}</p>
                         </div>
                       )}
