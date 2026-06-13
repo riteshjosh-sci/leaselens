@@ -29,16 +29,7 @@ export default function AdminNav({ activeTab, setTab }) {
     <>
       {/* Mobile header bar */}
       <div className={styles.mobileHeader}>
-        <div className={styles.logoWrap}>
-          <svg width="20" height="20" viewBox="0 0 40 40" fill="none" style={{color:'var(--paper)'}}>
-            <path d="M5 13 V7 a2 2 0 0 1 2-2 h6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-            <path d="M27 5 h6 a2 2 0 0 1 2 2 v6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-            <path d="M35 27 v6 a2 2 0 0 1 -2 2 h-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-            <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-            <circle cx="20" cy="20" r="5.4" fill="currentColor"/>
-          </svg>
-          <div className={styles.logo}>Lease<em>Lens</em></div>
-        </div>
+        <div className={styles.logo}>Lease<em>Lens</em></div>
         <button className={styles.hamburger} onClick={() => setMobileOpen(!mobileOpen)}>
           {mobileOpen ? '✕' : '☰'}
         </button>
@@ -58,16 +49,7 @@ export default function AdminNav({ activeTab, setTab }) {
               <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
               <circle cx="20" cy="20" r="5.4" fill="currentColor"/>
             </svg>
-            <div className={styles.logoWrap}>
-          <svg width="20" height="20" viewBox="0 0 40 40" fill="none" style={{color:'var(--paper)'}}>
-            <path d="M5 13 V7 a2 2 0 0 1 2-2 h6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-            <path d="M27 5 h6 a2 2 0 0 1 2 2 v6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-            <path d="M35 27 v6 a2 2 0 0 1 -2 2 h-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-            <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-            <circle cx="20" cy="20" r="5.4" fill="currentColor"/>
-          </svg>
-          <div className={styles.logo}>Lease<em>Lens</em></div>
-        </div>
+            <div className={styles.logo}>Lease<em>Lens</em></div>
           </div>
           <div className={styles.adminTag}>Admin panel</div>
         </div>
