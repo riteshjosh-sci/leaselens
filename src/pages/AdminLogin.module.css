@@ -10,42 +10,42 @@
 .card {
   width: 100%;
   max-width: 400px;
-  background: var(--white);
-  border-radius: 3px;
+  background: var(--card);
+  border-radius: var(--radius-sm);
   padding: 48px 40px;
 }
 
 .brand {
-  font-family: 'DM Serif Display', serif;
+  font-family: var(--font);
   font-size: 28px;
   font-weight: 600;
   color: var(--ink);
   letter-spacing: 0.04em;
   margin-bottom: 4px;
 }
-.brand em { font-style: italic; color: var(--accent-mid); }
+.brand em { font-style: italic; color: var(--accent); }
 
 .tag {
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--gold);
+  color: var(--accent);
   margin-bottom: 32px;
 }
 
 .form { display: flex; flex-direction: column; gap: 16px; }
 
 .field { display: flex; flex-direction: column; gap: 6px; }
-.field label { font-size: 13px; font-weight: 500; color: var(--ink-mid); }
+.field label { font-size: 13px; font-weight: 500; color: var(--ink-soft); }
 
 .error {
   background: var(--risk-h-bg);
-  border: 1px solid #e8c0c0;
-  border-radius: 2px;
+  border: 1px solid rgba(44,80,214,0.2);
+  border-radius: var(--radius-sm);
   padding: 10px 14px;
   font-size: 13px;
-  color: var(--risk-h);
+  color: var(--accent-deep);
 }
 
 .backLink {
@@ -53,7 +53,7 @@
   text-align: center;
   margin-top: 20px;
   font-size: 12px;
-  color: var(--ink-light);
+  color: var(--muted);
   text-decoration: none;
   transition: color 0.2s;
 }

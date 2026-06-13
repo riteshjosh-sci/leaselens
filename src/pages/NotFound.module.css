@@ -12,17 +12,17 @@
 }
 
 .code {
-  font-family: 'DM Serif Display', serif;
+  font-family: var(--font);
   font-size: 120px;
   font-weight: 400;
-  color: var(--rule);
+  color: var(--hair);
   line-height: 1;
   margin-bottom: 8px;
   letter-spacing: -4px;
 }
 
 .h1 {
-  font-family: 'DM Serif Display', serif;
+  font-family: var(--font);
   font-size: 36px;
   font-weight: 400;
   color: var(--ink);
@@ -32,9 +32,9 @@
 
 .sub {
   font-size: 16px;
-  color: var(--ink-mid);
+  color: var(--ink-soft);
   line-height: 1.75;
-  font-weight: 300;
+  font-weight: 400;
   margin-bottom: 36px;
 }
 
