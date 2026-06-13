@@ -200,13 +200,36 @@
   .facts { flex-wrap:wrap; }
   .fact { flex:1 1 120px; }
 }
-@media (max-width:680px) {
+@media (max-width:768px) {
   .page { padding:84px 20px 60px; }
-  .wsHead { flex-direction:column; }
-  .wsName { font-size:26px; }
-  .lifecycle { display:none; }
+  .wsHead { flex-direction:column; gap:16px; }
+  .wsId { gap:12px; }
+  .wsName { font-size:24px; }
+  .wsActions { width:100%; flex-wrap:wrap; gap:8px; }
+  .lifecycle { padding:14px 16px; }
+  .rail { gap:0; overflow-x:auto; }
+  .stageNm { font-size:10px; max-width:60px; }
   .facts { display:none; }
+  .panelHead { flex-direction:column; align-items:flex-start; gap:10px; }
+  .statFilter { width:100%; overflow-x:auto; }
+  .negRow { padding:12px 16px; gap:10px; }
+  .nm { font-size:14px; }
+  .negDetail { padding:0 16px 16px; }
+  .docQuote { font-size:14px; padding:12px 14px; }
+  .nb p { font-size:14px; }
+  .decide { flex-wrap:wrap; gap:8px; }
+  .briefCounts { }
+  .bn { font-size:20px; }
+}
+@media (max-width:480px) {
+  .page { padding:80px 16px 60px; }
+  .wsName { font-size:20px; }
+  .lifecycle { display:none; }
   .negControls { opacity:1; }
+  .sbadge { display:none; }
+  .railSide { flex-direction:column; }
+  .railSide > * { flex:none; width:100%; }
+  .crumb { font-size:12px; }
 }
 
 .sfBtn { border:none; background:transparent; font-family:var(--font); font-size:13px; font-weight:600; color:var(--ink-soft); padding:6px 13px; border-radius:7px; cursor:pointer; transition:all 0.15s; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
