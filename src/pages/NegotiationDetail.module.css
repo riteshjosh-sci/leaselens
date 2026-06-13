@@ -138,10 +138,10 @@
 .docRow:hover { border-color:var(--accent); }
 .docRowLatest { border-left:3px solid var(--accent); }
 .fic { background:var(--paper); border:1px solid var(--hair); border-radius:5px; padding:5px 6px; font-size:9px; font-weight:700; color:var(--accent); letter-spacing:0.06em; flex-shrink:0; }
-.dm { flex:1; min-width:0; }
-.docRole { font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:2px; }
+.dm { flex:1; min-width:0; overflow:hidden; }
+.docRole { font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:2px; white-space:nowrap; }
 .docFn { font-size:12px; font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
-.docVmeta { font-size:11px; color:var(--muted); margin-top:2px; }
+.docVmeta { font-size:11px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .docActions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
 .docDel { background:none; border:none; color:var(--faint); cursor:pointer; font-size:12px; padding:2px 4px; transition:color 0.15s; }
 .docDel:hover { color:var(--risk-h); }
@@ -175,7 +175,7 @@
 .sCard h3 { font-size:12px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--muted); margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--hair-lt); display:flex; align-items:center; justify-content:space-between; }
 .mv { font-size:12px; font-weight:700; color:var(--accent); letter-spacing:0; text-transform:none; }
 .docs { display:flex; flex-direction:column; gap:8px; }
-.docrow { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--hair-lt); }
+.docrow { display:flex; align-items:center; gap:8px; padding:10px 0; border-bottom:1px solid var(--hair-lt); min-width:0; }
 .docrow:last-child { border-bottom:none; }
 .ficSm { background:var(--paper); border:1px solid var(--hair); border-radius:4px; padding:4px 5px; font-size:8.5px; font-weight:700; color:var(--accent); letter-spacing:0.05em; flex-shrink:0; }
 .pillSm { font-size:9.5px; font-weight:700; letter-spacing:0.05em; padding:3px 8px; border-radius:100px; text-transform:uppercase; flex-shrink:0; }
