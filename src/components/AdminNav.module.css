@@ -14,13 +14,19 @@
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
 
+.logoWrap {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 6px;
+}
+
 .logo {
   font-family: var(--font);
-  font-size: 21px;
+  font-size: 19px;
   font-weight: 700;
   color: var(--paper);
   letter-spacing: -0.022em;
-  margin-bottom: 6px;
   line-height: 1;
 }
 .logo em { font-style: normal; color: var(--accent-lt); }
