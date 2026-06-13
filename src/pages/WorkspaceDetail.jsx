@@ -158,8 +158,8 @@ export default function WorkspaceDetail() {
   if (loading) return <><Nav /><div className={styles.loading}>Loading…</div></>
 
   // Clause item component
-  const ClauseItem = ({ c }) => {
-    const [open, setOpen] = useState(c.danger === 'HIGH')
+  const ClauseItem = ({ c, isFirst = false }) => {
+    const [open, setOpen] = useState(isFirst)
     const dec = decisions[c.clauseKey] || 'open'
 
     return (
@@ -384,7 +384,7 @@ export default function WorkspaceDetail() {
                   {highClauses.length > 0 && (
                     <div className={styles.negGroup}>
                       <div className={styles.gh}>High priority <span className={styles.gc}>· {highClauses.length}</span></div>
-                      {highClauses.map(c => <ClauseItem key={c.clauseKey} c={c} />)}
+                      {highClauses.map((c, i) => <ClauseItem key={c.clauseKey} c={c} isFirst={i === 0} />)}
                     </div>
                   )}
                   {medClauses.length > 0 && (

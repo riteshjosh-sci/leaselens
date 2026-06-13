@@ -205,3 +205,6 @@
   .facts { display:none; }
   .negControls { opacity:1; }
 }
+
+.sfBtn { border:none; background:transparent; font-family:var(--font); font-size:13px; font-weight:600; color:var(--ink-soft); padding:6px 13px; border-radius:7px; cursor:pointer; transition:all 0.15s; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
+.sfBtn:hover { color:var(--ink); }
