@@ -7,7 +7,7 @@ import styles from './AppSidebar.module.css'
 const NAV = [
   { id: 'dashboard',   label: 'Dashboard',    path: '/dashboard',  icon: <GridIcon /> },
   { id: 'analyser',    label: 'Analyse',       path: '/analyser',   icon: <ScanIcon /> },
-  { id: 'workspaces',  label: 'Workspaces',   path: '/dashboard',  icon: <FolderIcon /> },
+  { id: 'workspaces',  label: 'Workspaces',   path: '/workspaces', icon: <FolderIcon /> },
   { id: 'reports',     label: 'Reports',       path: '/dashboard',  icon: <FileIcon /> },
   { id: 'compare',     label: 'Compare',       path: '/dashboard',  icon: <CompareIcon /> },
 ]
@@ -55,7 +55,7 @@ export default function AppSidebar({ mobileOpen, onClose }) {
   const isActive = (id) => {
     if (id === 'dashboard') return location.pathname === '/dashboard'
     if (id === 'analyser') return location.pathname === '/analyser'
-    if (id === 'workspaces') return location.pathname.startsWith('/workspace/') || location.pathname.startsWith('/negotiation/')
+    if (id === 'workspaces') return location.pathname === '/workspaces' || location.pathname.startsWith('/workspace/') || location.pathname.startsWith('/negotiation/')
     if (id === 'reports') return location.pathname.startsWith('/report/')
     if (id === 'compare') return location.pathname.startsWith('/compare/')
     return false

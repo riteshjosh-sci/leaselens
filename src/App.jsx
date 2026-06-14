@@ -25,6 +25,7 @@ const Terms               = lazy(() => import('./pages/Terms'))
 const WorkspaceSettings   = lazy(() => import('./pages/WorkspaceSettings'))
 const SharedReport        = lazy(() => import('./pages/SharedReport'))
 const WorkspacePage       = lazy(() => import('./pages/WorkspacePage'))
+const WorkspaceList       = lazy(() => import('./pages/WorkspaceList'))
 const NegotiationDetail   = lazy(() => import('./pages/NegotiationDetail'))
 
 export default function App() {
@@ -49,6 +50,7 @@ export default function App() {
             <Route path="/dashboard"              element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/report/:id"             element={<ProtectedRoute><ReportView /></ProtectedRoute>} />
             <Route path="/compare/:negotiationId" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
+            <Route path="/workspaces"             element={<ProtectedRoute><WorkspaceList /></ProtectedRoute>} />
             <Route path="/workspace/:id"          element={<ProtectedRoute><WorkspacePage /></ProtectedRoute>} />
             <Route path="/workspace/:id/settings" element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
             <Route path="/negotiation/:id"        element={<ProtectedRoute><NegotiationDetail /></ProtectedRoute>} />
