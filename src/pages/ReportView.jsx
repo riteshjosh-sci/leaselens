@@ -2,8 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import Footer from '../components/Footer'
-import Nav from '../components/Nav'
+import AppSidebar from '../components/AppSidebar'
 import styles from './ReportView.module.css'
 
 export default function ReportView() {
@@ -197,9 +196,10 @@ export default function ReportView() {
   const lowCount  = clauses.filter(c => c.danger === 'LOW').length
 
   return (
-    <div className={styles.page}>
-
-      <Nav />
+    <div className="app-layout">
+      <AppSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <main className="app-main">
+      <div className={styles.page}>
       {/* BREADCRUMB */}
       <div className={styles.crumb}>
         <button onClick={() => navigate('/dashboard')}>Dashboard</button>

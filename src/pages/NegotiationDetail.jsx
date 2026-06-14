@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import Nav from '../components/Nav'
-import Footer from '../components/Footer'
+import AppSidebar from '../components/AppSidebar'
 import styles from './NegotiationDetail.module.css'
 
 const LIFECYCLE = ['Reviewing', 'Counter prepared', 'Sent to agent', 'Awaiting response', 'Agreed']
@@ -256,8 +255,9 @@ export default function NegotiationDetail() {
   if (loading) return <><Nav /><div className={styles.loading}>Loading…</div></>
 
   return (
-    <>
-      <Nav />
+    <div className="app-layout">
+      <AppSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <main className="app-main">
       <div className={styles.page}>
 
         {/* BREADCRUMB */}
@@ -529,7 +529,8 @@ export default function NegotiationDetail() {
           </div>
         </div>
       </div>
-      <Footer />
-    </>
+      </div>
+      </main>
+    </div>
   )
 }

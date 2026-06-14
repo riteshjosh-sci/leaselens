@@ -2,62 +2,57 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import Nav from '../components/Nav'
-import Footer from '../components/Footer'
+import AppSidebar from '../components/AppSidebar'
 import styles from './WorkspacePage.module.css'
+
+const MenuIcon = () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+const ArrowIcon = () => <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const DocIcon = () => <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M5 2h7l4 4v12a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="1.5"/><path d="M12 2v4h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+const PlusIcon = () => <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+const SettingsIcon = () => <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="2.5" stroke="currentColor" strokeWidth="1.5"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
 
 export default function WorkspacePage() {
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
-
   const [ws, setWs] = useState(null)
   const [negotiations, setNeg] = useState([])
-  const [logoUrl, setLogoUrl] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [wsModal, setWsModal] = useState(false)
-  const [negName, setNegName] = useState('')
+  const [mobileOpen, setMobileOpen] = useState(false)
 
-  useEffect(() => {
-    if (!user) { navigate('/login'); return }
-    fetchAll()
-  }, [id, user])
+  useEffect(() => { if (!user) { navigate('/login'); return } fetchAll() }, [id, user])
 
   const fetchAll = async () => {
     const [wsRes, negsRes] = await Promise.all([
       supabase.from('workspaces').select('*').eq('id', id).eq('user_id', user.id).single(),
       supabase.from('negotiations').select(`
         id, property_name, created_at, status,
-        documents (
-          id, filename, version_number, uploaded_at, overall_risk,
-          reports ( id )
-        )
+        documents ( id, filename, version_number, uploaded_at, overall_risk, file_path,
+          reports ( id ) )
       `).eq('workspace_id', id).order('created_at', { ascending: false }),
     ])
-
     if (wsRes.error || !wsRes.data) { navigate('/dashboard'); return }
     setWs(wsRes.data)
     setNeg(negsRes.data || [])
-
-    if (wsRes.data.logo_path) {
-      const { data: urlData } = supabase.storage.from('logos').getPublicUrl(wsRes.data.logo_path)
-      setLogoUrl(urlData?.publicUrl || null)
-    }
     setLoading(false)
   }
 
-  const handleCreateNeg = async () => {
-    if (!negName.trim()) return
-    const { data } = await supabase.from('negotiations').insert({
-      user_id: user.id,
-      workspace_id: id,
-      property_name: negName.trim(),
-      status: 'active',
-    }).select().single()
-    if (data) {
-      navigate('/analyser', { state: { negotiationId: data.id, workspaceId: id } })
-    }
-    setNegName(''); setWsModal(false)
+  const getMetaForNeg = async (negId) => {
+    const { data } = await supabase.from('jobs').select('asset_class, property_type, landlord_type, suburb, postcode')
+      .eq('negotiation_id', negId).order('created_at', { ascending: false }).limit(1).single()
+    return data || {}
+  }
+
+  const handleAnalyseNew = async () => {
+    const lastNeg = negotiations[0]
+    let meta = {}
+    if (lastNeg) meta = await getMetaForNeg(lastNeg.id)
+    navigate('/analyser', { state: { workspaceId: id, prefill: meta } })
+  }
+
+  const handleAnalyseVersion = async (negId) => {
+    const meta = await getMetaForNeg(negId)
+    navigate('/analyser', { state: { negotiationId: negId, workspaceId: id, prefill: meta } })
   }
 
   const handleDeleteNeg = async (negId) => {
@@ -71,149 +66,130 @@ export default function WorkspacePage() {
   }
 
   const formatDate = d => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
-  const stripTimestamp = f => f?.replace(/^\d+_/, '') || ''
-
-  const getDocSummary = (neg) => {
-    const docs = neg.documents || []
-    const hasHoa = docs.some(d => d.filename?.toLowerCase().includes('hoa'))
-    const hasLease = docs.some(d => !d.filename?.toLowerCase().includes('hoa'))
-    const parts = []
-    if (hasLease) parts.push('lease')
-    if (hasHoa) parts.push('HOA')
-    if (!parts.length && docs.length) parts.push(`${docs.length} document${docs.length > 1 ? 's' : ''}`)
-    return parts.join(' · ') || 'No documents'
-  }
-
-  const getStatus = (neg) => {
-    const docs = neg.documents || []
-    const highRisk = docs.some(d => d.overall_risk === 'HIGH')
-    if (highRisk) return { label: 'Needs attention', cls: styles.statusRaise }
-    if (docs.length === 0) return { label: 'No documents', cls: '' }
-    return { label: 'Reviewing', cls: '' }
-  }
+  const stripTimestamp = f => f?.replace(/^\d+_/, '').replace(/\.[^.]+$/, '') || ''
+  const riskColor = { HIGH: 'var(--risk-h)', MEDIUM: 'var(--risk-m)', LOW: 'var(--risk-l)' }
+  const riskBg = { HIGH: 'var(--risk-h-bg)', MEDIUM: 'var(--risk-m-bg)', LOW: 'var(--risk-l-bg)' }
 
   const totalDocs = negotiations.reduce((a, n) => a + (n.documents?.length || 0), 0)
 
-  if (loading) return <><Nav /><div className={styles.loading}>Loading…</div></>
+  const getStatus = (neg) => {
+    const docs = neg.documents || []
+    if (docs.some(d => d.overall_risk === 'HIGH')) return { label: 'Needs attention', cls: styles.statusHigh }
+    if (docs.length === 0) return { label: 'No documents', cls: styles.statusNone }
+    return { label: 'Reviewing', cls: styles.statusOk }
+  }
+
+  if (loading) return (
+    <div className="app-layout">
+      <AppSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <main className="app-main"><div className={styles.loading}><div className={styles.ring} /></div></main>
+    </div>
+  )
 
   return (
-    <>
-      <Nav />
-      <div className={styles.page}>
+    <div className="app-layout">
+      <AppSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <main className="app-main">
 
-        {/* BREADCRUMB */}
-        <div className={styles.crumb}>
-          <button onClick={() => navigate('/dashboard')}>Dashboard</button>
-          <span>›</span>
-          <span>{ws.name}</span>
-        </div>
-
-        {/* HEADER */}
-        <div className={styles.head}>
-          <div className={styles.headLeft}>
-            {logoUrl
-              ? <img src={logoUrl} alt="logo" className={styles.wsLogo} />
-              : <div className={styles.wsBadge}>{ws.name[0]?.toUpperCase()}</div>
-            }
+        {/* TOP BAR */}
+        <div className={styles.topbar}>
+          <div className={styles.topbarLeft}>
+            <button className={styles.menuBtn} onClick={() => setMobileOpen(true)}><MenuIcon /></button>
             <div>
-              <div className={styles.kicker}>Workspace</div>
-              <h1 className={styles.h1}>{ws.name}</h1>
-              {ws.client_name && <div className={styles.sub}>{ws.client_name}</div>}
-              <div className={styles.meta}>
-                {negotiations.length} negotiation{negotiations.length !== 1 ? 's' : ''} · {totalDocs} document{totalDocs !== 1 ? 's' : ''}
+              <div className={styles.crumb}>
+                <button onClick={() => navigate('/dashboard')}>Dashboard</button>
+                <span>›</span>
+                <span>{ws.name}</span>
               </div>
+              <h1 className={styles.h1}>{ws.name}</h1>
+              {ws.client_name && <p className={styles.sub}>{ws.client_name}</p>}
             </div>
           </div>
-          <div className={styles.headActions}>
-            <button className="btn-outline btn-sm"
-              onClick={() => navigate(`/workspace/${id}/settings`)}>
-              Settings
+          <div className={styles.topbarRight}>
+            <div className={styles.stats}>
+              <span><b>{negotiations.length}</b> negotiations</span>
+              <span><b>{totalDocs}</b> documents</span>
+            </div>
+            <button className="btn-outline btn-sm" onClick={() => navigate(`/workspace/${id}/settings`)}>
+              <SettingsIcon /> Settings
             </button>
-            <button className="btn-ink btn-sm"
-              onClick={() => navigate('/analyser', { state: { workspaceId: id } })}>
-              + Analyse document
+            <button className="btn-gold btn-sm" onClick={handleAnalyseNew}>
+              <PlusIcon /> Analyse document
             </button>
           </div>
         </div>
 
-        {/* NEGOTIATIONS GRID */}
-        <div className={styles.dsec}>
-          <div className={styles.sh}>
-            <span className={styles.shLbl}>Negotiations</span>
-            <span className={styles.shCnt}>{negotiations.length} active</span>
-            <span className={styles.shLn} />
+        <div className={styles.content}>
+          {/* SECTION HEADER */}
+          <div className={styles.sectionHead}>
+            <div className={styles.sh}>
+              <span className={styles.shLbl}>Negotiations</span>
+              <span className={styles.shCnt}>{negotiations.length} active</span>
+              <span className={styles.shLn} />
+            </div>
           </div>
 
+          {/* NEGOTIATION GRID */}
           {negotiations.length === 0 ? (
             <div className={styles.empty}>
-              <p>No negotiations yet. Analyse a lease or HOA to get started.</p>
-              <button className="btn-ink btn-sm" style={{ marginTop: 16 }}
-                onClick={() => navigate('/analyser', { state: { workspaceId: id } })}>
-                Analyse document →
-              </button>
+              <div className={styles.emptyIcon}><DocIcon /></div>
+              <h3>No negotiations yet</h3>
+              <p>Upload your first lease or HOA to begin analysis.</p>
+              <button className="btn-gold" onClick={handleAnalyseNew}>Analyse document →</button>
             </div>
           ) : (
-            <div className={styles.wsGrid}>
+            <div className={styles.grid}>
               {negotiations.map(neg => {
-                const docs = (neg.documents || []).sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))
+                const docs = (neg.documents || []).sort((a, b) => b.version_number - a.version_number)
                 const latestDoc = docs[0]
-                const docSummary = getDocSummary(neg)
                 const status = getStatus(neg)
-                const highCount = docs.filter(d => d.overall_risk === 'HIGH').length
+                const cleanName = (neg.property_name || 'Unnamed').replace(/^\d+_/, '').replace(/\.[^.]+$/, '').replace(/_/g, ' ')
 
                 return (
-                  <div key={neg.id} className={styles.wcard}
-                    onClick={() => navigate(`/negotiation/${neg.id}`)}>
-                    <div className={styles.wcTop}>
-                      <div className={styles.wcBadge}>
-                        {(neg.property_name?.replace(/^\d+_/, '') || 'N')[0]?.toUpperCase()}
+                  <div key={neg.id} className={styles.card} onClick={() => navigate(`/negotiation/${neg.id}`)}>
+                    <div className={styles.cardTop}>
+                      <div className={styles.cardBadge}>{cleanName[0]?.toUpperCase()}</div>
+                      <div className={styles.cardInfo}>
+                        <div className={styles.cardName}>{cleanName}</div>
+                        {ws.client_name && <div className={styles.cardClient}>{ws.client_name}</div>}
                       </div>
-                      <div className={styles.wcId}>
-                        <div className={styles.wcName}>{(neg.property_name || 'Unnamed').replace(/^\d+_/, '').replace(/\.[^.]+$/, '').replace(/_/g, ' ')}</div>
-                        {ws.client_name && <div className={styles.wcTn}>{ws.client_name}</div>}
-                      </div>
-                      <span className={`${styles.statusChip} ${status.cls}`}>
-                        <span className={styles.d} />
-                        {status.label}
-                      </span>
+                      <span className={`${styles.statusChip} ${status.cls}`}>{status.label}</span>
                     </div>
 
-                    <div className={styles.wcSummary}>
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 1.5h5l3 3v10H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
-                        <path d="M9 1.5v3h3" stroke="currentColor" strokeWidth="1.4"/>
-                      </svg>
-                      {docSummary}
-                      <span className={styles.docsN}>· {docs.length} document{docs.length !== 1 ? 's' : ''}</span>
+                    <div className={styles.cardDocs}>
+                      <DocIcon />
+                      <span>{docs.length} version{docs.length !== 1 ? 's' : ''}</span>
+                      {latestDoc?.overall_risk && (
+                        <span className={styles.riskPill} style={{ background: riskBg[latestDoc.overall_risk], color: riskColor[latestDoc.overall_risk] }}>
+                          {latestDoc.overall_risk}
+                        </span>
+                      )}
                     </div>
 
-                    <div className={styles.wcFoot}>
-                      <span className={styles.wcUp}>
+                    <div className={styles.cardFoot}>
+                      <span className={styles.cardDate}>
                         {latestDoc ? `Updated ${formatDate(latestDoc.uploaded_at)}` : `Created ${formatDate(neg.created_at)}`}
                       </span>
-                      <span className={styles.wcOpen}>Open →</span>
+                      <div className={styles.cardActions} onClick={e => e.stopPropagation()}>
+                        <button className={styles.versionBtn} onClick={() => handleAnalyseVersion(neg.id)}>+ Version</button>
+                        <button className={styles.delBtn} onClick={() => handleDeleteNeg(neg.id)}>✕</button>
+                      </div>
+                      <span className={styles.openBtn}>Open <ArrowIcon /></span>
                     </div>
-
-                    <button className={styles.delBtn}
-                      onClick={e => { e.stopPropagation(); handleDeleteNeg(neg.id) }}
-                      title="Delete negotiation">✕</button>
                   </div>
                 )
               })}
 
-              {/* Add new */}
-              <div className={`${styles.wcard} ${styles.wcardNew}`}
-                onClick={() => navigate('/analyser', { state: { workspaceId: id } })}>
-                <div className={styles.plus}>+</div>
-                <div className={styles.nt}>New negotiation</div>
-                <div className={styles.ns}>Analyse a lease or HOA for this workspace</div>
+              {/* New card */}
+              <div className={`${styles.card} ${styles.cardNew}`} onClick={handleAnalyseNew}>
+                <div className={styles.newPlus}>+</div>
+                <div className={styles.newLabel}>New negotiation</div>
+                <div className={styles.newSub}>Analyse a lease or HOA</div>
               </div>
             </div>
           )}
         </div>
-      </div>
-
-      <Footer />
-    </>
+      </main>
+    </div>
   )
 }
