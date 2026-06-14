@@ -229,12 +229,18 @@
 .exportMeta { text-align:center; font-size:12.5px; color:var(--navy-muted); }
 
 /* Preview card */
-.previewCard { background:var(--bg); border:1px solid var(--border); border-radius:var(--radius-sm); padding:24px; margin-top:14px; text-align:center; }
-.previewLogo { font-size:32px; margin-bottom:12px; }
-.previewTitle { font-size:18px; font-weight:700; color:var(--navy); margin-bottom:6px; }
-.previewSub { font-size:13px; font-weight:600; color:var(--gold); margin-bottom:12px; }
-.previewDate { font-size:12px; color:var(--navy-muted); margin-bottom:16px; }
-.previewConfidential { font-size:11.5px; color:var(--navy-muted); font-style:italic; }
+.previewCard { background:var(--white); border:1px solid var(--border); border-radius:var(--radius-sm); margin-top:14px; overflow:hidden; }
+.previewHeaderBar { background:var(--navy); padding:10px 14px; display:flex; align-items:center; justify-content:space-between; }
+.previewBrand { display:flex; align-items:center; gap:7px; font-size:13px; font-weight:700; color:#fff; }
+.previewConfTag { font-size:9px; font-weight:700; letter-spacing:0.1em; color:rgba(255,255,255,0.5); }
+.previewBody { padding:16px; }
+.previewDocIcon { display:inline-block; background:var(--navy); color:#fff; font-size:8px; font-weight:800; letter-spacing:0.05em; padding:5px 7px; border-radius:4px; margin-bottom:10px; }
+.previewTitle { font-size:14px; font-weight:700; color:var(--navy); margin-bottom:5px; line-height:1.3; }
+.previewSub { font-size:11.5px; font-weight:600; color:var(--gold); margin-bottom:10px; }
+.previewDivider { height:1px; background:var(--border); margin:10px 0; }
+.previewMeta { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--navy-muted); margin-bottom:8px; flex-wrap:wrap; }
+.previewRisk { font-weight:700; }
+.previewConfidential { font-size:10.5px; color:var(--navy-muted); font-style:italic; line-height:1.5; }
 
 .securityCard2 { background:var(--navy); border-radius:var(--radius); padding:20px; color:rgba(255,255,255,0.8); font-size:13px; line-height:1.6; display:flex; flex-direction:column; gap:10px; }
 .sc2Title { font-size:14px; font-weight:700; color:#fff; }
@@ -338,3 +344,6 @@
   h2 { page-break-after:avoid; }
   .clauseDetail { page-break-inside:avoid; }
 }
+
+.shareResult { display:flex; gap:8px; margin-top:10px; align-items:center; }
+.shareInput { flex:1; padding:8px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-family:monospace; font-size:12px; color:var(--navy); background:var(--bg); outline:none; }

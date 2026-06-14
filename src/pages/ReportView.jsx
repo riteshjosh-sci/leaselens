@@ -33,6 +33,9 @@ export default function ReportView() {
   const [activeClause, setActiveClause] = useState(0)
   const [filter, setFilter]       = useState('All')
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [exportFormat, setExportFormat] = useState('pdf')
+  const [exportDelivery, setExportDelivery] = useState('download')
+  const [shareGenerated, setShareGenerated] = useState(null)
 
   useEffect(() => { fetchReport() }, [id])
 
@@ -74,7 +77,7 @@ export default function ReportView() {
     : filter === 'High' ? highClauses
     : filter === 'Medium' ? medClauses : lowClauses
 
-  const handlePDF = () => { window.print() }
+  const handlePDF = () => { window.open(`/report/${id}/print`, '_blank') }
 
   const handleShare = async () => {
     try {
@@ -535,7 +538,9 @@ export default function ReportView() {
                         { id: 'pdf', icon: '📄', label: 'PDF', desc: 'Best for printing and sharing.' },
                         { id: 'share', icon: '🔗', label: 'Shareable Link', desc: 'Secure link with access control.' },
                       ].map(f => (
-                        <div key={f.id} className={`${styles.formatCard} ${f.id === 'pdf' ? styles.formatActive : ''}`}>
+                        <div key={f.id}
+                          className={`${styles.formatCard} ${exportFormat === f.id ? styles.formatActive : ''}`}
+                          onClick={() => setExportFormat(f.id)}>
                           <span className={styles.formatIcon}>{f.icon}</span>
                           <div className={styles.formatLabel}>{f.label}</div>
                           <div className={styles.formatDesc}>{f.desc}</div>
@@ -553,25 +558,46 @@ export default function ReportView() {
                     <p className={styles.stepSub}>Choose how you would like to receive your report.</p>
                     <div className={styles.deliveryList}>
                       {[
-                        { icon: '📧', label: 'Download Now', sub: 'Download the report to your device.' },
-                        { icon: '🔗', label: 'Secure Share Link', sub: 'Generate a secure link with access controls.' },
-                      ].map((d, i) => (
-                        <div key={i} className={`${styles.deliveryItem} ${i === 0 ? styles.deliveryActive : ''}`}>
+                        { id:'download', icon: '⬇️', label: 'Download Now', sub: 'Download the report to your device.' },
+                        { id:'link', icon: '🔗', label: 'Secure Share Link', sub: 'Generate a secure link with access controls.' },
+                      ].map((d) => (
+                        <div key={d.id}
+                          className={`${styles.deliveryItem} ${exportDelivery === d.id ? styles.deliveryActive : ''}`}
+                          onClick={() => setExportDelivery(d.id)}>
                           <span className={styles.dIcon}>{d.icon}</span>
                           <div>
                             <div className={styles.dLabel}>{d.label}</div>
                             <div className={styles.dSub}>{d.sub}</div>
                           </div>
-                          <div className={`${styles.dRadio} ${i === 0 ? styles.dRadioActive : ''}`} />
+                          <div className={`${styles.dRadio} ${exportDelivery === d.id ? styles.dRadioActive : ''}`} />
                         </div>
                       ))}
                     </div>
+                    {shareGenerated && (
+                      <div className={styles.shareResult}>
+                        <input className={styles.shareInput} value={shareGenerated} readOnly />
+                        <button className="btn-outline btn-sm" onClick={() => { navigator.clipboard.writeText(shareGenerated); }}>Copy</button>
+                      </div>
+                    )}
                   </div>
                 </div>
 
                 {/* Generate button */}
-                <button className={styles.generateBtn} onClick={handlePDF}>
-                  <DownloadIcon /> Generate Report
+                <button className={styles.generateBtn} onClick={async () => {
+                  if (exportFormat === 'pdf') {
+                    handlePDF()
+                  } else {
+                    // Generate shareable link
+                    const { data } = await import('../lib/supabase').then(m => 
+                      m.supabase.from('share_tokens').insert({
+                        report_id: id, user_id: user?.id,
+                        expires_at: new Date(Date.now() + 7*24*60*60*1000).toISOString()
+                      }).select().single()
+                    )
+                    if (data) setShareGenerated(`${window.location.origin}/shared/${data.token}`)
+                  }
+                }}>
+                  <DownloadIcon /> {exportFormat === 'pdf' ? 'Generate & Download PDF' : 'Generate Share Link'}
                 </button>
                 <div className={styles.exportMeta}>🔒 Encrypted export · Access controlled · Audit logged</div>
               </div>
@@ -582,11 +608,35 @@ export default function ReportView() {
                   <h3 className={styles.sCardTitle}>Report preview</h3>
                   <p className={styles.panelSub}>This is how your report cover will look.</p>
                   <div className={styles.previewCard}>
-                    <div className={styles.previewLogo}>⚖️</div>
-                    <div className={styles.previewTitle}>{negotiation?.property_name || 'Lease Analysis Report'}</div>
-                    <div className={styles.previewSub} style={{color:'var(--gold)'}}>Prepared by LeaseLens</div>
-                    <div className={styles.previewDate}>Generated on {new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-                    <div className={styles.previewConfidential}>This report is confidential and intended solely for the use of the tenant.</div>
+                    <div className={styles.previewHeaderBar}>
+                      <div className={styles.previewBrand}>
+                        <svg width="16" height="16" viewBox="0 0 40 40" fill="none">
+                          <path d="M5 13 V7 a2 2 0 0 1 2-2 h6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
+                          <path d="M27 5 h6 a2 2 0 0 1 2 2 v6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
+                          <path d="M35 27 v6 a2 2 0 0 1 -2 2 h-6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
+                          <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
+                          <circle cx="20" cy="20" r="5.4" fill="white"/>
+                        </svg>
+                        <span>LeaseLens</span>
+                      </div>
+                      <span className={styles.previewConfTag}>CONFIDENTIAL</span>
+                    </div>
+                    <div className={styles.previewBody}>
+                      <div className={styles.previewDocIcon}>{document?.filename?.split('.').pop()?.toUpperCase() || 'PDF'}</div>
+                      <div className={styles.previewTitle}>{negotiation?.property_name || 'Lease Analysis Report'}</div>
+                      <div className={styles.previewSub}>Prepared by LeaseLens</div>
+                      <div className={styles.previewDivider} />
+                      <div className={styles.previewMeta}>
+                        <span>v{document?.version_number}</span>
+                        <span>·</span>
+                        <span>{new Date().toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })}</span>
+                        <span>·</span>
+                        <span className={styles.previewRisk} style={{color: document?.overall_risk === 'HIGH' ? 'var(--risk-h)' : document?.overall_risk === 'MEDIUM' ? 'var(--risk-m)' : 'var(--risk-l)'}}>
+                          {document?.overall_risk} RISK
+                        </span>
+                      </div>
+                      <div className={styles.previewConfidential}>This report is confidential and intended solely for the use of the tenant.</div>
+                    </div>
                   </div>
                 </div>
 

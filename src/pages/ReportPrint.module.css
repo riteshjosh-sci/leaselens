@@ -1,0 +1,140 @@
+/* ── SCREEN — loading state ── */
+.loadingPage { display:flex; align-items:center; justify-content:center; min-height:100vh; background:#fff; font-family:'Inter',sans-serif; }
+.loadingInner { display:flex; flex-direction:column; align-items:center; gap:14px; color:#8A96B8; font-size:14px; }
+.ring { width:32px; height:32px; border:3px solid #EEF1F8; border-top-color:#1B2B5E; border-radius:50%; animation:spin 0.8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+
+/* ── BASE ── */
+.page {
+  font-family: 'Inter', -apple-system, sans-serif;
+  font-size: 11pt;
+  line-height: 1.6;
+  color: #1B2B5E;
+  background: #fff;
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 16mm 14mm;
+}
+
+/* ── HEADER ── */
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 2.5px solid #1B2B5E;
+  margin-bottom: 20px;
+}
+.headerLeft { display:flex; flex-direction:column; gap:4px; }
+.brandLogo { display:flex; align-items:center; gap:10px; }
+.brandName { font-size:20px; font-weight:800; color:#1B2B5E; letter-spacing:-0.02em; }
+.brandName span { color:#b48c3f; }
+.wsLogo { max-height:44px; max-width:160px; object-fit:contain; }
+.headerClient { font-size:11px; color:#8A96B8; font-weight:500; margin-top:4px; }
+.headerRight { text-align:right; }
+.headerTitle { font-size:13px; font-weight:700; color:#1B2B5E; margin-bottom:4px; }
+.headerMeta { font-size:10px; color:#8A96B8; line-height:1.5; }
+
+/* ── DOCUMENT TITLE ── */
+.docTitle { display:flex; align-items:center; gap:14px; margin-bottom:20px; padding:16px; background:#F4F6FA; border-radius:8px; }
+.docIcon { background:#1B2B5E; color:#fff; font-size:9px; font-weight:800; letter-spacing:0.06em; padding:8px 10px; border-radius:6px; flex-shrink:0; }
+.docName { font-size:16px; font-weight:700; color:#1B2B5E; letter-spacing:-0.02em; margin-bottom:3px; }
+.docProp { font-size:11px; color:#8A96B8; }
+
+/* ── RISK OVERVIEW ── */
+.riskOverview { display:flex; align-items:center; gap:24px; margin-bottom:24px; padding:16px 20px; border:1.5px solid #C8D0E7; border-radius:10px; }
+.riskScore { display:flex; align-items:baseline; gap:6px; flex-shrink:0; }
+.riskNum { font-size:48px; font-weight:800; letter-spacing:-0.04em; line-height:1; }
+.riskOf { font-size:18px; color:#8A96B8; font-weight:600; }
+.riskLabel { font-size:11px; font-weight:700; letter-spacing:0.06em; padding:4px 12px; border-radius:100px; margin-left:8px; }
+.riskBreakdown { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; flex:1; }
+.rbCard { border-radius:8px; padding:10px 12px; text-align:center; }
+.rbCount { font-size:26px; font-weight:800; letter-spacing:-0.03em; line-height:1; margin-bottom:3px; }
+.rbLabel { font-size:10px; font-weight:600; color:#4A5D8A; }
+
+/* ── SECTIONS ── */
+.section { margin-bottom:20px; }
+.sectionTitle { font-size:12px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:#1B2B5E; margin-bottom:12px; padding-bottom:8px; border-bottom:1.5px solid #EEF1F8; display:flex; align-items:center; gap:6px; }
+.clauseCount { font-weight:500; color:#8A96B8; letter-spacing:0; text-transform:none; }
+.summaryText { font-size:11pt; color:#4A5D8A; line-height:1.7; }
+
+/* ── CLAUSES ── */
+.clause { border:1px solid #EEF1F8; border-radius:8px; margin-bottom:12px; overflow:hidden; page-break-inside:avoid; }
+.clauseHead { display:flex; align-items:stretch; gap:0; background:#F4F6FA; }
+.clauseBar { width:4px; flex-shrink:0; }
+.clauseHeadContent { flex:1; padding:10px 14px; }
+.clauseRef { font-size:9.5px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:#8A96B8; margin-bottom:3px; }
+.clauseName { font-size:13px; font-weight:700; color:#1B2B5E; }
+.clauseRisk { font-size:9.5px; font-weight:800; letter-spacing:0.06em; padding:4px 10px; border-radius:100px; align-self:center; margin:8px; white-space:nowrap; }
+.clauseQuote { margin:0 14px; padding:10px 12px; background:#F4F6FA; border-left:3px solid #1B2B5E; border-radius:0 6px 6px 0; }
+.quoteLabel { font-size:9px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:#8A96B8; margin-bottom:6px; }
+.clauseQuote p { font-size:10.5pt; color:#1B2B5E; line-height:1.55; font-style:italic; }
+.clauseBody { padding:0 14px 12px; display:flex; flex-direction:column; gap:0; }
+.clauseBlock { padding:10px 0; border-top:1px solid #EEF1F8; }
+.blockLabel { font-size:9px; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:#8A96B8; margin-bottom:5px; }
+.clauseBlock p { font-size:10.5pt; color:#4A5D8A; line-height:1.6; }
+.counterBlock { background:#FDF8F0; border-radius:6px; padding:10px 12px; margin-top:6px; border-top:none; }
+.legBlock { background:#F0FDF4; border-radius:6px; padding:10px 12px; margin-top:4px; border-top:none; }
+
+/* ── NEXT STEPS ── */
+.nextSteps { padding-left:18px; display:flex; flex-direction:column; gap:8px; }
+.nextSteps li { font-size:11pt; color:#4A5D8A; line-height:1.6; }
+
+/* ── FOOTER ── */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 32px;
+  padding-top: 12px;
+  border-top: 1.5px solid #C8D0E7;
+  font-size: 9px;
+  color: #8A96B8;
+}
+.footerBrand { font-weight:800; color:#1B2B5E; }
+.footerCenter { flex:1; text-align:center; line-height:1.5; }
+.footerRight { text-align:right; white-space:nowrap; }
+
+/* ── PRINT ── */
+@media print {
+  @page {
+    size: A4;
+    margin: 18mm 14mm 22mm 14mm;
+  }
+
+  .page {
+    padding: 0;
+    max-width: 100%;
+  }
+
+  .clause { page-break-inside: avoid; }
+  .section { page-break-inside: avoid; }
+  .riskOverview { page-break-inside: avoid; }
+
+  /* Repeat header on every page */
+  .header {
+    position: running(header);
+  }
+  .footer {
+    position: running(footer);
+  }
+}
+
+/* ── SCREEN only — print button ── */
+.printBar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  background: #1B2B5E;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  z-index: 100;
+  print-color-adjust: exact;
+}
+@media print { .printBar { display:none !important; } }
+.printBarLeft { font-size:14px; font-weight:600; color:#fff; }
+.printBarBtns { display:flex; gap:10px; }
+.printBtnPrimary { background:#b48c3f; color:#fff; border:none; border-radius:6px; padding:9px 20px; font-size:13px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; }
+.printBtnGhost { background:transparent; color:rgba(255,255,255,0.7); border:1.5px solid rgba(255,255,255,0.3); border-radius:6px; padding:9px 20px; font-size:13px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; }
