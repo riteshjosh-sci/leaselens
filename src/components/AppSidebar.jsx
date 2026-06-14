@@ -58,6 +58,7 @@ export default function AppSidebar({ mobileOpen, onClose }) {
     if (id === 'workspaces') return location.pathname === '/workspaces' || location.pathname.startsWith('/workspace/') || location.pathname.startsWith('/negotiation/')
     if (id === 'reports') return location.pathname.startsWith('/report/')
     if (id === 'compare') return location.pathname.startsWith('/compare/')
+    if (id === 'settings') return location.pathname === '/settings'
     return false
   }
 
@@ -91,7 +92,7 @@ export default function AppSidebar({ mobileOpen, onClose }) {
               <button
                 key={item.id}
                 className={`${styles.navItem} ${isActive(item.id) ? styles.navActive : ''}`}
-                onClick={() => handleNav(item.path)}
+                onClick={() => handleNav(item.path || '/settings')}
               >
                 <span className={styles.navIcon}>{item.icon}</span>
                 <span className={styles.navText}>{item.label}</span>
