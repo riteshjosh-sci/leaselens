@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
@@ -24,6 +24,23 @@ export default function AppSidebar({ mobileOpen, onClose }) {
   const navigate = useNavigate()
   const location = useLocation()
   const { user } = useAuth()
+  const [profile, setProfile] = useState(null)
+
+  useEffect(() => {
+    if (!user) return
+    supabase.from('profiles').select('plan, scan_credits, monthly_scans_used').eq('id', user.id).single()
+      .then(({ data }) => setProfile(data))
+  }, [user])
+
+  const planLabel = {
+    free: 'Free plan',
+    one_off: 'One-off',
+    monthly: 'Monthly plan',
+    annual: 'Annual plan',
+    adviser: 'Adviser plan',
+  }[profile?.plan || 'free'] || 'Free plan'
+
+  const isPaid = profile?.plan && profile.plan !== 'free'
 
   const handleSignOut = async () => {
     await supabase.auth.signOut()
@@ -84,15 +101,17 @@ export default function AppSidebar({ mobileOpen, onClose }) {
           </div>
         </nav>
 
-        {/* Upgrade card */}
-        <div className={styles.upgradeCard}>
-          <div className={styles.upgradeIcon}>✦</div>
-          <div className={styles.upgradeTitle}>Upgrade to Pro</div>
-          <div className={styles.upgradeSub}>Unlimited scans, branded reports & more.</div>
-          <button className={styles.upgradeBtn} onClick={() => handleNav('/pricing')}>
-            Upgrade now
-          </button>
-        </div>
+        {/* Upgrade card — only show on free plan */}
+        {!isPaid && (
+          <div className={styles.upgradeCard}>
+            <div className={styles.upgradeIcon}>✦</div>
+            <div className={styles.upgradeTitle}>Upgrade to Pro</div>
+            <div className={styles.upgradeSub}>Unlimited scans, branded reports & more.</div>
+            <button className={styles.upgradeBtn} onClick={() => handleNav('/pricing')}>
+              Upgrade now
+            </button>
+          </div>
+        )}
 
         {/* Bottom */}
         <div className={styles.bottom}>
@@ -100,7 +119,7 @@ export default function AppSidebar({ mobileOpen, onClose }) {
             <div className={styles.avatar}>{user?.email?.[0]?.toUpperCase()}</div>
             <div className={styles.userInfo}>
               <div className={styles.userEmail}>{user?.email}</div>
-              <div className={styles.userPlan}>Free plan</div>
+              <div className={styles.userPlan}>{planLabel}</div>
             </div>
           </div>
           <button className={styles.signOut} onClick={handleSignOut}>
