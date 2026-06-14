@@ -7,9 +7,7 @@ import styles from './AppSidebar.module.css'
 const NAV = [
   { id: 'dashboard',  label: 'Dashboard',     path: '/dashboard',  icon: <GridIcon /> },
   { id: 'analyser',   label: 'Analyse',        path: '/analyser',   icon: <ScanIcon /> },
-  { id: 'workspaces', label: 'Workspaces',     path: '/workspaces', icon: <FolderIcon /> },
-  { id: 'reports',    label: 'Reports',        path: '/reports',    icon: <FileIcon /> },
-  { id: 'compare',    label: 'Compare',        path: '/compare',    icon: <CompareIcon /> },
+  { id: 'pricing',    label: 'Pricing',        path: '/pricing',    icon: <FileIcon /> },
 ]
 
 function GridIcon()   { return <svg width="17" height="17" viewBox="0 0 20 20" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.6"/><rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.6"/><rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.6"/><rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.6"/></svg> }
@@ -52,7 +50,10 @@ export default function AppSidebar({ mobileOpen, onClose }) {
     onClose?.()
   }
 
-  const isActive = (path) => location.pathname === path || location.pathname.startsWith(path + '/')
+  const isActive = (path) => {
+    if (path === '/dashboard') return location.pathname === '/dashboard' || location.pathname.startsWith('/workspace/') || location.pathname.startsWith('/negotiation/')
+    return location.pathname === path || location.pathname.startsWith(path + '/')
+  }
 
   return (
     <>
