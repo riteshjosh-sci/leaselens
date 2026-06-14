@@ -27,7 +27,7 @@ export default function ReportView() {
   const [report, setReport]       = useState(null)
   const [document, setDocument]   = useState(null)
   const [negotiation, setNeg]     = useState(null)
-  const [workspace, setWs]        = useState(null)
+  const [ws, setWs]               = useState(null)
   const [loading, setLoading]     = useState(true)
   const [activeTab, setActiveTab] = useState('Summary')
   const [activeClause, setActiveClause] = useState(0)
@@ -110,7 +110,7 @@ export default function ReportView() {
             <div>
               <div className={styles.crumb}>
                 <button onClick={() => navigate('/dashboard')}>Dashboard</button>
-                {negotiation?.workspace_id && <><span>›</span><button onClick={() => navigate(`/workspace/${negotiation.workspace_id}`)}>{workspace?.name || 'Workspace'}</button></>}
+                {negotiation?.workspace_id && <><span>›</span><button onClick={() => navigate(`/workspace/${negotiation.workspace_id}`)}>{ws?.name || 'Workspace'}</button></>}
                 {negotiation && <><span>›</span><button onClick={() => navigate(`/negotiation/${negotiation.id}`)}>{negotiation.property_name || 'Negotiation'}</button></>}
                 <span>›</span><span>Report</span>
               </div>
@@ -633,6 +633,8 @@ export default function ReportView() {
             </div>
           )}
 
+        </div>
+        </div>
         </div>
         {/* PRINT FOOTER — hidden on screen */}
         <div className={styles.printFooter} style={{display:'none'}}>
