@@ -529,7 +529,6 @@ export default function NegotiationDetail() {
           </div>
         </div>
       </div>
-      </div>
       </main>
     </div>
   )
