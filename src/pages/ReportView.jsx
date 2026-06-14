@@ -439,6 +439,7 @@ export default function ReportView() {
 
           <p className={styles.sDisclaimer}>LeaseLens provides informational analysis to support negotiation and does not constitute legal advice.</p>
         </div>
+      </div>
       </main>
     </div>
   )
