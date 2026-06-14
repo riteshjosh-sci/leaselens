@@ -595,7 +595,6 @@ export default function ReportView() {
 
                       const { data, error } = await supabase.from('share_tokens').insert({
                         user_id: user?.id,
-                        report_id: id,
                         workspace_id: negotiation?.workspace_id || null,
                         token: token,
                         label: `Report share — ${new Date().toLocaleDateString('en-AU')}`,
