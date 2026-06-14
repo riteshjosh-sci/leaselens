@@ -58,6 +58,12 @@ body {
   line-height: 1.6;
 }
 
+/* Subtle gradient background for glass effect */
+.app-layout {
+  background: linear-gradient(135deg, #EEF2FF 0%, #F4F6FA 50%, #EDF4FF 100%);
+  min-height: 100vh;
+}
+
 ::selection { background: var(--gold); color: #fff; }
 
 h1, h2, h3, h4 { font-family: var(--font); font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; color: var(--navy); }
