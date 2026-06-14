@@ -136,8 +136,8 @@ export default function ReportPrint() {
       {/* PAGE BREAK after cover */}
       <div className={styles.pageBreak} />
 
-      {/* HEADER */}
-      <div className={styles.header}>
+      {/* HEADER — page 2 onwards only */}
+      <div className={styles.headerReport}>
         <div className={styles.headerLeft}>
           {ws?.logoUrl ? (
             <img src={ws.logoUrl} alt="Logo" className={styles.wsLogo} />

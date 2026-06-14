@@ -267,4 +267,28 @@
     box-shadow: 0 4px 24px rgba(27,43,94,0.08);
   }
   .pageBreak { display: none; }
+  /* On screen show header normally */
+  .header { display: flex; }
+}
+
+/* ── HEADER for page 2+ (after cover) ── */
+.headerReport {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #1B2B5E;
+  margin-bottom: 16px;
+}
+.headerReport .brandLogo { font-size: 15px; }
+.headerReport .brandName { font-size: 15px; }
+
+@media print {
+  /* Suppress header on the cover page (first page) */
+  /* The cover fills page 1, pageBreak forces page 2 */
+  /* headerReport appears naturally at top of page 2 */
+  .headerReport {
+    margin-top: 0;
+    padding-top: 0;
+  }
 }
