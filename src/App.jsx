@@ -26,6 +26,7 @@ const WorkspaceSettings   = lazy(() => import('./pages/WorkspaceSettings'))
 const SharedReport        = lazy(() => import('./pages/SharedReport'))
 const WorkspacePage       = lazy(() => import('./pages/WorkspacePage'))
 const WorkspaceList       = lazy(() => import('./pages/WorkspaceList'))
+const AccountSettings     = lazy(() => import('./pages/AccountSettings'))
 const NegotiationDetail   = lazy(() => import('./pages/NegotiationDetail'))
 
 export default function App() {
@@ -53,6 +54,7 @@ export default function App() {
             <Route path="/workspaces"             element={<ProtectedRoute><WorkspaceList /></ProtectedRoute>} />
             <Route path="/workspace/:id"          element={<ProtectedRoute><WorkspacePage /></ProtectedRoute>} />
             <Route path="/workspace/:id/settings" element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
+            <Route path="/settings"               element={<ProtectedRoute><AccountSettings /></ProtectedRoute>} />
             <Route path="/negotiation/:id"        element={<ProtectedRoute><NegotiationDetail /></ProtectedRoute>} />
 
             {/* ── Admin routes — completely isolated ── */}
