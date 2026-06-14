@@ -261,3 +261,80 @@
   .riskStats { grid-template-columns:repeat(2,1fr); }
   .h1 { font-size:15px; max-width:200px; }
 }
+
+/* ── PRINT / PDF EXPORT ── */
+@media print {
+  /* Hide app chrome */
+  .topbar,
+  .docBar,
+  .tabBar { display:none !important; }
+
+  /* Full width content */
+  .content { padding:0 !important; }
+  .summaryLayout,
+  .riskLayout,
+  .clauseLayout,
+  .exportLayout { display:block !important; }
+  .summarySide,
+  .riskSide,
+  .clauseSide { display:none !important; }
+
+  /* Page setup */
+  @page {
+    size: A4;
+    margin: 20mm 16mm 24mm 16mm;
+  }
+
+  /* HEADER — fixed at top of every page */
+  .printHeader {
+    display:flex !important;
+    align-items:center;
+    justify-content:space-between;
+    padding-bottom:12px;
+    border-bottom:2px solid #1B2B5E;
+    margin-bottom:20px;
+  }
+  .printHeaderLogo { font-size:18px; font-weight:800; color:#1B2B5E; letter-spacing:-0.02em; }
+  .printHeaderLogo span { color:#b48c3f; }
+  .printHeaderDoc { font-size:11px; color:#8A96B8; text-align:right; }
+
+  /* FOOTER — fixed at bottom */
+  .printFooter {
+    display:flex !important;
+    align-items:center;
+    justify-content:space-between;
+    padding-top:10px;
+    border-top:1px solid #C8D0E7;
+    margin-top:20px;
+    font-size:10px;
+    color:#8A96B8;
+  }
+
+  /* Panels */
+  .panel { box-shadow:none !important; border:1px solid #C8D0E7 !important; break-inside:avoid; margin-bottom:12px; }
+  .sCard { box-shadow:none !important; border:1px solid #C8D0E7 !important; break-inside:avoid; }
+  .riskStat { break-inside:avoid; }
+  .clauseDetail { border:1px solid #C8D0E7 !important; break-inside:avoid; }
+
+  /* Typography */
+  body { font-size:11px; color:#1B2B5E; }
+  .panelTitle { font-size:13px !important; }
+  .summaryText { font-size:11px !important; line-height:1.6 !important; }
+  .nextStep { font-size:11px !important; }
+  .cdName { font-size:14px !important; }
+  .cdQuote p { font-size:11px !important; }
+  .cdSection p { font-size:11px !important; }
+
+  /* Risk stats grid */
+  .riskStats { display:grid !important; grid-template-columns:repeat(4,1fr) !important; gap:8px !important; }
+  .rsCount { font-size:28px !important; }
+
+  /* Clause list */
+  .riskClauseRow { padding:10px 16px !important; }
+  .rcName { font-size:12px !important; }
+
+  /* Page breaks */
+  .panel + .panel { page-break-before:auto; }
+  h2 { page-break-after:avoid; }
+  .clauseDetail { page-break-inside:avoid; }
+}

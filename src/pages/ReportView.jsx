@@ -67,7 +67,8 @@ export default function ReportView() {
   const lowClauses  = clauses.filter(c => c.danger === 'LOW')
 
   const riskScore = highClauses.length > 3 ? 'HIGH' : highClauses.length > 0 ? 'MEDIUM' : 'LOW'
-  const riskNum   = Math.max(10, Math.min(95, 100 - (highClauses.length * 15) - (medClauses.length * 5)))
+  // Score represents risk level: higher = more risk
+  const riskNum   = Math.min(95, Math.max(5, (highClauses.length * 15) + (medClauses.length * 5) + (lowClauses.length * 2)))
 
   const filteredClauses = filter === 'All' ? clauses
     : filter === 'High' ? highClauses
@@ -153,6 +154,15 @@ export default function ReportView() {
             <button key={t} className={`${styles.tab} ${activeTab === t ? styles.tabActive : ''}`}
               onClick={() => setActiveTab(t)}>{t}</button>
           ))}
+        </div>
+
+        {/* PRINT HEADER — hidden on screen, shows in PDF */}
+        <div className={styles.printHeader} style={{display:'none'}}>
+          <div className={styles.printHeaderLogo}>Lease<span>Lens</span></div>
+          <div className={styles.printHeaderDoc}>
+            <div>{stripTimestamp(document?.filename)}</div>
+            <div>Generated {new Date().toLocaleDateString('en-AU', {day:'numeric',month:'long',year:'numeric'})}</div>
+          </div>
         </div>
 
         <div className={styles.content}>
@@ -590,6 +600,13 @@ export default function ReportView() {
           )}
 
         </div>
+        {/* PRINT FOOTER — hidden on screen */}
+        <div className={styles.printFooter} style={{display:'none'}}>
+          <span>LeaseLens — Retail Lease Intelligence</span>
+          <span>This report is confidential and does not constitute legal advice.</span>
+          <span>{negotiation?.property_name || ''}</span>
+        </div>
+
       </main>
     </div>
   )
