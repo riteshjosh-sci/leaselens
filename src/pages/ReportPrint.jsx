@@ -162,6 +162,22 @@ export default function ReportPrint() {
         </div>
       </div>
 
+      {/* MINI HEADER — page 2+ */}
+      <div className={styles.miniHeader}>
+        <div className={styles.miniHeaderBrand}>
+          <svg width="16" height="16" viewBox="0 0 40 40" fill="none">
+            <path d="M5 13 V7 a2 2 0 0 1 2-2 h6" stroke="#1B2B5E" strokeWidth="2.6" strokeLinecap="round"/>
+            <path d="M27 5 h6 a2 2 0 0 1 2 2 v6" stroke="#1B2B5E" strokeWidth="2.6" strokeLinecap="round"/>
+            <path d="M35 27 v6 a2 2 0 0 1 -2 2 h-6" stroke="#1B2B5E" strokeWidth="2.6" strokeLinecap="round"/>
+            <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="#1B2B5E" strokeWidth="2.6" strokeLinecap="round"/>
+            <circle cx="20" cy="20" r="5.4" fill="#1B2B5E"/>
+          </svg>
+          <span>LeaseLens</span>
+        </div>
+        <div className={styles.miniHeaderDoc}>{stripTimestamp(document?.filename)}</div>
+        <div className={styles.miniHeaderDate}>{formatDate(new Date())}</div>
+      </div>
+
       {/* DOCUMENT TITLE */}
       <div className={styles.docTitle}>
         <div className={styles.docIcon}>{document?.filename?.split('.').pop()?.toUpperCase()}</div>

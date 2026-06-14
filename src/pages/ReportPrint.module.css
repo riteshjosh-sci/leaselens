@@ -16,24 +16,48 @@
   padding: 16mm 14mm;
 }
 
-/* ── HEADER ── */
-.header {
+/* ── MINI HEADER — page 2+ ── */
+.miniHeader {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  padding-bottom: 12px;
-  border-bottom: 2.5px solid #1B2B5E;
-  margin-bottom: 20px;
+  align-items: center;
+  gap: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1.5px solid #1B2B5E;
+  margin-bottom: 14px;
 }
-.headerLeft { display:flex; flex-direction:column; gap:4px; }
-.brandLogo { display:flex; align-items:center; gap:10px; }
-.brandName { font-size:20px; font-weight:800; color:#1B2B5E; letter-spacing:-0.02em; }
-.brandName span { color:#b48c3f; }
-.wsLogo { max-height:44px; max-width:160px; object-fit:contain; }
-.headerClient { font-size:11px; color:#8A96B8; font-weight:500; margin-top:4px; }
-.headerRight { text-align:right; }
-.headerTitle { font-size:13px; font-weight:700; color:#1B2B5E; margin-bottom:4px; }
-.headerMeta { font-size:10px; color:#8A96B8; line-height:1.5; }
+.miniHeaderBrand {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  font-weight: 800;
+  color: #1B2B5E;
+  flex-shrink: 0;
+}
+.miniHeaderDoc {
+  flex: 1;
+  font-size: 11px;
+  color: #4A5D8A;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.miniHeaderDate {
+  font-size: 10px;
+  color: #8A96B8;
+  flex-shrink: 0;
+}
+
+@media screen {
+  .miniHeader {
+    background: #F4F6FA;
+    border-radius: 6px;
+    padding: 8px 14px;
+    border: 1px solid #EEF1F8;
+    margin-bottom: 14px;
+  }
+}
 
 /* ── DOCUMENT TITLE ── */
 .docTitle { display:flex; align-items:center; gap:14px; margin-bottom:20px; padding:16px; background:#F4F6FA; border-radius:8px; }
@@ -269,26 +293,4 @@
   .pageBreak { display: none; }
   /* On screen show header normally */
   .header { display: flex; }
-}
-
-/* ── HEADER for page 2+ (after cover) ── */
-.headerReport {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 10px;
-  border-bottom: 2px solid #1B2B5E;
-  margin-bottom: 16px;
-}
-.headerReport .brandLogo { font-size: 15px; }
-.headerReport .brandName { font-size: 15px; }
-
-@media print {
-  /* Suppress header on the cover page (first page) */
-  /* The cover fills page 1, pageBreak forces page 2 */
-  /* headerReport appears naturally at top of page 2 */
-  .headerReport {
-    margin-top: 0;
-    padding-top: 0;
-  }
 }
