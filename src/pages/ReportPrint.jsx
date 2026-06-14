@@ -91,6 +91,8 @@ export default function ReportPrint() {
 
         {/* ════════════════════════════════
             PAGE 1 — COVER
+            (break-after: page in CSS —
+             no separate pageBreak div needed)
             ════════════════════════════════ */}
         <div className={styles.cover}>
 
@@ -164,9 +166,7 @@ export default function ReportPrint() {
 
         {/* ════════════════════════════════
             PAGE 2+ — REPORT CONTENT
-            (page break forces new page)
             ════════════════════════════════ */}
-        <div className={styles.pageBreak} />
 
         {/* Running header on every content page */}
         <div className={styles.runningHead}>
