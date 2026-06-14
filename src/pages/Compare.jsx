@@ -2,316 +2,345 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import Nav from '../components/Nav'
-import Footer from '../components/Footer'
+import AppSidebar from '../components/AppSidebar'
 import styles from './Compare.module.css'
+
+const MenuIcon  = () => <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>
+const SwapIcon  = () => <svg width="15" height="15" viewBox="0 0 20 20" fill="none"><path d="M4 7h12M4 7l3-3M4 7l3 3M16 13H4M16 13l-3-3M16 13l-3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const ChevIcon  = () => <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const ArrowIcon = () => <svg width="13" height="13" viewBox="0 0 20 20" fill="none"><path d="M4 10h12M10 4l6 6-6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+const CheckIcon = () => <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8l3 3 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
 
 export default function Compare() {
   const { negotiationId } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [negotiation, setNegotiation] = useState(null)
-  const [versions, setVersions] = useState([])
-  const [versionA, setVersionA] = useState(null)
-  const [versionB, setVersionB] = useState(null)
-  const [comparison, setComparison] = useState(null)
+
+  const [neg, setNeg]         = useState(null)
+  const [docs, setDocs]       = useState([])
+  const [v1, setV1]           = useState(null)
+  const [v2, setV2]           = useState(null)
+  const [report1, setReport1] = useState(null)
+  const [report2, setReport2] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [comparing, setComparing] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
 
-  useEffect(() => {
-    if (!user) { navigate('/login'); return }
-    fetchVersions()
-  }, [negotiationId, user])
+  useEffect(() => { if (!user) { navigate('/login'); return }; fetchAll() }, [negotiationId])
 
-  const fetchVersions = async () => {
-    const { data: neg } = await supabase
+  const fetchAll = async () => {
+    const { data: negData } = await supabase
       .from('negotiations')
-      .select('id, property_name')
-      .eq('id', negotiationId)
-      .single()
+      .select(`id, property_name, workspace_id,
+        documents ( id, filename, version_number, uploaded_at, overall_risk,
+          reports ( id, report_json ) )`)
+      .eq('id', negotiationId).single()
 
-    const { data: docs } = await supabase
-      .from('documents')
-      .select('id, filename, version_number, uploaded_at, overall_risk, reports(id, report_json)')
-      .eq('negotiation_id', negotiationId)
-      .order('version_number', { ascending: true })
+    if (!negData) { navigate('/dashboard'); return }
+    setNeg(negData)
+    const sorted = (negData.documents || []).sort((a, b) => a.version_number - b.version_number)
+    setDocs(sorted)
 
-    setNegotiation(neg)
-    setVersions(docs || [])
-
-    if (docs?.length >= 2) {
-      setVersionA(docs[docs.length - 2])
-      setVersionB(docs[docs.length - 1])
+    if (sorted.length >= 2) {
+      const d1 = sorted[sorted.length - 2]
+      const d2 = sorted[sorted.length - 1]
+      setV1(d1); setV2(d2)
+      setReport1(d1.reports?.[0]?.report_json || null)
+      setReport2(d2.reports?.[0]?.report_json || null)
+    } else if (sorted.length === 1) {
+      setV1(sorted[0])
+      setReport1(sorted[0].reports?.[0]?.report_json || null)
     }
-
     setLoading(false)
   }
 
-  const runComparison = () => {
-    if (!versionA || !versionB) return
-    setComparing(true)
-
-    const reportA = versionA.reports?.[0]?.report_json
-    const reportB = versionB.reports?.[0]?.report_json
-
-    if (!reportA || !reportB) {
-      setComparing(false)
-      return
-    }
-
-    // Fuzzy clause matching — normalise names before comparing
-    const normaliseName = (name) => name
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, '')
-      .replace(/\s+/g, ' ')
-      .trim()
-
-    // Extract key words from clause name for matching
-    const keyWords = (name) => normaliseName(name)
-      .split(' ')
-      .filter(w => w.length > 3)
-      .sort()
-      .join(' ')
-
-    // Find best match in clauseMapA for a given clause name
-    const findMatch = (name, mapA) => {
-      const normB = normaliseName(name)
-      const keyB = keyWords(name)
-
-      // Try exact normalised match first
-      for (const [key, clause] of Object.entries(mapA)) {
-        if (normaliseName(key) === normB) return key
-      }
-
-      // Try keyword overlap match
-      let bestMatch = null
-      let bestScore = 0
-      for (const [key, clause] of Object.entries(mapA)) {
-        const keyA = keyWords(key)
-        const wordsA = keyA.split(' ')
-        const wordsB = keyB.split(' ')
-        const common = wordsA.filter(w => wordsB.includes(w)).length
-        const score = common / Math.max(wordsA.length, wordsB.length)
-        if (score > bestScore && score >= 0.5) {
-          bestScore = score
-          bestMatch = key
-        }
-      }
-      return bestMatch
-    }
-
-    // Build clause map from version A
-    const clauseMapA = {}
-    ;(reportA.clauses || []).forEach(c => { clauseMapA[c.name] = c })
-
-    // Compare each clause in version B against version A
-    const results = []
-
-    ;(reportB.clauses || []).forEach(clauseB => {
-      const matchKey = findMatch(clauseB.name, clauseMapA)
-      const clauseA = matchKey ? clauseMapA[matchKey] : null
-      let status = 'new'
-
-      if (clauseA) {
-        const riskOrder = { HIGH: 3, MEDIUM: 2, LOW: 1 }
-        const aRisk = riskOrder[clauseA.danger] || 0
-        const bRisk = riskOrder[clauseB.danger] || 0
-        if (bRisk < aRisk) status = 'improved'
-        else if (bRisk > aRisk) status = 'worsened'
-        else status = 'unchanged'
-        delete clauseMapA[matchKey]
-      }
-
-      results.push({ clause: clauseB, prevClause: clauseA, status })
-    })
-
-    // Any remaining in A were removed
-    Object.values(clauseMapA).forEach(clauseA => {
-      results.push({ clause: clauseA, prevClause: null, status: 'removed' })
-    })
-
-    // Sort: worsened first, then new, then unchanged, then improved, then removed
-    const order = { worsened: 0, new: 1, unchanged: 2, improved: 3, removed: 4 }
-    results.sort((a, b) => order[a.status] - order[b.status])
-
-    const summary = {
-      improved: results.filter(r => r.status === 'improved').length,
-      worsened: results.filter(r => r.status === 'worsened').length,
-      unchanged: results.filter(r => r.status === 'unchanged').length,
-      new: results.filter(r => r.status === 'new').length,
-      removed: results.filter(r => r.status === 'removed').length,
-    }
-
-    setComparison({ results, summary, reportA, reportB })
-    setComparing(false)
+  const handleSwap = () => {
+    const tmp = v1; setV1(v2); setV2(tmp)
+    const tmpR = report1; setReport1(report2); setReport2(tmpR)
   }
 
-  const statusConfig = {
-    improved:  { label: 'Improved',  color: 'var(--risk-l)', bg: 'var(--risk-l-bg)', border: '#b8d8c4', icon: '↑' },
-    worsened:  { label: 'Worsened',  color: 'var(--risk-h)', bg: 'var(--risk-h-bg)', border: '#e8c0c0', icon: '↓' },
-    unchanged: { label: 'Unchanged', color: 'var(--ink-light)', bg: 'var(--paper)', border: 'var(--rule)', icon: '—' },
-    new:       { label: 'New clause', color: 'var(--gold)', bg: 'var(--gold-light)', border: '#e0d5c0', icon: '+' },
-    removed:   { label: 'Removed',   color: '#60a5fa', bg: '#eff6ff', border: '#bfdbfe', icon: '✓' },
-  }
+  const stripTimestamp = f => f?.replace(/^\d+_/, '') || ''
+  const formatDate = d => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
 
-  const riskBadge = (risk) => {
-    if (!risk) return null
-    const map = { HIGH: 'badge-high', MEDIUM: 'badge-medium', LOW: 'badge-low' }
-    return <span className={`badge ${map[risk]}`}>{risk}</span>
-  }
+  const clauses1 = report1?.clauses || []
+  const clauses2 = report2?.clauses || []
 
-  const formatDate = (d) => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+  // Compare clauses
+  const allNames = [...new Set([...clauses1.map(c => c.name), ...clauses2.map(c => c.name)])]
+  const compared = allNames.map(name => {
+    const c1 = clauses1.find(c => c.name === name)
+    const c2 = clauses2.find(c => c.name === name)
+    let status = 'unchanged'
+    if (!c1) status = 'added'
+    else if (!c2) status = 'removed'
+    else if (c1.danger !== c2.danger || c1.risk !== c2.risk) status = 'modified'
+    return { name, c1, c2, status }
+  })
+
+  const added    = compared.filter(c => c.status === 'added').length
+  const removed  = compared.filter(c => c.status === 'removed').length
+  const modified = compared.filter(c => c.status === 'modified').length
+
+  const riskColor = { HIGH: 'var(--risk-h)', MEDIUM: 'var(--risk-m)', LOW: 'var(--risk-l)' }
+  const riskBg    = { HIGH: 'var(--risk-h-bg)', MEDIUM: 'var(--risk-m-bg)', LOW: 'var(--risk-l-bg)' }
+  const riskBorder= { HIGH: 'var(--risk-h-border)', MEDIUM: 'var(--risk-m-border)', LOW: 'var(--risk-l-border)' }
+
+  const statusColor = { added:'var(--risk-l)', removed:'var(--risk-h)', modified:'var(--risk-m)', unchanged:'var(--navy-muted)' }
+  const statusBg    = { added:'var(--risk-l-bg)', removed:'var(--risk-h-bg)', modified:'var(--risk-m-bg)', unchanged:'var(--bg)' }
+  const statusLabel = { added:'NEW', removed:'REMOVED', modified:'MODIFIED', unchanged:'' }
 
   if (loading) return (
-    <>
-      <Nav />
-      <div className={styles.loading}>Loading versions...</div>
-    </>
-  )
-
-  if (versions.length < 2) return (
-    <>
-      <Nav />
-      <div className={styles.errorWrap}>
-        <h2>Not enough versions</h2>
-        <p>You need at least two versions of this document to compare.</p>
-        <button className="btn-primary" onClick={() => navigate('/dashboard')}>Back to dashboard</button>
-      </div>
-    </>
+    <div className="app-layout">
+      <AppSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <main className="app-main"><div className={styles.loading}><div className={styles.ring} /></div></main>
+    </div>
   )
 
   return (
-    <>
-      <Nav />
-      <div className={styles.page}>
-        <button className={styles.back} onClick={() => navigate('/dashboard')}>← Dashboard</button>
+    <div className="app-layout">
+      <AppSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
+      <main className="app-main">
 
-        <div className={styles.kicker}>Version comparison</div>
-        <h1 className={styles.h1}>{negotiation?.property_name || 'Document comparison'}</h1>
-
-        {/* VERSION SELECTOR */}
-        <div className={styles.selector}>
-          <div className={styles.selectorCol}>
-            <div className={styles.selectorLabel}>Version A (earlier)</div>
-            <select className="input" value={versionA?.id || ''} onChange={e => setVersionA(versions.find(v => v.id === e.target.value))}>
-              {versions.map(v => (
-                <option key={v.id} value={v.id}>v{v.version_number} — {v.filename.replace(/^\d+_/, '')}</option>
-              ))}
-            </select>
-            {versionA && <div className={styles.selectorMeta}>{formatDate(versionA.uploaded_at)} · {riskBadge(versionA.overall_risk)}</div>}
+        {/* TOP BAR */}
+        <div className={styles.topbar}>
+          <div className={styles.topbarLeft}>
+            <button className={styles.menuBtn} onClick={() => setMobileOpen(true)}><MenuIcon /></button>
+            <div>
+              <div className={styles.crumb}>
+                <button onClick={() => navigate('/dashboard')}>Dashboard</button>
+                <span>›</span>
+                {neg?.workspace_id && <button onClick={() => navigate(`/workspace/${neg.workspace_id}`)}>Workspace</button>}
+                {neg?.workspace_id && <span>›</span>}
+                <button onClick={() => navigate(`/negotiation/${negotiationId}`)}>{neg?.property_name || 'Negotiation'}</button>
+                <span>›</span><span>Compare</span>
+              </div>
+              <h1 className={styles.h1}>Comparison</h1>
+              <p className={styles.sub}>Compare two versions and understand the key differences.</p>
+            </div>
           </div>
-
-          <div className={styles.arrow}>→</div>
-
-          <div className={styles.selectorCol}>
-            <div className={styles.selectorLabel}>Version B (later)</div>
-            <select className="input" value={versionB?.id || ''} onChange={e => setVersionB(versions.find(v => v.id === e.target.value))}>
-              {versions.map(v => (
-                <option key={v.id} value={v.id}>v{v.version_number} — {v.filename}</option>
-              ))}
-            </select>
-            {versionB && <div className={styles.selectorMeta}>{formatDate(versionB.uploaded_at)} · {riskBadge(versionB.overall_risk)}</div>}
+          <div className={styles.topbarRight}>
+            <button className="btn-outline btn-sm" onClick={handleSwap}><SwapIcon /> Swap documents</button>
           </div>
-
-          <button className="btn-primary" onClick={runComparison} disabled={comparing || !versionA || !versionB || versionA?.id === versionB?.id}>
-            {comparing ? 'Comparing...' : 'Compare →'}
-          </button>
         </div>
 
-        {!versionA?.reports?.[0]?.report_json && versionA && (
-          <div className={styles.noReport}>Version A has no report yet — run an analysis first.</div>
-        )}
-        {!versionB?.reports?.[0]?.report_json && versionB && (
-          <div className={styles.noReport}>Version B has no report yet — run an analysis first.</div>
-        )}
+        {docs.length < 2 ? (
+          <div className={styles.content}>
+            <div className={styles.emptyState}>
+              <div className={styles.emptyIcon}>📄</div>
+              <h3>Only one version available</h3>
+              <p>Upload a second version to compare changes between documents.</p>
+              <button className="btn-gold" onClick={() => navigate(`/negotiation/${negotiationId}`)}>
+                Add a version →
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className={styles.content}>
 
-        {/* COMPARISON RESULTS */}
-        {comparison && (
-          <div className={styles.results}>
-            {/* Summary banner */}
-            <div className={styles.summaryBanner}>
-              <div className={styles.bannerTitle}>What changed between v{versionA?.version_number} and v{versionB?.version_number}</div>
-              <div className={styles.bannerStats}>
-                {Object.entries(comparison.summary).map(([key, val]) => {
-                  const cfg = statusConfig[key]
-                  return (
-                    <div key={key} className={styles.bannerStat} style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }}>
-                      <span className={styles.bannerIcon} style={{ color: cfg.color }}>{cfg.icon}</span>
-                      <span className={styles.bannerVal} style={{ color: cfg.color }}>{val}</span>
-                      <span className={styles.bannerLabel}>{cfg.label}</span>
-                    </div>
-                  )
-                })}
+            {/* VERSION SELECTORS */}
+            <div className={styles.versionRow}>
+              <div className={styles.versionCol}>
+                <div className={styles.versionLabel}>Original Version</div>
+                <div className={styles.versionCard}>
+                  <div className={styles.vcIcon}>
+                    {v1?.filename?.split('.').pop()?.toUpperCase()}
+                  </div>
+                  <div className={styles.vcInfo}>
+                    <div className={styles.vcName}>{stripTimestamp(v1?.filename)}</div>
+                    <div className={styles.vcMeta}>v{v1?.version_number} · {formatDate(v1?.uploaded_at)}</div>
+                  </div>
+                  {v1?.overall_risk && (
+                    <span className={styles.riskPill} style={{background: riskBg[v1.overall_risk], color: riskColor[v1.overall_risk], border: `1px solid ${riskBorder[v1.overall_risk]}`}}>
+                      {v1.overall_risk}
+                    </span>
+                  )}
+                  <ChevIcon />
+                </div>
               </div>
 
-              {/* Overall risk change */}
-              <div className={styles.riskChange}>
-                <span>Overall risk:</span>
-                {riskBadge(comparison.reportA.overall_risk)}
-                <span className={styles.riskArrow}>→</span>
-                {riskBadge(comparison.reportB.overall_risk)}
-                {comparison.reportA.overall_risk !== comparison.reportB.overall_risk && (
-                  <span className={styles.riskChangeLabel} style={{
-                    color: comparison.reportB.overall_risk === 'HIGH' ? 'var(--risk-h)'
-                      : comparison.reportB.overall_risk === 'LOW' ? 'var(--risk-l)'
-                      : 'var(--gold)'
-                  }}>
-                    {['HIGH','MEDIUM','LOW'].indexOf(comparison.reportB.overall_risk) >
-                     ['HIGH','MEDIUM','LOW'].indexOf(comparison.reportA.overall_risk)
-                      ? '↑ Improved' : '↓ Worsened'}
-                  </span>
-                )}
+              <div className={styles.vsLabel}>VS</div>
+
+              <div className={styles.versionCol}>
+                <div className={styles.versionLabel}>Revised Version</div>
+                <div className={styles.versionCard}>
+                  <div className={styles.vcIcon} style={{background:'var(--navy)', color:'#fff'}}>
+                    {v2?.filename?.split('.').pop()?.toUpperCase()}
+                  </div>
+                  <div className={styles.vcInfo}>
+                    <div className={styles.vcName}>{stripTimestamp(v2?.filename)}</div>
+                    <div className={styles.vcMeta}>v{v2?.version_number} · {formatDate(v2?.uploaded_at)}</div>
+                  </div>
+                  {v2?.overall_risk && (
+                    <span className={styles.riskPill} style={{background: riskBg[v2.overall_risk], color: riskColor[v2.overall_risk], border: `1px solid ${riskBorder[v2.overall_risk]}`}}>
+                      {v2.overall_risk}
+                    </span>
+                  )}
+                  <ChevIcon />
+                </div>
               </div>
             </div>
 
-            {/* Clause list */}
-            <div className={styles.clauseList}>
-              {comparison.results.map((r, i) => {
-                const cfg = statusConfig[r.status]
-                return (
-                  <div key={i} className={styles.clauseRow} style={{ borderLeft: `3px solid ${cfg.color}` }}>
-                    <div className={styles.clauseTop}>
-                      <div className={styles.clauseName}>{r.clause.name}</div>
-                      <div className={styles.clauseBadges}>
-                        {r.prevClause && riskBadge(r.prevClause.danger)}
-                        {r.prevClause && <span className={styles.clauseArrow}>→</span>}
-                        {riskBadge(r.clause.danger)}
-                        <span className={styles.statusTag} style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
-                          {cfg.icon} {cfg.label}
-                        </span>
-                      </div>
+            <div className={styles.mainGrid}>
+              {/* LEFT — clause comparison */}
+              <div className={styles.compareMain}>
+
+                {/* Side by side headers */}
+                <div className={styles.sideBySide}>
+                  <div className={styles.sidePanel}>
+                    <div className={styles.sideHead}>
+                      <h3>Original Version</h3>
+                      <span className={styles.clauseCount}>{clauses1.length} clauses</span>
                     </div>
-
-                    {r.status !== 'unchanged' && r.status !== 'removed' && (
-                      <div className={styles.clauseDetail}>
-                        {r.clause.risk && (
-                          <div className={styles.detailSection}>
-                            <div className={styles.detailLabel}>Current risk</div>
-                            <p>{r.clause.risk}</p>
+                    <div className={styles.clauseRows}>
+                      {compared.map((c, i) => (
+                        <div key={i} className={`${styles.clauseRow} ${c.status === 'removed' ? styles.removedRow : ''}`}>
+                          <div className={styles.crNum}>{i + 1}</div>
+                          <div className={styles.crInfo}>
+                            <div className={styles.crName}>{c.name}</div>
+                            {c.c1 && <div className={styles.crDesc}>{c.c1.risk?.substring(0, 80)}...</div>}
                           </div>
-                        )}
-                        {r.clause.counter && (
-                          <div className={styles.counterBox}>
-                            <div className={styles.detailLabel}>Suggested response</div>
-                            <p>{r.clause.counter}</p>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {r.status === 'removed' && (
-                      <div className={styles.clauseDetail}>
-                        <p className={styles.removedNote}>This clause was present in version A but does not appear in version B.</p>
-                      </div>
-                    )}
+                          {c.c1?.danger && (
+                            <div className={styles.crDot} style={{background: riskColor[c.c1.danger]}} />
+                          )}
+                          {c.status !== 'unchanged' && (
+                            <span className={styles.statusDot} style={{background: statusBg[c.status], color: statusColor[c.status]}}>
+                              {statusLabel[c.status]}
+                            </span>
+                          )}
+                          <ChevIcon />
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                )
-              })}
+
+                  <div className={styles.sidePanel}>
+                    <div className={styles.sideHead}>
+                      <h3>Revised Version</h3>
+                      <span className={styles.clauseCount}>{clauses2.length} clauses</span>
+                    </div>
+                    <div className={styles.clauseRows}>
+                      {compared.map((c, i) => (
+                        <div key={i} className={`${styles.clauseRow} ${c.status === 'added' ? styles.addedRow : c.status === 'modified' ? styles.modifiedRow : ''}`}>
+                          <div className={styles.crNum}>{i + 1}</div>
+                          <div className={styles.crInfo}>
+                            <div className={styles.crName}>{c.name}</div>
+                            {c.c2 && <div className={styles.crDesc}>{c.c2.risk?.substring(0, 80)}...</div>}
+                            {!c.c2 && <div className={styles.crDesc} style={{color:'var(--navy-lt)'}}>Clause not present in this version</div>}
+                          </div>
+                          {c.c2?.danger && (
+                            <div className={styles.crDot} style={{background: riskColor[c.c2.danger]}} />
+                          )}
+                          {c.status === 'added' && (
+                            <span className={styles.newBadge}>NEW</span>
+                          )}
+                          <ChevIcon />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Key differences */}
+                {modified > 0 && (
+                  <div className={styles.keyDiffs}>
+                    <div className={styles.kdHead}>
+                      <h3>Key Differences</h3>
+                      <button className={styles.viewAllBtn}>View all changes <ArrowIcon /></button>
+                    </div>
+                    <div className={styles.kdGrid}>
+                      {compared.filter(c => c.status === 'modified').slice(0, 3).map((c, i) => (
+                        <div key={i} className={styles.kdCard}>
+                          <div className={styles.kdIcon} style={{background: c.c2?.danger === 'HIGH' ? 'var(--risk-h-bg)' : c.c2?.danger === 'MEDIUM' ? 'var(--risk-m-bg)' : 'var(--risk-l-bg)'}}>
+                            {c.c2?.danger === 'HIGH' ? '🔴' : c.c2?.danger === 'MEDIUM' ? '🟡' : '🟢'}
+                          </div>
+                          <div className={styles.kdName}>{c.name}</div>
+                          <div className={styles.kdDesc}>{c.c2?.risk?.substring(0, 100)}...</div>
+                          <div className={styles.kdRisk} style={{color: riskColor[c.c2?.danger || 'LOW']}}>
+                            {c.c2?.danger === 'HIGH' ? 'Higher Risk' : c.c2?.danger === 'MEDIUM' ? 'Moderate Impact' : 'Lower Risk'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* RIGHT — summary sidebar */}
+              <div className={styles.compareSide}>
+
+                {/* Comparison summary */}
+                <div className={styles.sCard}>
+                  <h3 className={styles.sCardTitle}>Comparison Summary</h3>
+                  <div className={styles.summaryItems}>
+                    {[
+                      { icon:'🟢', label:'Added Clauses', count: added, color:'var(--risk-l)' },
+                      { icon:'🟡', label:'Modified Clauses', count: modified, color:'var(--risk-m)' },
+                      { icon:'🔴', label:'Removed Clauses', count: removed, color:'var(--risk-h)' },
+                    ].map((s, i) => (
+                      <div key={i} className={styles.summaryItem}>
+                        <span>{s.icon}</span>
+                        <span className={styles.siLabel}>{s.label}</span>
+                        <span className={styles.siCount} style={{color: s.color}}>{s.count}</span>
+                      </div>
+                    ))}
+                    <div className={styles.summaryItem}>
+                      <span>⬇️</span>
+                      <span className={styles.siLabel}>Risk Change</span>
+                      <span className={styles.riskChange}>
+                        {v2?.overall_risk === 'LOW' ? '↓ Lower Risk' : v2?.overall_risk === 'HIGH' ? '↑ Higher Risk' : '→ Same Risk'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Which version is better */}
+                <div className={styles.sCard}>
+                  <h3 className={styles.sCardTitle}>Which Version is More Favorable?</h3>
+                  <div className={styles.favorCard}>
+                    <div className={styles.favorIcon}>⚖️</div>
+                    <div className={styles.favorTitle}>
+                      {v2?.overall_risk <= v1?.overall_risk ? 'Revised Version' : 'Original Version'}
+                    </div>
+                    <p className={styles.favorDesc}>
+                      {v2?.overall_risk === 'LOW' ? 'The revised version reduces overall risk and provides stronger protections.'
+                        : 'The original version may have more favorable terms in some areas.'}
+                    </p>
+                    <div className={styles.favorPoints}>
+                      {compared.filter(c => c.status === 'modified' && c.c2?.danger === 'LOW').slice(0, 3).map((c, i) => (
+                        <div key={i} className={styles.favorPoint}>
+                          <span className={styles.fpCheck}><CheckIcon /></span>
+                          <span>{c.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <button className={styles.viewRiskBtn}>View Risk Comparison <ArrowIcon /></button>
+                </div>
+
+                {/* Recommendations */}
+                <div className={styles.sCard}>
+                  <h3 className={styles.sCardTitle}>Recommendations</h3>
+                  <div className={styles.recList}>
+                    {[
+                      { color:'var(--risk-l)', title:'Proceed with Revised Version', sub:'Better protections and lower risk.' },
+                      { color:'var(--risk-m)', title:'Review Modified Clauses', sub:'Expanded scope may increase obligations.' },
+                      { color:'var(--risk-h)', title:'Verify Data Protection Compliance', sub:'Align with privacy policies.' },
+                    ].map((r, i) => (
+                      <div key={i} className={styles.recItem}>
+                        <div className={styles.recDot} style={{background: r.color}} />
+                        <div>
+                          <div className={styles.recTitle}>{r.title}</div>
+                          <div className={styles.recSub}>{r.sub}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+              </div>
             </div>
           </div>
         )}
-      </div>
-      <Footer />
-    </>
+      </main>
+    </div>
   )
 }
