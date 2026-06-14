@@ -54,10 +54,10 @@ export default function ReportView() {
 
     setReport(rpt.report_json)
     setDocument(rpt.documents)
-    const neg = rpt.documents?.negotiations
-    const ws  = neg?.workspaces
-    setNeg(neg)
-    setWs(ws)
+    const negData = rpt.documents?.negotiations
+    const wsData  = negData?.workspaces
+    setNeg(negData)
+    setWs(wsData)
     setLoading(false)
   }
 
@@ -633,8 +633,6 @@ export default function ReportView() {
             </div>
           )}
 
-        </div>
-        </div>
         </div>
         {/* PRINT FOOTER — hidden on screen */}
         <div className={styles.printFooter} style={{display:'none'}}>
