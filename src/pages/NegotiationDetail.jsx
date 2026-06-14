@@ -257,8 +257,7 @@ export default function NegotiationDetail() {
   return (
     <div className="app-layout">
       <AppSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <main className="app-main">
-      <div className={styles.page}>
+      <main className="app-main" style={{overflowX:'hidden'}}>
 
         {/* BREADCRUMB */}
         <div className={styles.crumb}>
@@ -528,7 +527,6 @@ export default function NegotiationDetail() {
             <p className={styles.disclaimer}>LeaseLens provides informational analysis to support negotiation and does not constitute legal advice.</p>
           </div>
         </div>
-      </div>
       </main>
     </div>
   )

@@ -198,8 +198,7 @@ export default function ReportView() {
   return (
     <div className="app-layout">
       <AppSidebar mobileOpen={mobileOpen} onClose={() => setMobileOpen(false)} />
-      <main className="app-main">
-      <div className={styles.page}>
+      <main className="app-main" style={{overflowX:'hidden'}}>
       {/* BREADCRUMB */}
       <div className={styles.crumb}>
         <button onClick={() => navigate('/dashboard')}>Dashboard</button>
@@ -440,7 +439,6 @@ export default function ReportView() {
 
           <p className={styles.sDisclaimer}>LeaseLens provides informational analysis to support negotiation and does not constitute legal advice.</p>
         </div>
-      </div>
       </main>
     </div>
   )
