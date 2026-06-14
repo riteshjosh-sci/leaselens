@@ -587,14 +587,21 @@ export default function ReportView() {
                   if (exportFormat === 'pdf') {
                     handlePDF()
                   } else {
-                    // Generate shareable link
-                    const { data } = await import('../lib/supabase').then(m => 
-                      m.supabase.from('share_tokens').insert({
-                        report_id: id, user_id: user?.id,
-                        expires_at: new Date(Date.now() + 7*24*60*60*1000).toISOString()
+                    try {
+                      const { data, error } = await supabase.from('share_tokens').insert({
+                        user_id: user?.id,
+                        report_id: id,
+                        workspace_id: negotiation?.workspace_id || null,
+                        label: `Report share — ${new Date().toLocaleDateString('en-AU')}`,
+                        expires_at: new Date(Date.now() + 30*24*60*60*1000).toISOString()
                       }).select().single()
-                    )
-                    if (data) setShareGenerated(`${window.location.origin}/shared/${data.token}`)
+                      if (error) { console.error('Share error:', error); alert('Failed to generate share link: ' + error.message); return }
+                      if (data?.token) {
+                        const url = `${window.location.origin}/shared/${data.token}`
+                        setShareGenerated(url)
+                        await navigator.clipboard.writeText(url)
+                      }
+                    } catch(e) { console.error(e); alert('Failed to generate share link.') }
                   }
                 }}>
                   <DownloadIcon /> {exportFormat === 'pdf' ? 'Generate & Download PDF' : 'Generate Share Link'}
@@ -608,35 +615,12 @@ export default function ReportView() {
                   <h3 className={styles.sCardTitle}>Report preview</h3>
                   <p className={styles.panelSub}>This is how your report cover will look.</p>
                   <div className={styles.previewCard}>
-                    <div className={styles.previewHeaderBar}>
-                      <div className={styles.previewBrand}>
-                        <svg width="16" height="16" viewBox="0 0 40 40" fill="none">
-                          <path d="M5 13 V7 a2 2 0 0 1 2-2 h6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
-                          <path d="M27 5 h6 a2 2 0 0 1 2 2 v6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
-                          <path d="M35 27 v6 a2 2 0 0 1 -2 2 h-6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
-                          <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
-                          <circle cx="20" cy="20" r="5.4" fill="white"/>
-                        </svg>
-                        <span>LeaseLens</span>
-                      </div>
-                      <span className={styles.previewConfTag}>CONFIDENTIAL</span>
-                    </div>
-                    <div className={styles.previewBody}>
-                      <div className={styles.previewDocIcon}>{document?.filename?.split('.').pop()?.toUpperCase() || 'PDF'}</div>
-                      <div className={styles.previewTitle}>{negotiation?.property_name || 'Lease Analysis Report'}</div>
-                      <div className={styles.previewSub}>Prepared by LeaseLens</div>
-                      <div className={styles.previewDivider} />
-                      <div className={styles.previewMeta}>
-                        <span>v{document?.version_number}</span>
-                        <span>·</span>
-                        <span>{new Date().toLocaleDateString('en-AU', { day:'numeric', month:'short', year:'numeric' })}</span>
-                        <span>·</span>
-                        <span className={styles.previewRisk} style={{color: document?.overall_risk === 'HIGH' ? 'var(--risk-h)' : document?.overall_risk === 'MEDIUM' ? 'var(--risk-m)' : 'var(--risk-l)'}}>
-                          {document?.overall_risk} RISK
-                        </span>
-                      </div>
-                      <div className={styles.previewConfidential}>This report is confidential and intended solely for the use of the tenant.</div>
-                    </div>
+                    <div className={styles.previewLogo}>⚖️</div>
+                    <div className={styles.previewWs}>{ws?.client_name || ws?.name || 'LeaseLens'}</div>
+                    <div className={styles.previewTitle}>{negotiation?.property_name || 'Lease Analysis Report'}</div>
+                    <div className={styles.previewSub}>Prepared by LeaseLens</div>
+                    <div className={styles.previewDate}>Generated on {new Date().toLocaleDateString('en-AU', { day:'numeric', month:'long', year:'numeric' })}</div>
+                    <div className={styles.previewConfidential}>This report is confidential and intended solely for the use of the tenant.</div>
                   </div>
                 </div>
 

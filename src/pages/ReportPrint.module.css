@@ -138,3 +138,133 @@
 .printBarBtns { display:flex; gap:10px; }
 .printBtnPrimary { background:#b48c3f; color:#fff; border:none; border-radius:6px; padding:9px 20px; font-size:13px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; }
 .printBtnGhost { background:transparent; color:rgba(255,255,255,0.7); border:1.5px solid rgba(255,255,255,0.3); border-radius:6px; padding:9px 20px; font-size:13px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; }
+
+/* ── COVER PAGE ── */
+.coverPage {
+  min-height: 257mm; /* A4 height minus margins */
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background: #fff;
+}
+
+.coverTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 16px;
+  border-bottom: 3px solid #1B2B5E;
+}
+.coverBrand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 22px;
+  font-weight: 800;
+  color: #1B2B5E;
+  letter-spacing: -0.02em;
+}
+.coverBrand svg { flex-shrink:0; }
+/* The SVG background is navy so we need a container */
+.coverBrand > svg { background:#1B2B5E; border-radius:8px; padding:4px; }
+.coverBrand span span { color: #b48c3f; }
+.coverClient {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8A96B8;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.coverCenter {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 0;
+}
+.coverEmoji { font-size: 56px; margin-bottom: 16px; }
+.coverReportType {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8A96B8;
+  margin-bottom: 14px;
+}
+.coverTitle {
+  font-size: 28px;
+  font-weight: 800;
+  color: #1B2B5E;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  margin-bottom: 12px;
+  max-width: 480px;
+}
+.coverSubtitle {
+  font-size: 14px;
+  font-weight: 600;
+  color: #b48c3f;
+  margin-bottom: 28px;
+}
+.coverDivider {
+  width: 60px;
+  height: 3px;
+  background: #b48c3f;
+  border-radius: 2px;
+  margin: 0 auto 32px;
+}
+.coverMeta {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  width: 100%;
+  max-width: 480px;
+  background: #F4F6FA;
+  border-radius: 10px;
+  padding: 18px 20px;
+}
+.coverMetaItem { display:flex; flex-direction:column; gap:4px; align-items:center; }
+.coverMetaLabel { font-size: 9px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #8A96B8; }
+.coverMetaVal { font-size: 12px; font-weight: 700; color: #1B2B5E; }
+
+.coverBottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 16px;
+  border-top: 1px solid #C8D0E7;
+}
+.coverConfidential {
+  font-size: 10px;
+  color: #8A96B8;
+  font-style: italic;
+  line-height: 1.5;
+  max-width: 400px;
+}
+.coverPage2 { font-size: 10px; color: #C8D0E7; }
+
+/* Page break after cover */
+.pageBreak {
+  page-break-after: always;
+  break-after: page;
+  height: 0;
+}
+
+@media print {
+  .coverPage { min-height: calc(297mm - 40mm); }
+  .coverTitle { font-size: 24px; }
+}
+
+@media screen {
+  .coverPage {
+    border: 1px solid #EEF1F8;
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 32px;
+    box-shadow: 0 4px 24px rgba(27,43,94,0.08);
+  }
+  .pageBreak { display: none; }
+}

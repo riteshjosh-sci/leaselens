@@ -80,6 +80,62 @@ export default function ReportPrint() {
         </div>
       </div>
 
+      {/* COVER PAGE */}
+      <div className={styles.coverPage}>
+        <div className={styles.coverTop}>
+          <div className={styles.coverBrand}>
+            <svg width="36" height="36" viewBox="0 0 40 40" fill="none">
+              <path d="M5 13 V7 a2 2 0 0 1 2-2 h6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
+              <path d="M27 5 h6 a2 2 0 0 1 2 2 v6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
+              <path d="M35 27 v6 a2 2 0 0 1 -2 2 h-6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
+              <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="white" strokeWidth="2.6" strokeLinecap="round"/>
+              <circle cx="20" cy="20" r="5.4" fill="white"/>
+            </svg>
+            <span>Lease<span>Lens</span></span>
+          </div>
+          {ws?.client_name && <div className={styles.coverClient}>{ws.client_name}</div>}
+        </div>
+
+        <div className={styles.coverCenter}>
+          <div className={styles.coverEmoji}>⚖️</div>
+          <div className={styles.coverReportType}>Lease Analysis Report</div>
+          <h1 className={styles.coverTitle}>{neg?.property_name || stripTimestamp(document?.filename)}</h1>
+          <div className={styles.coverSubtitle}>Prepared by LeaseLens</div>
+          <div className={styles.coverDivider} />
+          <div className={styles.coverMeta}>
+            <div className={styles.coverMetaItem}>
+              <span className={styles.coverMetaLabel}>Document</span>
+              <span className={styles.coverMetaVal}>{stripTimestamp(document?.filename)}</span>
+            </div>
+            <div className={styles.coverMetaItem}>
+              <span className={styles.coverMetaLabel}>Version</span>
+              <span className={styles.coverMetaVal}>{document?.version_number}</span>
+            </div>
+            <div className={styles.coverMetaItem}>
+              <span className={styles.coverMetaLabel}>Risk Level</span>
+              <span className={styles.coverMetaVal} style={{color: document?.overall_risk === 'HIGH' ? '#DC2626' : document?.overall_risk === 'MEDIUM' ? '#D97706' : '#16A34A', fontWeight:700}}>
+                {document?.overall_risk}
+              </span>
+            </div>
+            <div className={styles.coverMetaItem}>
+              <span className={styles.coverMetaLabel}>Generated</span>
+              <span className={styles.coverMetaVal}>{formatDate(new Date())}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className={styles.coverBottom}>
+          <div className={styles.coverConfidential}>
+            This report is confidential and intended solely for the use of the tenant.
+            It does not constitute legal advice.
+          </div>
+          <div className={styles.coverPage2}>Page 1</div>
+        </div>
+      </div>
+
+      {/* PAGE BREAK after cover */}
+      <div className={styles.pageBreak} />
+
       {/* HEADER */}
       <div className={styles.header}>
         <div className={styles.headerLeft}>
