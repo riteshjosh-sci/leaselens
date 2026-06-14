@@ -588,19 +588,23 @@ export default function ReportView() {
                     handlePDF()
                   } else {
                     try {
+                      // Generate token in JS — avoids DB extension dependency
+                      const tokenArr = new Uint8Array(32)
+                      crypto.getRandomValues(tokenArr)
+                      const token = Array.from(tokenArr).map(b => b.toString(16).padStart(2,'0')).join('')
+
                       const { data, error } = await supabase.from('share_tokens').insert({
                         user_id: user?.id,
                         report_id: id,
                         workspace_id: negotiation?.workspace_id || null,
+                        token: token,
                         label: `Report share — ${new Date().toLocaleDateString('en-AU')}`,
                         expires_at: new Date(Date.now() + 30*24*60*60*1000).toISOString()
                       }).select().single()
                       if (error) { console.error('Share error:', error); alert('Failed to generate share link: ' + error.message); return }
-                      if (data?.token) {
-                        const url = `${window.location.origin}/shared/${data.token}`
-                        setShareGenerated(url)
-                        await navigator.clipboard.writeText(url)
-                      }
+                      const url = `${window.location.origin}/shared/${token}`
+                      setShareGenerated(url)
+                      await navigator.clipboard.writeText(url)
                     } catch(e) { console.error(e); alert('Failed to generate share link.') }
                   }
                 }}>

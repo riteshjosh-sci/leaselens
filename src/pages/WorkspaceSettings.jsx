@@ -88,8 +88,14 @@ export default function WorkspaceSettings() {
   }
 
   const handleCreateLink = async () => {
+    const tokenArr = new Uint8Array(32)
+    crypto.getRandomValues(tokenArr)
+    const token = Array.from(tokenArr).map(b => b.toString(16).padStart(2,'0')).join('')
+
     const { data, error: err } = await supabase.from('share_tokens').insert({
-      user_id: user.id, workspace_id: id, label: `Shared ${new Date().toLocaleDateString('en-AU')}`
+      user_id: user.id, workspace_id: id, token,
+      label: `Shared ${new Date().toLocaleDateString('en-AU')}`,
+      expires_at: new Date(Date.now() + 90*24*60*60*1000).toISOString()
     }).select().single()
     if (err) { setError(err.message); return }
     setLinks(p => [data, ...p])
