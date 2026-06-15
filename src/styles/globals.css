@@ -14,17 +14,17 @@ html {
 
 /* ── TOKENS ── */
 :root {
-  /* Foundation — warm neutral */
-  --paper:      #F3F0E8;
-  --paper-2:    #ECE7DC;
-  --card:       #FBFAF4;
+  /* Foundation */
+  --paper:      #F7F7F8;
+  --paper-2:    #EDEDEF;
+  --card:       #FFFFFF;
   --ink:        #1C1916;
   --ink-soft:   #4B463E;
   --ink-light:  #8C8579;
   --ink-mid:    #4B463E;
   --muted:      #8C8579;
   --faint:      #B6AF9F;
-  --white:      #FBFAF4;
+  --white:      #FFFFFF;
   --rule:       rgba(28,25,22,0.12);
   --rule-soft:  rgba(28,25,22,0.07);
   --hair:       rgba(28,25,22,0.12);
@@ -85,9 +85,6 @@ h1, h2, h3, h4 {
 
 p { margin: 0; text-wrap: pretty; }
 a { color: inherit; text-decoration: none; }
-
-/* ── Viewfinder mark SVG paths (reusable) ── */
-/* Used inline: four corner brackets + centre dot */
 
 /* ── Wordmark ── */
 .wordmark {

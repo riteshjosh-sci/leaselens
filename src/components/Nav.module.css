@@ -1,38 +1,108 @@
+/* App bar — dark sticky top nav matching Adam's design */
 .nav {
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 100;
-  background: rgba(243,240,232,0.92);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid var(--hair);
+  background: var(--ink);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
 
 .inner {
   max-width: var(--maxw);
   margin: 0 auto;
   padding: 0 var(--gut);
-  height: 68px;
+  height: 60px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 32px;
 }
 
+/* Left — logo + nav links */
+.left {
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+
 /* Logo */
 .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.mark { color: var(--ink); }
-.wordmark { font-family: var(--font); font-weight: 700; font-size: 19px; letter-spacing: -0.022em; color: var(--ink); }
-.lens { color: var(--accent); }
+.mark { color: var(--paper); }
+.wordmark { font-family: var(--font); font-weight: 700; font-size: 19px; letter-spacing: -0.022em; color: var(--paper); }
+.lens { color: var(--accent-lt); }
 
 /* Nav links */
-.links { display: flex; align-items: center; gap: 28px; list-style: none; flex: 1; }
-.links a { font-size: 14.5px; font-weight: 500; color: var(--ink-soft); transition: color 0.15s; }
-.links a:hover { color: var(--ink); }
+.links {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  list-style: none;
+}
+.links a {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: rgba(255,255,255,0.62);
+  padding: 7px 13px;
+  border-radius: 7px;
+  transition: background 0.15s, color 0.15s;
+}
+.links a:hover {
+  color: var(--paper);
+  background: rgba(255,255,255,0.08);
+}
+.links a.active {
+  color: var(--paper);
+  background: rgba(255,255,255,0.12);
+}
 
-/* CTA */
+/* Right — plan label + avatar */
+.right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-shrink: 0;
+}
+
+.credits {
+  font-size: 12.5px;
+  color: rgba(255,255,255,0.55);
+}
+.credits b {
+  color: var(--accent-lt);
+  font-weight: 600;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* CTA (public pages — sign in / get started) */
 .cta { display: flex; align-items: center; gap: 20px; flex-shrink: 0; }
-.signIn { font-size: 14.5px; font-weight: 600; color: var(--ink); }
-.dashLink { font-size: 14.5px; font-weight: 600; color: var(--accent); }
+.signIn {
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255,255,255,0.75);
+  transition: color 0.15s;
+}
+.signIn:hover { color: var(--paper); }
+.dashLink {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent-lt);
+  transition: color 0.15s;
+}
+.dashLink:hover { color: #fff; }
 
 /* Hamburger */
 .burger {
@@ -48,7 +118,7 @@
 .burger span {
   display: block;
   width: 22px; height: 2px;
-  background: var(--ink);
+  background: var(--paper);
   border-radius: 2px;
   transition: transform 0.25s, opacity 0.2s;
 }
@@ -61,8 +131,8 @@
   display: flex;
   flex-direction: column;
   padding: 12px var(--gut) 20px;
-  border-top: 1px solid var(--hair);
-  background: var(--paper);
+  border-top: 1px solid rgba(255,255,255,0.08);
+  background: var(--ink);
   gap: 2px;
 }
 .mobileMenu a,
@@ -71,8 +141,8 @@
   padding: 13px 4px;
   font-size: 15px;
   font-weight: 500;
-  color: var(--ink-soft);
-  border-bottom: 1px solid var(--hair-lt);
+  color: rgba(255,255,255,0.62);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
   background: none;
   border-left: none;
   border-right: none;
@@ -85,12 +155,14 @@
 .mobileMenu a:last-child,
 .mobileMenu button:last-child { border-bottom: none; }
 .mobileMenu a:hover,
-.mobileMenu button:hover { color: var(--accent); }
-.mobileDivider { height: 1px; background: var(--hair); margin: 6px 0; }
-.mobileCta { color: var(--accent) !important; font-weight: 600 !important; }
+.mobileMenu button:hover { color: var(--paper); }
+.mobileDivider { height: 1px; background: rgba(255,255,255,0.08); margin: 6px 0; }
+.mobileCta { color: var(--accent-lt) !important; font-weight: 600 !important; }
 
 @media (max-width: 960px) {
   .links { display: none; }
   .cta { display: none; }
+  .right { gap: 12px; }
+  .credits { display: none; }
   .burger { display: flex; }
 }

@@ -1,6 +1,6 @@
 .loading { display:flex; align-items:center; justify-content:center; height:100vh; color:var(--muted); }
 
-.page { max-width:var(--maxw); margin:0 auto; padding:96px var(--gut) 80px; min-height:100vh; }
+.page { max-width:var(--maxw); margin:0 auto; padding:88px var(--gut) 80px; min-height:100vh; }
 
 /* HEAD */
 .head { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-bottom:8px; }
@@ -16,89 +16,136 @@
 .shCnt { font-size:12px; font-weight:700; color:var(--faint); white-space:nowrap; }
 .shLn { flex:1; height:1px; background:var(--hair); }
 
-/* WORKSPACE GRID */
+/* PROPERTY GRID */
 .wsGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
 
-/* WORKSPACE CARD */
+/* PROPERTY CARD */
 .wcard {
-  background:var(--card);
-  border:1px solid var(--hair);
-  border-radius:var(--radius);
-  padding:22px;
-  display:flex;
-  flex-direction:column;
-  cursor:pointer;
-  transition:border-color 0.15s, box-shadow 0.15s;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  text-decoration: none;
+  color: inherit;
 }
 .wcard:hover {
-  border-color:var(--hair);
-  box-shadow:0 16px 40px -28px rgba(28,25,22,0.4);
+  box-shadow: 0 16px 40px -28px rgba(28,25,22,0.4);
+}
+
+/* Finalised card — slightly muted */
+.wcardFin {
+  background: var(--paper);
+}
+.wcardFin .wcBadge {
+  background: var(--muted);
 }
 
 .wcTop { display:flex; align-items:flex-start; gap:13px; }
+
 .wcBadge {
-  width:42px; height:42px; border-radius:10px;
-  background:var(--ink); color:var(--paper);
-  display:flex; align-items:center; justify-content:center;
-  font-size:18px; font-weight:700; flex-shrink:0;
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--ink);
+  color: var(--paper);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 700;
+  flex-shrink: 0;
 }
+
 .wcId { flex:1; min-width:0; }
 .wcName { font-size:16px; font-weight:600; letter-spacing:-0.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .wcTn { font-size:13px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
+/* Status chip — pushed to right of top row */
 .statusChip {
-  display:inline-flex; align-items:center; gap:7px;
-  font-size:11.5px; font-weight:700;
-  padding:6px 12px; border-radius:100px;
-  background:var(--accent-soft); color:var(--accent-deep);
-  white-space:nowrap; flex-shrink:0; margin-left:auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: 100px;
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+  white-space: nowrap;
+  flex-shrink: 0;
+  margin-left: auto;
 }
 .statusChip .d { width:7px; height:7px; border-radius:50%; background:var(--accent); }
-.statusRaise { background:var(--accent-soft); color:var(--accent-deep); }
+.statusWait { background:rgba(194,146,43,0.14); color:#8a6312; }
+.statusWait .d { background:var(--st-sent); }
+.statusDone { background:rgba(94,140,106,0.16); color:#3f6b4e; }
+.statusDone .d { background:var(--st-agreed); }
 
+/* Document summary line */
 .wcSummary {
-  font-size:14px; color:var(--ink-soft);
-  margin-top:18px; padding-top:16px;
-  border-top:1px solid var(--hair-lt);
-  display:flex; align-items:center; gap:9px;
+  font-size: 14px;
+  color: var(--ink-soft);
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hair-lt);
+  display: flex;
+  align-items: center;
+  gap: 9px;
 }
 .wcSummary svg { color:var(--muted); flex-shrink:0; }
 .docsN { color:var(--muted); }
 
+/* Footer row */
 .wcFoot {
-  display:flex; align-items:center; justify-content:space-between;
-  margin-top:18px; padding-top:16px;
-  border-top:1px solid var(--hair-lt);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--hair-lt);
 }
 .wcUp { font-size:12px; color:var(--muted); }
 .wcOpen { font-size:13px; font-weight:700; color:var(--accent); }
 
-/* NEW CARD */
+/* NEW / dashed card */
 .wcardNew {
-  border-style:dashed; border-color:var(--faint);
-  align-items:center; justify-content:center;
-  text-align:center; color:var(--muted);
-  gap:8px; min-height:180px; background:transparent;
+  border-style: dashed;
+  border-color: var(--faint);
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 8px;
+  min-height: 180px;
+  background: transparent;
 }
 .wcardNew:hover { border-color:var(--accent); background:var(--accent-soft); box-shadow:none; }
 .plus {
-  width:44px; height:44px; border-radius:50%;
-  border:1.5px dashed var(--faint);
-  display:flex; align-items:center; justify-content:center;
-  font-size:22px; color:var(--faint);
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 1.5px dashed var(--faint);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; color: var(--faint);
 }
 .nt { font-size:15px; font-weight:600; color:var(--ink-soft); }
 .ns { font-size:13px; color:var(--muted); max-width:180px; }
 
 /* UPGRADE BAR */
 .upgradeBar {
-  background:var(--ink); border-radius:var(--radius);
-  padding:18px 24px; margin-top:32px;
-  display:flex; align-items:center; justify-content:space-between; gap:16px;
-  flex-wrap:wrap;
+  background: var(--ink);
+  border-radius: var(--radius);
+  padding: 18px 24px;
+  margin-top: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 .upgradeBar strong { color:var(--accent-lt); }
-.upgradeBar span { color:rgba(243,240,232,0.75); font-size:14px; }
+.upgradeBar span { color:rgba(255,255,255,0.7); font-size:14px; }
 
 /* MODAL */
 .overlay { position:fixed; inset:0; background:rgba(0,0,0,0.45); z-index:200; display:flex; align-items:center; justify-content:center; padding:24px; backdrop-filter:blur(4px); }
@@ -113,7 +160,7 @@
   .wsGrid { grid-template-columns:repeat(2,1fr); }
 }
 @media (max-width:768px) {
-  .page { padding:84px 20px 60px; }
+  .page { padding:76px 20px 60px; }
   .head { flex-direction:column; gap:16px; }
   .h1 { font-size:28px; }
   .headActions { width:100%; justify-content:flex-start; }
