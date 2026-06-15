@@ -111,9 +111,9 @@ export default function Analyser() {
       setReport(jobData.report_json)
       setLoading(false)
       if (negotiationId) {
-        // Came from a negotiation — go back to its documents tab
+        // Came from existing negotiation — go back to its documents tab
         setTimeout(() => navigate(`/negotiation/${negotiationId}#documents`), 1500)
-      } else if (negIdRef.current) {
+      } else if (negIdRef.current && !negotiationId) {
         setShowPropertyPrompt(true)
       }
     } else if (jobData.status === 'failed') {
@@ -164,11 +164,22 @@ export default function Analyser() {
 
       if (user && !negId) {
         const defaultName = file?.name?.replace(/\.[^/.]+$/, '') || 'New negotiation'
+
+        // Auto-create a workspace if none was passed
+        let wsId = workspaceId
+        if (!wsId) {
+          const { data: wsData } = await supabase.from('workspaces').insert({
+            user_id: user.id,
+            name: 'New workspace',
+          }).select().single()
+          if (wsData) wsId = wsData.id
+        }
+
         const { data: negData } = await supabase.from('negotiations').insert({
           user_id: user.id,
           property_name: defaultName,
           status: 'active',
-          workspace_id: workspaceId || null,
+          workspace_id: wsId || null,
         }).select().single()
         if (negData) { negId = negData.id; setPropertyName(defaultName) }
       }
@@ -240,13 +251,39 @@ export default function Analyser() {
 
   const handleCreateNegotiation = async () => {
     if (!propertyName.trim()) return
+    // Find the most recently created negotiation for this user
     const { data: negs } = await supabase
-      .from('negotiations').select('id').eq('user_id', user.id)
-      .order('created_at', { ascending: false }).limit(1)
+      .from('negotiations')
+      .select('id, workspace_id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+
     if (negs?.[0]) {
-      await supabase.from('negotiations').update({ property_name: propertyName.trim() }).eq('id', negs[0].id)
+      const neg = negs[0]
+      // Rename the negotiation
+      await supabase.from('negotiations')
+        .update({ property_name: propertyName.trim() })
+        .eq('id', neg.id)
+
+      // Also rename the auto-created workspace to match
+      if (neg.workspace_id) {
+        await supabase.from('workspaces')
+          .update({ name: propertyName.trim() })
+          .eq('id', neg.workspace_id)
+          .eq('name', 'New workspace') // only rename if still default
+      }
+
+      setShowPropertyPrompt(false)
+      // Navigate to the workspace
+      if (neg.workspace_id) {
+        navigate(`/workspace/${neg.workspace_id}`)
+      } else {
+        navigate('/dashboard')
+      }
+    } else {
+      setShowPropertyPrompt(false)
     }
-    setShowPropertyPrompt(false)
   }
 
   const riskBadge = (risk) => {
@@ -487,7 +524,7 @@ export default function Analyser() {
           {showPropertyPrompt && report && (
             <div className={styles.propertyPrompt}>
               <h3>Report saved ✓</h3>
-              <p>Give this negotiation a name so you can find it easily (e.g. "Shop 4, Westfield Perth").</p>
+              <p>Give this property a name so you can find it easily in your dashboard (e.g. "Shop 4, Westfield Perth").</p>
               <div className={styles.propertyRow}>
                 <input className="input" value={propertyName} onChange={e => setPropertyName(e.target.value)}
                   placeholder="Property or negotiation name" />
