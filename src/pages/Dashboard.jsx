@@ -68,21 +68,18 @@ export default function Dashboard() {
   const getStatusChip = (ws) => {
     const negs = ws.negotiations || []
     if (negs.length === 0) return { label: 'No documents', cls: '' }
-    // If any negotiation is agreed → finalised
-    const allAgreed = negs.every(n => n.lifecycle === 'agreed')
-    if (allAgreed && negs.length > 0) return { label: 'Finalised', cls: styles.statusDone }
-    // Check lifecycle of most recent neg
     const lifecycles = negs.map(n => n.lifecycle)
-    if (lifecycles.includes('awaiting')) return { label: 'Awaiting landlord', cls: styles.statusWait }
-    if (lifecycles.includes('sent'))     return { label: 'Sent to agent', cls: styles.statusWait }
-    if (lifecycles.includes('counter_prepared')) return { label: 'Counter prepared', cls: '' }
+    if (negs.every(n => n.lifecycle === 'agreed'))       return { label: 'Finalised', cls: styles.statusDone }
+    if (lifecycles.includes('awaiting'))                  return { label: 'Awaiting landlord', cls: styles.statusWait }
+    if (lifecycles.includes('sent'))                      return { label: 'Sent to agent', cls: styles.statusWait }
+    if (lifecycles.includes('counter_prepared'))          return { label: 'Counter prepared', cls: '' }
     return { label: 'Reviewing', cls: '' }
   }
 
   // Derive doc type summary from filenames across all negotiations
   const getDocSummary = (ws) => {
     const allDocs = (ws.negotiations || []).flatMap(n => n.documents || [])
-    const hoaCount  = allDocs.filter(d => d.filename?.toLowerCase().includes('hoa')).length
+    const hoaCount   = allDocs.filter(d => d.filename?.toLowerCase().includes('hoa')).length
     const leaseCount = allDocs.filter(d => !d.filename?.toLowerCase().includes('hoa')).length
     const parts = []
     if (leaseCount > 0) parts.push(`${leaseCount} lease${leaseCount > 1 ? 's' : ''}`)
@@ -101,16 +98,23 @@ export default function Dashboard() {
   const totalDocs = workspaces.reduce((a, w) =>
     a + (w.negotiations || []).reduce((b, n) => b + (n.documents?.length || 0), 0), 0)
 
-  // Split workspaces into active / finalised
-  const active    = workspaces.filter(ws => !(ws.negotiations || []).every(n => n.lifecycle === 'agreed') || ws.negotiations.length === 0)
-  const finalised = workspaces.filter(ws => (ws.negotiations || []).length > 0 && (ws.negotiations || []).every(n => n.lifecycle === 'agreed'))
+  // Fixed active/finalised split
+  const active = workspaces.filter(ws => {
+    const negs = ws.negotiations || []
+    if (negs.length === 0) return true
+    return negs.some(n => n.lifecycle !== 'agreed')
+  })
+  const finalised = workspaces.filter(ws => {
+    const negs = ws.negotiations || []
+    return negs.length > 0 && negs.every(n => n.lifecycle === 'agreed')
+  })
 
   if (loading) return <><Nav /><div className={styles.loading}>Loading…</div></>
 
   const PropertyCard = ({ ws, fin = false }) => {
-    const status    = getStatusChip(ws)
+    const status             = getStatusChip(ws)
     const { summary, total } = getDocSummary(ws)
-    const latestDate = getLatestDate(ws)
+    const latestDate         = getLatestDate(ws)
 
     return (
       <div
