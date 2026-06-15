@@ -2,16 +2,23 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import styles from './NegotiationDetail.module.css'
+import briefStyles from './ResponseBriefModal.module.css'
 
 const LIFECYCLE = ['Reviewing', 'Counter prepared', 'Sent to agent', 'Awaiting response', 'Agreed']
 
 export default function ReviewTab({ negId, neg, ws, docs }) {
   const navigate = useNavigate()
-  const [decisions, setDecisions] = useState({})
-  const [lifecycle, setLifecycle] = useState(neg?.lifecycle || 'reviewing')
+  const [decisions, setDecisions]         = useState({})
+  const [lifecycle, setLifecycle]         = useState(neg?.lifecycle || 'reviewing')
   const [savingDecision, setSavingDecision] = useState(false)
   const [openClauseKey, setOpenClauseKey] = useState(null)
-  const [filter, setFilter] = useState('all')
+  const [filter, setFilter]               = useState('all')
+
+  // Brief modal state
+  const [briefOpen, setBriefOpen]   = useState(false)
+  const [briefText, setBriefText]   = useState('')
+  const [generating, setGenerating] = useState(false)
+  const [copied, setCopied]         = useState(false)
 
   useEffect(() => {
     if (!negId) return
@@ -65,7 +72,6 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
   }
 
   const riskColor = { HIGH: 'var(--accent)', MEDIUM: 'var(--risk-m)', LOW: 'var(--risk-l)' }
-  const riskPillCls = { HIGH: styles.pillHigh, MEDIUM: styles.pillMed, LOW: styles.pillLow }
 
   const latestReport = docs.find(d => d.reports?.[0]?.report_json)
   const allClauses = latestReport
@@ -76,26 +82,19 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
       }))
     : []
 
-  const highClauses  = allClauses.filter(c => c.danger === 'HIGH')
-  const medClauses   = allClauses.filter(c => c.danger === 'MEDIUM')
-  const lowClauses   = allClauses.filter(c => c.danger === 'LOW')
-  const countering   = allClauses.filter(c => decisions[c.clauseKey] === 'countering')
-  const agreed       = allClauses.filter(c => decisions[c.clauseKey] === 'accepted')
-  const toDecide     = allClauses.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
+  const highClauses = allClauses.filter(c => c.danger === 'HIGH')
+  const medClauses  = allClauses.filter(c => c.danger === 'MEDIUM')
+  const lowClauses  = allClauses.filter(c => c.danger === 'LOW')
+  const countering  = allClauses.filter(c => decisions[c.clauseKey] === 'countering')
+  const agreed      = allClauses.filter(c => decisions[c.clauseKey] === 'accepted')
+  const toDecide    = allClauses.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
 
-  // Filter display
-  const filteredHigh = filter === 'countering' ? highClauses.filter(c => decisions[c.clauseKey] === 'countering')
-    : filter === 'agreed' ? highClauses.filter(c => decisions[c.clauseKey] === 'accepted')
-    : filter === 'open' ? highClauses.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
-    : highClauses
-  const filteredMed = filter === 'countering' ? medClauses.filter(c => decisions[c.clauseKey] === 'countering')
-    : filter === 'agreed' ? medClauses.filter(c => decisions[c.clauseKey] === 'accepted')
-    : filter === 'open' ? medClauses.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
-    : medClauses
-  const filteredLow = filter === 'countering' ? lowClauses.filter(c => decisions[c.clauseKey] === 'countering')
-    : filter === 'agreed' ? lowClauses.filter(c => decisions[c.clauseKey] === 'accepted')
-    : filter === 'open' ? lowClauses.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
-    : lowClauses
+  const filterClauses = (list) => {
+    if (filter === 'countering') return list.filter(c => decisions[c.clauseKey] === 'countering')
+    if (filter === 'agreed')     return list.filter(c => decisions[c.clauseKey] === 'accepted')
+    if (filter === 'open')       return list.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
+    return list
+  }
 
   useEffect(() => {
     if (allClauses.length > 0 && openClauseKey === null) {
@@ -103,6 +102,65 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
       setOpenClauseKey(firstHigh?.clauseKey || allClauses[0]?.clauseKey || null)
     }
   }, [allClauses.length])
+
+  // ── Generate response email via Anthropic API ──
+  const handleGenerateBrief = async () => {
+    if (!countering.length) return
+    setGenerating(true)
+    setBriefOpen(true)
+    setBriefText('')
+    setCopied(false)
+
+    const propertyName = neg?.property_name || 'the premises'
+    const tenantName   = ws?.client_name || ''
+
+    const clauseLines = countering.map(c =>
+      `- ${c.name}: ${c.counter || c.risk || ''}`
+    ).join('\n')
+
+    const prompt = `You are drafting a professional negotiation email from a retail tenant to the landlord's agent.
+
+Property: ${propertyName}
+${tenantName ? `Tenant: ${tenantName}` : ''}
+
+The tenant wants to counter the following clauses:
+${clauseLines}
+
+Write a single, professional email the tenant can send directly to the agent. Rules:
+- Start with "Dear [Agent name],"
+- Brief intro: thank them for the heads of agreement and state you have reviewed the terms
+- One paragraph per clause, labelled with the clause name as a bold heading
+- Write each counter position in first-person declarative language (e.g. "Make-good is limited to..." not "We request that make-good be limited to...")
+- Keep each clause paragraph concise — one or two sentences
+- End with "We look forward to your response." and "Regards," followed by a blank line for the signature
+- Do not add legal disclaimers or commentary outside the email body
+- Plain text only, no markdown, no bullet points inside the email`
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-6',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+      })
+      const data = await response.json()
+      const text = data.content?.find(b => b.type === 'text')?.text || ''
+      setBriefText(text)
+    } catch (e) {
+      setBriefText('Failed to generate email. Please try again.')
+    }
+    setGenerating(false)
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(briefText).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    })
+  }
 
   const ClauseItem = ({ c }) => {
     const open = openClauseKey === c.clauseKey
@@ -182,162 +240,213 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
     )
   }
 
+  const filteredHigh = filterClauses(highClauses)
+  const filteredMed  = filterClauses(medClauses)
+  const filteredLow  = filterClauses(lowClauses)
+
   return (
-    <div className={styles.wsBody}>
-      <div className={styles.colMain}>
+    <>
+      <div className={styles.wsBody}>
+        <div className={styles.colMain}>
 
-        {/* FACTS STRIP */}
-        {allClauses.length > 0 && (
-          <div className={styles.facts}>
-            <div className={styles.fact}><div className={styles.factL}>Versions</div><div className={styles.factV}>{docs.length} <small>uploaded</small></div></div>
-            <div className={styles.factDiv} />
-            <div className={styles.fact}><div className={styles.factL}>Clauses flagged</div><div className={styles.factV}>{allClauses.length} <small>total</small></div></div>
-            <div className={styles.factDiv} />
-            <div className={styles.fact}><div className={styles.factL}>High priority</div><div className={styles.factV} style={{ color: 'var(--accent)' }}>{highClauses.length}</div></div>
-            <div className={styles.factDiv} />
-            <div className={styles.fact}><div className={styles.factL}>To decide</div><div className={styles.factV}>{toDecide.length} <small>remaining</small></div></div>
-          </div>
-        )}
+          {/* FACTS STRIP */}
+          {allClauses.length > 0 && (
+            <div className={styles.facts}>
+              <div className={styles.fact}><div className={styles.factL}>Versions</div><div className={styles.factV}>{docs.length} <small>uploaded</small></div></div>
+              <div className={styles.factDiv} />
+              <div className={styles.fact}><div className={styles.factL}>Clauses flagged</div><div className={styles.factV}>{allClauses.length} <small>total</small></div></div>
+              <div className={styles.factDiv} />
+              <div className={styles.fact}><div className={styles.factL}>High priority</div><div className={styles.factV} style={{ color: 'var(--accent)' }}>{highClauses.length}</div></div>
+              <div className={styles.factDiv} />
+              <div className={styles.fact}><div className={styles.factL}>To decide</div><div className={styles.factV}>{toDecide.length} <small>remaining</small></div></div>
+            </div>
+          )}
 
-        {/* LIFECYCLE */}
-        <div className={styles.lifecycle}>
-          <div className={styles.lcTop}>
-            <span className={styles.lcT}>Negotiation status</span>
-            {lifecycle === 'counter_prepared' && <span className={styles.lcNext}>Next: <b>send counters to agent</b></span>}
-            {lifecycle === 'sent'             && <span className={styles.lcNext}>Waiting for landlord response</span>}
-            {lifecycle === 'awaiting'         && <span className={styles.lcNext}>Chase if no response within 5 business days</span>}
-            {lifecycle === 'agreed'           && <span className={styles.lcNext} style={{ color: 'var(--risk-l)' }}>✓ Negotiation complete</span>}
-          </div>
-          <div className={styles.rail}>
-            {LIFECYCLE.map((s, i) => {
-              const lcIndex = { reviewing: 0, counter_prepared: 1, sent: 2, awaiting: 3, agreed: 4 }
-              const cur = lcIndex[lifecycle] ?? 0
-              const cls = i < cur ? styles.stageDone : i === cur ? styles.stageCurrent : styles.stageUpcoming
-              const stageKey = ['reviewing', 'counter_prepared', 'sent', 'awaiting', 'agreed'][i]
-              const isClickable = ['sent', 'awaiting', 'agreed'].includes(stageKey) && i >= cur
-              return (
-                <div key={s}
-                  className={`${styles.stage} ${cls} ${isClickable ? styles.stageClickable : ''}`}
-                  onClick={() => isClickable && updateLifecycle(stageKey)}>
-                  <div className={styles.stageLine} />
-                  <div className={styles.stageNode}>
-                    {i < cur && (
-                      <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
-                        <path d="M3 8l3 3 7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    )}
+          {/* LIFECYCLE */}
+          <div className={styles.lifecycle}>
+            <div className={styles.lcTop}>
+              <span className={styles.lcT}>Negotiation status</span>
+              {lifecycle === 'counter_prepared' && <span className={styles.lcNext}>Next: <b>send counters to agent</b></span>}
+              {lifecycle === 'sent'             && <span className={styles.lcNext}>Waiting for landlord response</span>}
+              {lifecycle === 'awaiting'         && <span className={styles.lcNext}>Chase if no response within 5 business days</span>}
+              {lifecycle === 'agreed'           && <span className={styles.lcNext} style={{ color: 'var(--risk-l)' }}>✓ Negotiation complete</span>}
+            </div>
+            <div className={styles.rail}>
+              {LIFECYCLE.map((s, i) => {
+                const lcIndex = { reviewing: 0, counter_prepared: 1, sent: 2, awaiting: 3, agreed: 4 }
+                const cur = lcIndex[lifecycle] ?? 0
+                const cls = i < cur ? styles.stageDone : i === cur ? styles.stageCurrent : styles.stageUpcoming
+                const stageKey = ['reviewing', 'counter_prepared', 'sent', 'awaiting', 'agreed'][i]
+                const isClickable = ['sent', 'awaiting', 'agreed'].includes(stageKey) && i >= cur
+                return (
+                  <div key={s}
+                    className={`${styles.stage} ${cls} ${isClickable ? styles.stageClickable : ''}`}
+                    onClick={() => isClickable && updateLifecycle(stageKey)}>
+                    <div className={styles.stageLine} />
+                    <div className={styles.stageNode}>
+                      {i < cur && (
+                        <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+                          <path d="M3 8l3 3 7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      )}
+                    </div>
+                    <div className={styles.stageNm}>{s}</div>
                   </div>
-                  <div className={styles.stageNm}>{s}</div>
-                </div>
-              )
-            })}
+                )
+              })}
+            </div>
           </div>
+
+          {/* CLAUSE LIST */}
+          {allClauses.length > 0 ? (
+            <div className={styles.panel}>
+              <div className={styles.panelHead}>
+                <h2>Clauses <span className={styles.ct}>· {allClauses.length}</span></h2>
+                <div className={styles.statFilter}>
+                  {[
+                    { key: 'all',        label: 'All',        count: allClauses.length },
+                    { key: 'open',       label: 'To decide',  count: toDecide.length },
+                    { key: 'countering', label: 'Countering', count: countering.length },
+                    { key: 'agreed',     label: 'Agreed',     count: agreed.length },
+                  ].map(f => (
+                    <button
+                      key={f.key}
+                      className={`${styles.sfBtn} ${filter === f.key ? styles.sfActive : ''}`}
+                      onClick={() => setFilter(f.key)}>
+                      {f.label} <span className={styles.c}>{f.count}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className={styles.panelBody}>
+                {filteredHigh.length > 0 && (
+                  <div className={styles.negGroup}>
+                    <div className={styles.gh}>High priority <span className={styles.gc}>· {filteredHigh.length}</span></div>
+                    {filteredHigh.map(c => <ClauseItem key={c.clauseKey} c={c} />)}
+                  </div>
+                )}
+                {filteredMed.length > 0 && (
+                  <div className={styles.negGroup}>
+                    <div className={styles.gh}>Medium <span className={styles.gc}>· {filteredMed.length}</span></div>
+                    {filteredMed.map(c => <ClauseItem key={c.clauseKey} c={c} />)}
+                  </div>
+                )}
+                {filteredLow.length > 0 && (
+                  <div className={styles.negGroup}>
+                    <div className={styles.gh}>Low / standard <span className={styles.gc}>· {filteredLow.length}</span></div>
+                    {filteredLow.map(c => <ClauseItem key={c.clauseKey} c={c} />)}
+                  </div>
+                )}
+                {filteredHigh.length === 0 && filteredMed.length === 0 && filteredLow.length === 0 && (
+                  <div className={styles.empty}>No clauses in this filter.</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className={styles.panel}>
+              <div className={styles.panelHead}><h2>Clauses</h2></div>
+              <div className={styles.empty}>No report yet — analyse a document to see clauses here.</div>
+            </div>
+          )}
         </div>
 
-        {/* CLAUSE LIST */}
-        {allClauses.length > 0 ? (
-          <div className={styles.panel}>
-            <div className={styles.panelHead}>
-              <h2>Clauses <span className={styles.ct}>· {allClauses.length}</span></h2>
-              <div className={styles.statFilter}>
+        {/* STICKY RAIL */}
+        <div className={styles.railSide}>
+          <div className={styles.nextCard}>
+            <h3>Response brief</h3>
+            <div className={styles.briefCounts}>
+              <div className={styles.bc}><div className={styles.bn}>{countering.length}</div><div className={styles.bl}>Countering</div></div>
+              <div className={styles.bc}><div className={styles.bn}>{agreed.length}</div><div className={styles.bl}>Agreed</div></div>
+              <div className={styles.bc}><div className={styles.bn}>{toDecide.length}</div><div className={styles.bl}>To decide</div></div>
+            </div>
+            {countering.length > 0 ? (
+              <div className={styles.briefList}>
+                {countering.map(c => (
+                  <div key={c.clauseKey} className={styles.bi}>
+                    <span className={styles.bd} />{c.name}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>Agree or counter each clause and LeaseLens builds the response to send to the agent.</p>
+            )}
+            {toDecide.length > 0 && (
+              <p style={{ fontSize: 13, color: 'rgba(243,240,232,.7)', marginTop: 8 }}>
+                {toDecide.length} clause{toDecide.length > 1 ? 's' : ''} still need{toDecide.length === 1 ? 's' : ''} a decision.
+              </p>
+            )}
+            <button
+              className={styles.briefBtn}
+              disabled={countering.length === 0}
+              onClick={handleGenerateBrief}>
+              Generate response for agent →
+            </button>
+          </div>
+
+          {allClauses.length > 0 && (
+            <div className={styles.sCard}>
+              <h3>Risk summary</h3>
+              <div className={styles.riskLegend}>
                 {[
-                  { key: 'all',        label: 'All',        count: allClauses.length },
-                  { key: 'open',       label: 'To decide',  count: toDecide.length },
-                  { key: 'countering', label: 'Countering', count: countering.length },
-                  { key: 'agreed',     label: 'Agreed',     count: agreed.length },
-                ].map(f => (
-                  <button
-                    key={f.key}
-                    className={`${styles.sfBtn} ${filter === f.key ? styles.sfActive : ''}`}
-                    onClick={() => setFilter(f.key)}>
-                    {f.label} <span className={styles.c}>{f.count}</span>
-                  </button>
+                  { label: 'High priority',  count: highClauses.length, color: 'var(--accent)' },
+                  { label: 'Medium',         count: medClauses.length,  color: 'var(--risk-m)' },
+                  { label: 'Low / standard', count: lowClauses.length,  color: 'var(--risk-l)' },
+                ].map(r => (
+                  <div key={r.label} className={styles.rkRow}>
+                    <span className={styles.rkDot} style={{ background: r.color }} />
+                    <span className={styles.rkNm}>{r.label}</span>
+                    <span className={styles.rkCt}>{r.count}</span>
+                  </div>
                 ))}
               </div>
             </div>
-            <div className={styles.panelBody}>
-              {filteredHigh.length > 0 && (
-                <div className={styles.negGroup}>
-                  <div className={styles.gh}>High priority <span className={styles.gc}>· {filteredHigh.length}</span></div>
-                  {filteredHigh.map(c => <ClauseItem key={c.clauseKey} c={c} />)}
-                </div>
-              )}
-              {filteredMed.length > 0 && (
-                <div className={styles.negGroup}>
-                  <div className={styles.gh}>Medium <span className={styles.gc}>· {filteredMed.length}</span></div>
-                  {filteredMed.map(c => <ClauseItem key={c.clauseKey} c={c} />)}
-                </div>
-              )}
-              {filteredLow.length > 0 && (
-                <div className={styles.negGroup}>
-                  <div className={styles.gh}>Low / standard <span className={styles.gc}>· {filteredLow.length}</span></div>
-                  {filteredLow.map(c => <ClauseItem key={c.clauseKey} c={c} />)}
-                </div>
-              )}
-              {filteredHigh.length === 0 && filteredMed.length === 0 && filteredLow.length === 0 && (
-                <div className={styles.empty}>No clauses in this filter.</div>
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className={styles.panel}>
-            <div className={styles.panelHead}><h2>Clauses</h2></div>
-            <div className={styles.empty}>No report yet — analyse a document to see clauses here.</div>
-          </div>
-        )}
-      </div>
+          )}
 
-      {/* STICKY RAIL */}
-      <div className={styles.railSide}>
-        <div className={styles.nextCard}>
-          <h3>Response brief</h3>
-          <div className={styles.briefCounts}>
-            <div className={styles.bc}><div className={styles.bn}>{countering.length}</div><div className={styles.bl}>Countering</div></div>
-            <div className={styles.bc}><div className={styles.bn}>{agreed.length}</div><div className={styles.bl}>Agreed</div></div>
-            <div className={styles.bc}><div className={styles.bn}>{toDecide.length}</div><div className={styles.bl}>To decide</div></div>
-          </div>
-          {countering.length > 0 ? (
-            <div className={styles.briefList}>
-              {countering.map(c => (
-                <div key={c.clauseKey} className={styles.bi}>
-                  <span className={styles.bd} />{c.name}
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p>Agree or counter each clause and LeaseLens builds the response to send to the agent.</p>
-          )}
-          {toDecide.length > 0 && (
-            <p style={{ fontSize: 13, color: 'rgba(243,240,232,.7)', marginTop: 8 }}>
-              {toDecide.length} clause{toDecide.length > 1 ? 's' : ''} still need{toDecide.length === 1 ? 's' : ''} a decision.
-            </p>
-          )}
-          <button className={styles.briefBtn} disabled={countering.length === 0}>
-            Generate response for agent →
-          </button>
+          <p className={styles.disclaimer}>LeaseLens provides informational analysis and does not constitute legal advice.</p>
         </div>
-
-        {allClauses.length > 0 && (
-          <div className={styles.sCard}>
-            <h3>Risk summary</h3>
-            <div className={styles.riskLegend}>
-              {[
-                { label: 'High priority',  count: highClauses.length, color: 'var(--accent)' },
-                { label: 'Medium',         count: medClauses.length,  color: 'var(--risk-m)' },
-                { label: 'Low / standard', count: lowClauses.length,  color: 'var(--risk-l)' },
-              ].map(r => (
-                <div key={r.label} className={styles.rkRow}>
-                  <span className={styles.rkDot} style={{ background: r.color }} />
-                  <span className={styles.rkNm}>{r.label}</span>
-                  <span className={styles.rkCt}>{r.count}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <p className={styles.disclaimer}>LeaseLens provides informational analysis and does not constitute legal advice.</p>
       </div>
-    </div>
+
+      {/* RESPONSE BRIEF MODAL */}
+      {briefOpen && (
+        <div className={briefStyles.overlay} onClick={() => !generating && setBriefOpen(false)}>
+          <div className={briefStyles.modal} onClick={e => e.stopPropagation()}>
+            <div className={briefStyles.modalHead}>
+              <div>
+                <div className={briefStyles.kicker}>Response brief</div>
+                <h2 className={briefStyles.title}>Email to agent</h2>
+              </div>
+              <button className={briefStyles.closeBtn} onClick={() => setBriefOpen(false)}>✕</button>
+            </div>
+
+            {generating ? (
+              <div className={briefStyles.generating}>
+                <div className={briefStyles.spinner} />
+                <p>Drafting your response email…</p>
+              </div>
+            ) : (
+              <>
+                <div className={briefStyles.hint}>
+                  Review and edit before sending. Replace [Agent name] with the agent's name.
+                </div>
+                <textarea
+                  className={briefStyles.emailBody}
+                  value={briefText}
+                  onChange={e => setBriefText(e.target.value)}
+                  rows={18}
+                />
+                <div className={briefStyles.modalFoot}>
+                  <button className={briefStyles.regenerateBtn} onClick={handleGenerateBrief}>
+                    Regenerate
+                  </button>
+                  <button className={briefStyles.copyBtn} onClick={handleCopy}>
+                    {copied ? '✓ Copied!' : 'Copy email'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
   )
 }
