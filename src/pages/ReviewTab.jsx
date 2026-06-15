@@ -103,56 +103,27 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
     }
   }, [allClauses.length])
 
-  // ── Generate response email via Anthropic API ──
-  const handleGenerateBrief = async () => {
+  // ── Generate response email──
+  const handleGenerateBrief = () => {
     if (!countering.length) return
-    setGenerating(true)
     setBriefOpen(true)
-    setBriefText('')
     setCopied(false)
 
-    const propertyName = neg?.property_name || 'the premises'
+    const propertyName = neg?.property_name || 'the above premises'
     const tenantName   = ws?.client_name || ''
 
-    const clauseLines = countering.map(c =>
-      `- ${c.name}: ${c.counter || c.risk || ''}`
-    ).join('\n')
+    const clauseParas = countering.map(c => {
+      const counterText = c.counter || c.risk || ''
+      return `${c.name}\n${counterText}`
+    }).join('\n\n')
 
-    const prompt = `You are drafting a professional negotiation email from a retail tenant to the landlord's agent.
+    const intro = tenantName
+      ? `Thank you for providing the heads of agreement for ${propertyName} on behalf of ${tenantName}. We have reviewed the terms and have the following comments:`
+      : `Thank you for providing the heads of agreement for ${propertyName}. We have reviewed the terms and have the following comments:`
 
-Property: ${propertyName}
-${tenantName ? `Tenant: ${tenantName}` : ''}
+    const email = `Dear [Agent name],\n\n${intro}\n\n${clauseParas}\n\nWe look forward to your response.\n\nRegards,\n`
 
-The tenant wants to counter the following clauses:
-${clauseLines}
-
-Write a single, professional email the tenant can send directly to the agent. Rules:
-- Start with "Dear [Agent name],"
-- Brief intro: thank them for the heads of agreement and state you have reviewed the terms
-- One paragraph per clause, labelled with the clause name as a bold heading
-- Write each counter position in first-person declarative language (e.g. "Make-good is limited to..." not "We request that make-good be limited to...")
-- Keep each clause paragraph concise — one or two sentences
-- End with "We look forward to your response." and "Regards," followed by a blank line for the signature
-- Do not add legal disclaimers or commentary outside the email body
-- Plain text only, no markdown, no bullet points inside the email`
-
-    try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
-          max_tokens: 1000,
-          messages: [{ role: 'user', content: prompt }],
-        }),
-      })
-      const data = await response.json()
-      const text = data.content?.find(b => b.type === 'text')?.text || ''
-      setBriefText(text)
-    } catch (e) {
-      setBriefText('Failed to generate email. Please try again.')
-    }
-    setGenerating(false)
+    setBriefText(email)
   }
 
   const handleCopy = () => {
@@ -417,13 +388,6 @@ Write a single, professional email the tenant can send directly to the agent. Ru
               </div>
               <button className={briefStyles.closeBtn} onClick={() => setBriefOpen(false)}>✕</button>
             </div>
-
-            {generating ? (
-              <div className={briefStyles.generating}>
-                <div className={briefStyles.spinner} />
-                <p>Drafting your response email…</p>
-              </div>
-            ) : (
               <>
                 <div className={briefStyles.hint}>
                   Review and edit before sending. Replace [Agent name] with the agent's name.
@@ -443,7 +407,6 @@ Write a single, professional email the tenant can send directly to the agent. Ru
                   </button>
                 </div>
               </>
-            )}
           </div>
         </div>
       )}
