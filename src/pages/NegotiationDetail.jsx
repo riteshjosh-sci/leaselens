@@ -35,6 +35,9 @@ export default function NegotiationDetail() {
   useEffect(() => {
     if (!user) { navigate('/login'); return }
     fetchAll()
+    const onFocus = () => fetchAll()
+    window.addEventListener('focus', onFocus)
+    return () => window.removeEventListener('focus', onFocus)
   }, [negId, user])
 
   const fetchAll = async () => {

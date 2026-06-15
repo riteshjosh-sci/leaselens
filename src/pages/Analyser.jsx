@@ -110,7 +110,12 @@ export default function Analyser() {
       setLoadingStage(LOADING_STAGES.length - 1)
       setReport(jobData.report_json)
       setLoading(false)
-      if (negIdRef.current && !negotiationId) setShowPropertyPrompt(true)
+      if (negotiationId) {
+        // Came from a negotiation — go back to its documents tab
+        setTimeout(() => navigate(`/negotiation/${negotiationId}#documents`), 1500)
+      } else if (negIdRef.current) {
+        setShowPropertyPrompt(true)
+      }
     } else if (jobData.status === 'failed') {
       completedRef.current = true
       cleanupJob()
