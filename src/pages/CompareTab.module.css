@@ -1,16 +1,5 @@
 /* CompareTab — matches Adam's LeaseLens_Compare.html design */
 
---imp:       #5E8C6A;
---imp-soft:  rgba(94,140,106,.12);
---imp-deep:  #3f6b4e;
---watch:     #C2922B;
---watch-soft:rgba(194,146,43,.13);
---watch-deep:#8a6312;
---risk-c:    #C0492F;
---risk-soft: rgba(192,73,47,.09);
---risk-deep: #993621;
---same:      #B6AF9F;
-
 .wrap { padding: 24px 0; }
 
 .empty { padding: 48px 0; color: var(--muted); font-size: 15px; }
