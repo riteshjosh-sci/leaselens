@@ -75,7 +75,10 @@ export default function Nav() {
                   </Link>
                 </li>
                 <li>
-                  <Link to="/workspaces" className={isActive('/workspace') ? styles.active : ''}>
+                  <Link to="/workspaces" className={
+                    isActive('/workspace') || isActive('/negotiation') || isActive('/compare') || isActive('/report')
+                      ? styles.active : ''
+                  }>
                     Workspaces
                   </Link>
                 </li>

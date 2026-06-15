@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
@@ -10,15 +10,16 @@ export default function ReportView() {
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
-  const [report, setReport] = useState(null)
-  const [document, setDocument] = useState(null)
+  const [report, setReport]           = useState(null)
+  const [document, setDocument]       = useState(null)
   const [negotiation, setNegotiation] = useState(null)
-  const [workspace, setWorkspace] = useState(null)
-  const [logoUrl, setLogoUrl] = useState(null)
+  const [workspace, setWorkspace]     = useState(null)
+  const [leaseData, setLeaseData]     = useState(null)
+  const [logoUrl, setLogoUrl]         = useState(null)
   const [allVersions, setAllVersions] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState('')
-  const [filter, setFilter] = useState('all')
+  const [loading, setLoading]         = useState(true)
+  const [error, setError]             = useState('')
+  const [filter, setFilter]           = useState('all')
   const [openClauses, setOpenClauses] = useState({})
 
   useEffect(() => {
@@ -56,6 +57,16 @@ export default function ReportView() {
       setLogoUrl(urlData?.publicUrl || null)
     }
 
+    // Fetch lease_data for this document
+    if (reportData.documents?.id) {
+      const { data: ld } = await supabase
+        .from('lease_data')
+        .select('*')
+        .eq('document_id', reportData.documents.id)
+        .single()
+      setLeaseData(ld || null)
+    }
+
     if (reportData.documents?.negotiations?.id) {
       const { data: versions } = await supabase
         .from('documents')
@@ -65,7 +76,6 @@ export default function ReportView() {
       setAllVersions(versions || [])
     }
 
-    // Auto-open first HIGH clause
     const clauses = reportData.report_json?.clauses || []
     const firstHigh = clauses.findIndex(c => c.danger === 'HIGH')
     if (firstHigh >= 0) setOpenClauses({ [firstHigh]: true })
@@ -74,79 +84,96 @@ export default function ReportView() {
     setLoading(false)
   }
 
+  const formatDate = (d) => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+  const formatMoney = (n) => n ? `$${Number(n).toLocaleString()}` : null
+  const stripTimestamp = f => f?.replace(/^\d+_/, '') || ''
+
+  const RISK = {
+    HIGH:   { dot: 'var(--accent)',  pill: styles.pillHigh,   label: 'High priority' },
+    MEDIUM: { dot: 'var(--risk-m)', pill: styles.pillMedium, label: 'Medium' },
+    LOW:    { dot: 'var(--risk-l)', pill: styles.pillLow,    label: 'Low' },
+  }
+
+  // Determine if lease or HOA
+  const docType = leaseData?.document_type || (
+    document?.filename?.toLowerCase().includes('hoa') ? 'HOA' : 'Lease'
+  )
+  const isLease = docType?.toLowerCase().includes('lease') || docType?.toLowerCase().includes('agreement for lease')
+
+  // Commercial terms rows
+  const commercialRows = isLease ? [
+    { label: 'Lease term',        value: leaseData?.term_years ? `${leaseData.term_years} years${leaseData.option_terms ? ` + ${leaseData.option_terms} option` : ''}` : null },
+    { label: 'Commencement',      value: leaseData?.commencement_date ? formatDate(leaseData.commencement_date) : null },
+    { label: 'Base rent (p.a.)',  value: formatMoney(leaseData?.base_rent_annual) },
+    { label: 'Rent per sqm',      value: leaseData?.base_rent_psm ? `${formatMoney(leaseData.base_rent_psm)}/sqm` : null },
+    { label: 'Tenancy size',      value: leaseData?.tenancy_size_sqm ? `${leaseData.tenancy_size_sqm} sqm` : null },
+    { label: 'Outgoings (p.a.)',  value: formatMoney(leaseData?.outgoings_annual) },
+    { label: 'Total deal value',  value: formatMoney(leaseData?.total_annual_deal_value) },
+    { label: 'Rent review',       value: leaseData?.rent_review_type ? `${leaseData.rent_review_type.toUpperCase()}${leaseData.rent_review_rate ? ` ${leaseData.rent_review_rate}%` : ''}` : null },
+    { label: 'Bank guarantee',    value: leaseData?.bank_guarantee_months ? `${leaseData.bank_guarantee_months} months` : null },
+    { label: 'Fit-out contrib.',  value: formatMoney(leaseData?.fitout_contribution) },
+    { label: 'Permitted use',     value: leaseData?.permitted_use },
+    { label: 'State',             value: leaseData?.state },
+  ].filter(r => r.value) : [
+    { label: 'Document type',    value: docType },
+    { label: 'Term',             value: leaseData?.term_years ? `${leaseData.term_years} years` : null },
+    { label: 'Base rent (p.a.)', value: formatMoney(leaseData?.base_rent_annual) },
+    { label: 'Bank guarantee',   value: leaseData?.bank_guarantee_months ? `${leaseData.bank_guarantee_months} months` : null },
+    { label: 'State',            value: leaseData?.state },
+  ].filter(r => r.value)
+
   const handleDownloadPDF = async () => {
     if (!report) return
     const data = report.report_json
-    let logoBase64 = null
-    if (logoUrl) {
-      try {
-        const res = await fetch(logoUrl)
-        const blob = await res.blob()
-        logoBase64 = await new Promise((resolve) => {
-          const reader = new FileReader()
-          reader.onloadend = () => resolve(reader.result)
-          reader.readAsDataURL(blob)
-        })
-      } catch (e) {}
-    }
-
-    const headerHTML = logoBase64
-      ? `<div class="header branded">
-           <div class="header-row">
-             <img src="${logoBase64}" class="logo-img" alt="Logo" />
-             <div class="header-divider"></div>
-             <div class="brand-sub">Lease<em>Lens</em></div>
-           </div>
-           ${workspace?.client_name ? `<div class="client-name">${workspace.client_name}</div>` : ''}
-           <div class="meta">${negotiation?.property_name || 'Document analysis'} · Version ${document?.version_number} · ${new Date(document?.uploaded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-         </div>`
-      : `<div class="header">
-           <div class="brand">Lease<em>Lens</em></div>
-           <div class="meta">${negotiation?.property_name || 'Document analysis'} · Version ${document?.version_number} · ${new Date(document?.uploaded_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
-         </div>`
-
     const win = window.open('', '_blank')
     win.document.write(`<!DOCTYPE html><html><head>
       <title>LeaseLens Report — ${document?.filename || 'Report'}</title>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+      <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; color: #1a1a18; font-size: 13px; line-height: 1.6; padding: 48px; max-width: 800px; margin: 0 auto; }
-        .header { border-bottom: 2px solid #1a3a2a; padding-bottom: 24px; margin-bottom: 32px; }
-        .brand { font-family: 'DM Serif Display', serif; font-size: 24px; color: #0f0f0d; margin-bottom: 8px; }
-        .brand em { font-style: italic; color: #2a5c42; }
-        .header.branded { border-bottom: 2px solid #1a3a2a; padding-bottom: 20px; margin-bottom: 32px; }
-        .header-row { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
-        .logo-img { max-height: 48px; max-width: 180px; object-fit: contain; }
-        .header-divider { width: 1px; height: 36px; background: #e2e0da; }
-        .brand-sub { font-family: 'DM Serif Display', serif; font-size: 18px; color: #7a7a74; }
-        .brand-sub em { font-style: italic; color: #2a5c42; }
-        .client-name { font-size: 12px; font-weight: 600; color: #3a3a36; margin-bottom: 4px; }
-        .meta { font-size: 11px; color: #7a7a74; }
-        .summary { background: #f0f5f2; border-left: 3px solid #1a3a2a; padding: 16px 20px; margin-bottom: 32px; font-size: 14px; color: #3a3a36; line-height: 1.75; }
-        .risk-badge { display: inline-block; padding: 4px 12px; border-radius: 2px; font-size: 11px; font-weight: 600; letter-spacing: 0.08em; margin-bottom: 24px; }
-        .risk-HIGH { background: #fdf2f2; color: #8b2020; }
-        .risk-MEDIUM { background: #fdf8f0; color: #7a5010; }
-        .risk-LOW { background: #f0f7f3; color: #1a5c30; }
-        h2 { font-family: 'DM Serif Display', serif; font-size: 20px; font-weight: 400; color: #0f0f0d; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 1px solid #e2e0da; }
-        .clause { border: 1px solid #e2e0da; border-radius: 2px; margin-bottom: 12px; overflow: hidden; }
-        .clause-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #f7fbf8; }
+        body { font-family: 'IBM Plex Sans', sans-serif; color: #1C1916; font-size: 13px; line-height: 1.6; padding: 48px; max-width: 800px; margin: 0 auto; }
+        .header { border-bottom: 2px solid #1C1916; padding-bottom: 20px; margin-bottom: 28px; }
+        .brand { font-size: 22px; font-weight: 700; color: #1C1916; margin-bottom: 6px; }
+        .brand em { font-style: normal; color: #2C50D6; }
+        .meta { font-size: 11px; color: #8C8579; }
+        .commercials { background: #F7F7F8; border: 1px solid rgba(28,25,22,0.1); border-radius: 8px; padding: 18px; margin-bottom: 24px; }
+        .commercials-title { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8C8579; margin-bottom: 14px; }
+        .commercials-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
+        .com-item .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #8C8579; margin-bottom: 3px; }
+        .com-item .val { font-size: 14px; font-weight: 600; color: #1C1916; }
+        .summary { background: #f0f5f2; border-left: 3px solid #2C50D6; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; line-height: 1.7; }
+        .risk-badge { display: inline-block; padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 20px; }
+        .risk-HIGH { background: rgba(44,80,214,0.1); color: #1E3AA8; }
+        .risk-MEDIUM { background: rgba(194,146,43,0.14); color: #8a6312; }
+        .risk-LOW { background: rgba(94,140,106,0.16); color: #3f6b4e; }
+        h2 { font-size: 18px; font-weight: 600; margin: 28px 0 14px; padding-bottom: 8px; border-bottom: 1px solid rgba(28,25,22,0.1); }
+        .clause { border: 1px solid rgba(28,25,22,0.1); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+        .clause-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #F7F7F8; }
         .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-        .dot-HIGH { background: #8b2020; } .dot-MEDIUM { background: #b8975a; } .dot-LOW { background: #1a5c30; }
-        .clause-name { font-weight: 500; font-size: 14px; flex: 1; }
-        .clause-body { padding: 16px; }
-        .clause-section { margin-bottom: 12px; }
-        .clause-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: #7a7a74; margin-bottom: 4px; }
-        .clause-quote { background: #f5f0e8; border-left: 3px solid #b8975a; padding: 10px 14px; font-size: 12px; color: #7a5010; font-style: italic; }
-        .clause-counter { background: #f0f7f3; border-left: 3px solid #1a5c30; padding: 10px 14px; font-size: 12px; color: #1a5c30; }
-        .next-steps { background: #0f0f0d; color: white; padding: 24px; border-radius: 2px; margin-top: 32px; }
+        .dot-HIGH { background: #2C50D6; } .dot-MEDIUM { background: #C2922B; } .dot-LOW { background: #5E8C6A; }
+        .clause-name { font-weight: 600; font-size: 14px; flex: 1; }
+        .clause-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
+        .clause-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #8C8579; margin-bottom: 4px; }
+        .clause-quote { background: #F7F7F8; border-left: 3px solid #C2922B; padding: 10px 14px; font-size: 12px; color: #4B463E; font-style: italic; }
+        .clause-counter { background: rgba(44,80,214,0.06); border-left: 3px solid #2C50D6; padding: 10px 14px; font-size: 12px; color: #1E3AA8; }
+        .next-steps { background: #1C1916; color: white; padding: 22px; border-radius: 8px; margin-top: 28px; }
         .next-steps h2 { color: white; border-color: rgba(255,255,255,0.1); }
-        .next-steps li { color: rgba(255,255,255,0.8); margin-bottom: 8px; font-size: 13px; }
-        .disclaimer { margin-top: 32px; padding: 12px 16px; border: 1px solid #e2e0da; font-size: 11px; color: #7a7a74; font-family: monospace; }
-        .footer { margin-top: 48px; padding-top: 16px; border-top: 1px solid #e2e0da; font-size: 11px; color: #7a7a74; display: flex; justify-content: space-between; }
+        .next-steps li { color: rgba(255,255,255,0.8); margin-bottom: 8px; }
+        .disclaimer { margin-top: 28px; padding: 12px 16px; border: 1px solid rgba(28,25,22,0.1); border-radius: 6px; font-size: 11px; color: #8C8579; }
+        .footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid rgba(28,25,22,0.1); font-size: 11px; color: #8C8579; display: flex; justify-content: space-between; }
       </style></head><body>
-      ${headerHTML}
-      <div class="risk-badge risk-${data.overall_risk}">● ${data.overall_risk} RISK</div>
+      <div class="header">
+        <div class="brand">Lease<em>Lens</em></div>
+        <div class="meta">${negotiation?.property_name || 'Document analysis'} · v${document?.version_number} · ${formatDate(document?.uploaded_at)}</div>
+      </div>
+      <span class="risk-badge risk-${data.overall_risk}">● ${data.overall_risk} RISK</span>
+      ${commercialRows.length > 0 ? `
+      <div class="commercials">
+        <div class="commercials-title">${isLease ? 'Lease' : 'HOA'} — Commercial Terms</div>
+        <div class="commercials-grid">
+          ${commercialRows.map(r => `<div class="com-item"><div class="lbl">${r.label}</div><div class="val">${r.value}</div></div>`).join('')}
+        </div>
+      </div>` : ''}
       <div class="summary">${data.summary}</div>
       <h2>Clause-by-clause analysis</h2>
       ${(data.clauses || []).map(c => `
@@ -154,43 +181,33 @@ export default function ReportView() {
           <div class="clause-header">
             <div class="dot dot-${c.danger}"></div>
             <div class="clause-name">${c.name}</div>
-            <span class="risk-badge risk-${c.danger}" style="margin:0">${c.danger}</span>
           </div>
           <div class="clause-body">
-            ${c.location ? `<div class="clause-section"><div class="clause-label">Location</div><div>${c.location}</div></div>` : ''}
-            ${c.quote ? `<div class="clause-section"><div class="clause-label">Clause wording</div><div class="clause-quote">"${c.quote}"</div></div>` : ''}
-            ${c.risk ? `<div class="clause-section"><div class="clause-label">What this means</div><div>${c.risk}</div></div>` : ''}
-            ${c.counter ? `<div class="clause-section"><div class="clause-label">Suggested response</div><div class="clause-counter">${c.counter}</div></div>` : ''}
+            ${c.quote   ? `<div><div class="clause-label">Clause wording</div><div class="clause-quote">"${c.quote}"</div></div>` : ''}
+            ${c.risk    ? `<div><div class="clause-label">What this means</div><div>${c.risk}</div></div>` : ''}
+            ${c.counter ? `<div><div class="clause-label">Suggested counter</div><div class="clause-counter">${c.counter}</div></div>` : ''}
           </div>
         </div>`).join('')}
       <div class="next-steps"><h2>Recommended next steps</h2><ol style="padding-left:18px;margin-top:12px">${(data.next_steps || []).map(s => `<li>${s}</li>`).join('')}</ol></div>
       <div class="disclaimer">DISCLAIMER: LeaseLens is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.</div>
-      <div class="footer"><span>${workspace?.client_name ? `${workspace.client_name} · via ` : ''}LeaseLens · leaselens.au</span><span>Generated ${new Date().toLocaleDateString('en-AU')}</span></div>
+      <div class="footer"><span>${workspace?.client_name ? `${workspace.client_name} · ` : ''}LeaseLens · leaselens.au</span><span>Generated ${formatDate(new Date())}</span></div>
     </body></html>`)
     win.document.close()
     setTimeout(() => win.print(), 500)
   }
 
-  const formatDate = (d) => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
-  const stripTimestamp = f => f?.replace(/^\d+_/, '') || ''
-
-  const RISK = {
-    HIGH:   { dot: '#8b2020', pill: styles.pillHigh,   label: 'High priority' },
-    MEDIUM: { dot: '#b8975a', pill: styles.pillMedium, label: 'Medium' },
-    LOW:    { dot: '#1a5c30', pill: styles.pillLow,    label: 'Low' },
-  }
-
-  if (loading) return <div className={styles.loading}>Loading report…</div>
+  if (loading) return <><Nav /><div className={styles.loading}>Loading report…</div></>
 
   if (error) return (
+    <><Nav />
     <div className={styles.errorWrap}>
       <h2>{error}</h2>
       <button className="btn-primary" onClick={() => navigate('/dashboard')}>Back to dashboard</button>
-    </div>
+    </div></>
   )
 
-  const data = report.report_json
-  const clauses = data.clauses || []
+  const data     = report.report_json
+  const clauses  = data.clauses || []
   const filtered = filter === 'all' ? clauses : clauses.filter(c => c.danger === filter.toUpperCase())
   const highCount = clauses.filter(c => c.danger === 'HIGH').length
   const medCount  = clauses.filter(c => c.danger === 'MEDIUM').length
@@ -198,15 +215,13 @@ export default function ReportView() {
 
   return (
     <div className={styles.page}>
-
       <Nav />
+
       {/* BREADCRUMB */}
       <div className={styles.crumb}>
         <button onClick={() => navigate('/dashboard')}>Dashboard</button>
-        {negotiation?.workspace_id && <span>›</span>}
-        {negotiation?.workspace_id && <button onClick={() => navigate(`/workspace/${negotiation.workspace_id}`)}>Workspace</button>}
-        {negotiation && <span>›</span>}
-        {negotiation && <button onClick={() => navigate(`/negotiation/${negotiation.id}`)}>{negotiation.property_name || 'Negotiation'}</button>}
+        {negotiation?.workspace_id && <><span>›</span><button onClick={() => navigate(`/workspace/${negotiation.workspace_id}`)}>Workspace</button></>}
+        {negotiation && <><span>›</span><button onClick={() => navigate(`/negotiation/${negotiation.id}`)}>{negotiation.property_name || 'Negotiation'}</button></>}
         <span>›</span>
         <span>{stripTimestamp(document?.filename)}</span>
       </div>
@@ -227,7 +242,7 @@ export default function ReportView() {
                 <span className={styles.sep}>·</span>
                 <span>{formatDate(document?.uploaded_at)}</span>
                 <span className={styles.sep}>·</span>
-                <span className={styles.docRisk} data-risk={data.overall_risk}>
+                <span className={`${styles.docRisk} ${styles[`docRisk${data.overall_risk}`]}`}>
                   ● {data.overall_risk} RISK
                 </span>
               </div>
@@ -235,7 +250,7 @@ export default function ReportView() {
           </div>
           <div className={styles.docActions}>
             {allVersions.length >= 2 && (
-              <button className={styles.btnOutline} onClick={() => navigate(`/compare/${negotiation?.id}`)}>
+              <button className={styles.btnOutline} onClick={() => navigate(`/negotiation/${negotiation?.id}#compare`)}>
                 Compare versions
               </button>
             )}
@@ -245,19 +260,8 @@ export default function ReportView() {
               </svg>
               Export PDF
             </button>
-            <button className={styles.btnOutline} onClick={() => {
-              const url = `${window.location.origin}/report/${id}`
-              navigator.clipboard.writeText(url)
-                .then(() => alert('Report link copied to clipboard'))
-            }}>
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path d="M11 5a2 2 0 100-4 2 2 0 000 4zM5 10a2 2 0 100-4 2 2 0 000 4zm6 5a2 2 0 100-4 2 2 0 000 4z" stroke="currentColor" strokeWidth="1.5"/>
-                <path d="M6.7 9l2.6 1.5M9.3 5.5L6.7 7" stroke="currentColor" strokeWidth="1.5"/>
-              </svg>
-              Share
-            </button>
             <button className={styles.btnInk} onClick={() => navigate('/analyser', { state: { negotiationId: negotiation?.id, workspaceId: workspace?.id } })}>
-              Re-run analysis
+              + Add version
             </button>
           </div>
         </div>
@@ -265,9 +269,29 @@ export default function ReportView() {
 
       {/* MAIN */}
       <div className={styles.appMain}>
-
-        {/* CLAUSE LIST */}
         <div className={styles.briefing}>
+
+          {/* COMMERCIALS TABLE */}
+          {commercialRows.length > 0 && (
+            <div className={styles.commercials}>
+              <div className={styles.commercialsKicker}>
+                {isLease ? 'Lease' : 'Heads of Agreement'} · Commercial terms
+              </div>
+              <div className={styles.commercialsGrid}>
+                {commercialRows.map(r => (
+                  <div key={r.label} className={styles.comItem}>
+                    <div className={styles.comLabel}>{r.label}</div>
+                    <div className={styles.comValue}>{r.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* SUMMARY */}
+          <div className={styles.reportSummary}>{data.summary}</div>
+
+          {/* CLAUSE LIST */}
           <div className={styles.briefingHead}>
             <h2 className={styles.briefingTitle}>
               Clause briefing <span>· {clauses.length} reviewed</span>
@@ -293,18 +317,12 @@ export default function ReportView() {
           <div className={styles.clauseList}>
             {filtered.map((c, i) => {
               const globalIdx = clauses.indexOf(c)
-              const isOpen = !!openClauses[globalIdx]
-              const risk = RISK[c.danger] || RISK.LOW
+              const isOpen    = !!openClauses[globalIdx]
+              const risk      = RISK[c.danger] || RISK.LOW
               return (
-                <div
-                  key={i}
-                  className={`${styles.clauseItem} ${isOpen ? styles.clauseOpen : ''}`}
-                  id={`clause-${globalIdx}`}
-                >
-                  <div
-                    className={styles.clauseSummary}
-                    onClick={() => setOpenClauses(prev => ({ ...prev, [globalIdx]: !prev[globalIdx] }))}
-                  >
+                <div key={i} className={`${styles.clauseItem} ${isOpen ? styles.clauseOpen : ''}`} id={`clause-${globalIdx}`}>
+                  <div className={styles.clauseSummary}
+                    onClick={() => setOpenClauses(prev => ({ ...prev, [globalIdx]: !prev[globalIdx] }))}>
                     <span className={styles.prioDot} style={{ background: risk.dot }} />
                     <div className={styles.clauseTitles}>
                       {c.location && <div className={styles.clauseRef}>{c.location}</div>}
@@ -356,25 +374,23 @@ export default function ReportView() {
 
         {/* SIDEBAR */}
         <div className={styles.summaryCol}>
-
-          {/* At a glance */}
           <div className={styles.sCard}>
             <h3>At a glance</h3>
             <div className={styles.scoreRow}>
               <span className={styles.scoreNum}>{clauses.length}</span>
               <span className={styles.scoreOf}>clauses reviewed</span>
-              <span className={styles.scoreLbl} data-risk={data.overall_risk}>{data.overall_risk}</span>
+              <span className={`${styles.scoreLbl} ${styles[`scoreLbl${data.overall_risk}`]}`}>{data.overall_risk}</span>
             </div>
             <div className={styles.meter}>
-              {highCount > 0 && <span style={{ flex: highCount, background: 'var(--risk-h)' }} />}
-              {medCount > 0  && <span style={{ flex: medCount,  background: 'var(--gold)' }} />}
-              {lowCount > 0  && <span style={{ flex: lowCount,  background: 'var(--risk-l)' }} />}
+              {highCount > 0 && <span style={{ flex: highCount, background: 'var(--accent)' }} />}
+              {medCount  > 0 && <span style={{ flex: medCount,  background: 'var(--risk-m)' }} />}
+              {lowCount  > 0 && <span style={{ flex: lowCount,  background: 'var(--risk-l)' }} />}
             </div>
             <div className={styles.legend}>
               {[
-                { label: 'High priority', count: highCount, color: 'var(--risk-h)' },
-                { label: 'Medium',        count: medCount,  color: 'var(--gold)' },
-                { label: 'Low / standard',count: lowCount,  color: 'var(--risk-l)' },
+                { label: 'High priority',  count: highCount, color: 'var(--accent)' },
+                { label: 'Medium',         count: medCount,  color: 'var(--risk-m)' },
+                { label: 'Low / standard', count: lowCount,  color: 'var(--risk-l)' },
               ].map(l => (
                 <div key={l.label} className={styles.legendRow}>
                   <span className={styles.legendDot} style={{ background: l.color }} />
@@ -385,13 +401,11 @@ export default function ReportView() {
             </div>
           </div>
 
-          {/* Summary */}
           <div className={styles.sCard}>
             <h3>Summary</h3>
             <p className={styles.summaryText}>{data.summary}</p>
           </div>
 
-          {/* Jump to */}
           <div className={styles.sCard}>
             <h3>Jump to clause</h3>
             <div className={styles.jumpList}>
@@ -413,26 +427,21 @@ export default function ReportView() {
             </div>
           </div>
 
-          {/* Version history */}
           {allVersions.length > 1 && (
             <div className={styles.sCard}>
               <h3>Versions</h3>
               <div className={styles.versionList}>
                 {allVersions.map(v => (
-                  <div
-                    key={v.id}
+                  <div key={v.id}
                     className={`${styles.versionRow} ${v.reports?.[0]?.id === id ? styles.versionActive : ''}`}
-                    onClick={() => v.reports?.[0]?.id && navigate(`/report/${v.reports[0].id}`)}
-                  >
+                    onClick={() => v.reports?.[0]?.id && navigate(`/report/${v.reports[0].id}`)}>
                     <span className={styles.vNum}>v{v.version_number}</span>
                     <span className={styles.vDate}>{formatDate(v.uploaded_at)}</span>
-                    {v.overall_risk && (
-                      <span className={styles.vRisk} data-risk={v.overall_risk}>{v.overall_risk}</span>
-                    )}
+                    {v.overall_risk && <span className={styles.vRisk}>{v.overall_risk}</span>}
                   </div>
                 ))}
               </div>
-              <button className={styles.compareBtn} onClick={() => navigate(`/compare/${negotiation?.id}`)}>
+              <button className={styles.compareBtn} onClick={() => navigate(`/negotiation/${negotiation?.id}#compare`)}>
                 Compare versions →
               </button>
             </div>

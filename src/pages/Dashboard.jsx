@@ -10,12 +10,13 @@ export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [workspaces, setWorkspaces] = useState([])
-  const [profile, setProfile] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [wsModal, setWsModal] = useState(false)
-  const [wsName, setWsName] = useState('')
-  const [wsClient, setWsClient] = useState('')
-  const [wsSaving, setWsSaving] = useState(false)
+  const [profile, setProfile]       = useState(null)
+  const [loading, setLoading]       = useState(true)
+  const [wsModal, setWsModal]       = useState(false)
+  const [wsName, setWsName]         = useState('')
+  const [wsClient, setWsClient]     = useState('')
+  const [wsSaving, setWsSaving]     = useState(false)
+  const [sortPref, setSortPref]     = useState('property') // 'property' | 'tenant'
 
   useEffect(() => { if (!user) return; fetchAll() }, [user])
 
@@ -38,8 +39,15 @@ export default function Dashboard() {
       supabase.from('profiles').select('*').eq('id', user.id).single(),
     ])
     setWorkspaces(wsRes.data || [])
-    setProfile(profileRes.data)
+    const p = profileRes.data
+    setProfile(p)
+    if (p?.sort_preference) setSortPref(p.sort_preference)
     setLoading(false)
+  }
+
+  const handleSortPref = async (pref) => {
+    setSortPref(pref)
+    await supabase.from('profiles').update({ sort_preference: pref }).eq('id', user.id)
   }
 
   const handleCreateWorkspace = async () => {
@@ -64,7 +72,6 @@ export default function Dashboard() {
   const formatDate = d =>
     new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
 
-  // Derive status chip from lifecycle across all negotiations in workspace
   const getStatusChip = (ws) => {
     const negs = ws.negotiations || []
     if (negs.length === 0) return { label: 'No documents', cls: '' }
@@ -76,7 +83,6 @@ export default function Dashboard() {
     return { label: 'Reviewing', cls: '' }
   }
 
-  // Derive doc type summary from filenames across all negotiations
   const getDocSummary = (ws) => {
     const allDocs = (ws.negotiations || []).flatMap(n => n.documents || [])
     const hoaCount   = allDocs.filter(d => d.filename?.toLowerCase().includes('hoa')).length
@@ -98,7 +104,6 @@ export default function Dashboard() {
   const totalDocs = workspaces.reduce((a, w) =>
     a + (w.negotiations || []).reduce((b, n) => b + (n.documents?.length || 0), 0), 0)
 
-  // Fixed active/finalised split
   const active = workspaces.filter(ws => {
     const negs = ws.negotiations || []
     if (negs.length === 0) return true
@@ -108,6 +113,19 @@ export default function Dashboard() {
     const negs = ws.negotiations || []
     return negs.length > 0 && negs.every(n => n.lifecycle === 'agreed')
   })
+
+  // Sort by property name or tenant name
+  const sortFn = (a, b) => {
+    if (sortPref === 'tenant') {
+      const ta = (a.client_name || a.name).toLowerCase()
+      const tb = (b.client_name || b.name).toLowerCase()
+      return ta.localeCompare(tb)
+    }
+    return a.name.toLowerCase().localeCompare(b.name.toLowerCase())
+  }
+
+  const sortedActive    = [...active].sort(sortFn)
+  const sortedFinalised = [...finalised].sort(sortFn)
 
   if (loading) return <><Nav /><div className={styles.loading}>Loading…</div></>
 
@@ -167,6 +185,21 @@ export default function Dashboard() {
             </div>
           </div>
           <div className={styles.headActions}>
+            {/* Sort toggle */}
+            <div className={styles.sortToggle}>
+              <button
+                className={`${styles.sortBtn} ${sortPref === 'property' ? styles.sortBtnActive : ''}`}
+                onClick={() => handleSortPref('property')}
+              >
+                By property
+              </button>
+              <button
+                className={`${styles.sortBtn} ${sortPref === 'tenant' ? styles.sortBtnActive : ''}`}
+                onClick={() => handleSortPref('tenant')}
+              >
+                By tenant
+              </button>
+            </div>
             <button className="btn-outline btn-sm" onClick={() => setWsModal(true)}>
               + New property
             </button>
@@ -184,7 +217,7 @@ export default function Dashboard() {
             <span className={styles.shLn} />
           </div>
           <div className={styles.wsGrid}>
-            {active.map(ws => <PropertyCard key={ws.id} ws={ws} />)}
+            {sortedActive.map(ws => <PropertyCard key={ws.id} ws={ws} />)}
             <div
               className={`${styles.wcard} ${styles.wcardNew}`}
               onClick={() => setWsModal(true)}
@@ -197,15 +230,15 @@ export default function Dashboard() {
         </div>
 
         {/* FINALISED */}
-        {finalised.length > 0 && (
+        {sortedFinalised.length > 0 && (
           <div className={styles.dsec}>
             <div className={styles.sh}>
               <span className={styles.shLbl}>Finalised</span>
-              <span className={styles.shCnt}>{finalised.length} signed</span>
+              <span className={styles.shCnt}>{sortedFinalised.length} signed</span>
               <span className={styles.shLn} />
             </div>
             <div className={styles.wsGrid}>
-              {finalised.map(ws => <PropertyCard key={ws.id} ws={ws} fin />)}
+              {sortedFinalised.map(ws => <PropertyCard key={ws.id} ws={ws} fin />)}
             </div>
           </div>
         )}

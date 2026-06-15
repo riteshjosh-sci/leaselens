@@ -216,3 +216,59 @@
   .nextSteps { padding:14px 12px; }
   .nextSteps li { font-size:12.5px; }
 }
+
+/* ── COMMERCIALS TABLE ── */
+.commercials {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  padding: 20px 24px;
+  margin-bottom: 20px;
+}
+.commercialsKicker {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--accent);
+  margin-bottom: 16px;
+}
+.commercialsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px 20px;
+}
+.comItem {}
+.comLabel {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+  margin-bottom: 4px;
+}
+.comValue {
+  font-size: 15px; font-weight: 600; letter-spacing: -0.01em; color: var(--ink);
+}
+
+/* ── REPORT SUMMARY ── */
+.reportSummary {
+  font-size: 15px; line-height: 1.7; color: var(--ink-soft);
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-left: 3px solid var(--accent);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 16px 20px;
+  margin-bottom: 20px;
+}
+
+/* ── SCORE LABEL VARIANTS ── */
+.scoreLblHIGH   { background: var(--risk-h-bg); color: var(--accent-deep); }
+.scoreLblMEDIUM { background: var(--risk-m-bg); color: #8a6312; }
+.scoreLblLOW    { background: var(--risk-l-bg); color: #3f6b4e; }
+
+/* ── DOC RISK VARIANTS ── */
+.docRiskHIGH   { color: var(--accent-deep); font-weight: 700; }
+.docRiskMEDIUM { color: #8a6312; font-weight: 700; }
+.docRiskLOW    { color: #3f6b4e; font-weight: 700; }
+
+@media (max-width: 900px) {
+  .commercialsGrid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 600px) {
+  .commercialsGrid { grid-template-columns: repeat(2, 1fr); }
+}
