@@ -1,22 +1,32 @@
 .loading { display:flex; align-items:center; justify-content:center; height:100vh; color:var(--muted); }
 
-.page { max-width:var(--maxw); margin:0 auto; padding:96px var(--gut) 80px; min-height:100vh; overflow-x:hidden; width:100%; }
+.page { max-width:var(--maxw); margin:0 auto; padding:88px var(--gut) 80px; min-height:100vh; overflow-x:hidden; width:100%; }
 
+/* BREADCRUMB */
 .crumb { display:flex; align-items:center; gap:9px; font-size:13px; color:var(--muted); margin-bottom:22px; }
 .crumb button { background:none; border:none; color:var(--muted); cursor:pointer; font-family:var(--font); font-size:13px; padding:0; transition:color 0.15s; }
 .crumb button:hover { color:var(--ink); }
-.crumb span { color:var(--hair); }
+.crumb span { color:var(--faint); }
 
 /* HEADER */
 .head { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-bottom:32px; padding-bottom:28px; border-bottom:1px solid var(--hair); }
 .headLeft { display:flex; align-items:center; gap:16px; }
-.wsLogo { height:48px; max-width:140px; object-fit:contain; }
 .wsBadge { width:48px; height:48px; border-radius:12px; background:var(--ink); color:var(--paper); font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .kicker { font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); margin-bottom:5px; }
 .h1 { font-size:32px; font-weight:600; letter-spacing:-0.025em; color:var(--ink); line-height:1.05; }
 .sub { font-size:14px; color:var(--muted); margin-top:4px; }
 .meta { font-size:13px; color:var(--muted); margin-top:6px; }
 .headActions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+/* Workspace-level status chip in header */
+.statusChip { display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; padding:6px 12px; border-radius:100px; background:var(--accent-soft); color:var(--accent-deep); white-space:nowrap; flex-shrink:0; }
+.statusChip .d { width:7px; height:7px; border-radius:50%; background:var(--accent); }
+.statusWait { background:rgba(194,146,43,0.14); color:#8a6312; }
+.statusWait .d { background:var(--st-sent); }
+.statusDone { background:rgba(94,140,106,0.16); color:#3f6b4e; }
+.statusDone .d { background:var(--st-agreed); }
+.statusMuted { background:var(--paper-2); color:var(--muted); }
+.statusMuted .d { background:var(--faint); }
 
 /* SECTION */
 .dsec { margin-top:8px; }
@@ -30,19 +40,19 @@
 /* GRID */
 .wsGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; width:100%; min-width:0; }
 
-/* CARD */
+/* NEGOTIATION CARD */
 .wcard {
-  background:var(--card);
-  border:1px solid var(--hair);
-  border-radius:var(--radius);
-  padding:22px;
-  display:flex;
-  flex-direction:column;
-  cursor:pointer;
-  position:relative;
-  min-width:0;
-  overflow:hidden;
-  transition:border-color 0.15s, box-shadow 0.15s;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  cursor: pointer;
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 .wcard:hover { box-shadow:0 16px 40px -28px rgba(28,25,22,0.4); }
 
@@ -52,9 +62,9 @@
 .wcName { font-size:16px; font-weight:600; letter-spacing:-0.01em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .wcTn { font-size:13px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 
-.statusChip { display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; padding:6px 12px; border-radius:100px; background:var(--accent-soft); color:var(--accent-deep); white-space:nowrap; flex-shrink:0; margin-left:auto; }
-.d { width:7px; height:7px; border-radius:50%; background:var(--accent); }
-.statusRaise { background:var(--accent-soft); color:var(--accent-deep); }
+/* Negotiation-level chip (smaller, on the card) */
+.negChip { display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; padding:6px 12px; border-radius:100px; background:var(--accent-soft); color:var(--accent-deep); white-space:nowrap; flex-shrink:0; margin-left:auto; }
+.negChip .d { width:7px; height:7px; border-radius:50%; background:var(--accent); }
 
 .wcSummary { font-size:14px; color:var(--ink-soft); margin-top:18px; padding-top:16px; border-top:1px solid var(--hair-lt); display:flex; align-items:center; gap:9px; }
 .wcSummary svg { color:var(--muted); flex-shrink:0; }
@@ -75,11 +85,12 @@
 .nt { font-size:15px; font-weight:600; color:var(--ink-soft); }
 .ns { font-size:13px; color:var(--muted); max-width:180px; }
 
-@media (max-width:1080px) {
-  .wsGrid { grid-template-columns:repeat(2,1fr); }
-}
+/* The .d dot used inside chips — needs to be a class not inline */
+.d { width:7px; height:7px; border-radius:50%; background:var(--accent); display:inline-block; }
+
+@media (max-width:1080px) { .wsGrid { grid-template-columns:repeat(2,1fr); } }
 @media (max-width:768px) {
-  .page { padding:84px 20px 60px; }
+  .page { padding:76px 20px 60px; }
   .head { flex-direction:column; gap:16px; padding-bottom:20px; }
   .headLeft { gap:12px; }
   .h1 { font-size:26px; }
