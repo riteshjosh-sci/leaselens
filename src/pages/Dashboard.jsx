@@ -117,9 +117,11 @@ export default function Dashboard() {
   // Sort by property name or tenant name
   const sortFn = (a, b) => {
     if (sortPref === 'tenant') {
-      const ta = (a.client_name || a.name).toLowerCase()
-      const tb = (b.client_name || b.name).toLowerCase()
-      return ta.localeCompare(tb)
+      // Workspaces without client_name go to bottom
+      if (!a.client_name && !b.client_name) return a.name.localeCompare(b.name)
+      if (!a.client_name) return 1
+      if (!b.client_name) return -1
+      return a.client_name.toLowerCase().localeCompare(b.client_name.toLowerCase())
     }
     return a.name.toLowerCase().localeCompare(b.name.toLowerCase())
   }
@@ -185,21 +187,6 @@ export default function Dashboard() {
             </div>
           </div>
           <div className={styles.headActions}>
-            {/* Sort toggle */}
-            <div className={styles.sortToggle}>
-              <button
-                className={`${styles.sortBtn} ${sortPref === 'property' ? styles.sortBtnActive : ''}`}
-                onClick={() => handleSortPref('property')}
-              >
-                By property
-              </button>
-              <button
-                className={`${styles.sortBtn} ${sortPref === 'tenant' ? styles.sortBtnActive : ''}`}
-                onClick={() => handleSortPref('tenant')}
-              >
-                By tenant
-              </button>
-            </div>
             <button className="btn-outline btn-sm" onClick={() => setWsModal(true)}>
               + New property
             </button>
@@ -207,6 +194,22 @@ export default function Dashboard() {
               + Analyse document
             </button>
           </div>
+        </div>
+
+        {/* SORT TABS */}
+        <div className={styles.sortTabs}>
+          <button
+            className={`${styles.sortTab} ${sortPref === 'property' ? styles.sortTabActive : ''}`}
+            onClick={() => handleSortPref('property')}
+          >
+            By property
+          </button>
+          <button
+            className={`${styles.sortTab} ${sortPref === 'tenant' ? styles.sortTabActive : ''}`}
+            onClick={() => handleSortPref('tenant')}
+          >
+            By tenant
+          </button>
         </div>
 
         {/* ACTIVE */}

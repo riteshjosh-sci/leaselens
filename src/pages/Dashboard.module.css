@@ -9,7 +9,7 @@
 .headActions { display:flex; gap:11px; flex-wrap:wrap; align-items:center; }
 
 /* SECTIONS */
-.dsec { margin-top:34px; }
+.dsec { margin-top: 28px; }
 
 .sh { display:flex; align-items:center; gap:13px; margin-bottom:16px; }
 .shLbl { font-size:12px; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--ink-soft); }
@@ -176,30 +176,32 @@
   .dsec { margin-top:24px; }
 }
 
-/* SORT TOGGLE */
-.sortToggle {
-  display: inline-flex;
-  background: var(--paper-2);
-  border-radius: 8px;
-  padding: 3px;
-  gap: 2px;
+/* SORT TABS */
+.sortTabs {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid var(--hair);
+  margin-top: 24px;
+  margin-bottom: 0;
 }
-.sortBtn {
+.sortTab {
   background: transparent;
   border: none;
+  border-bottom: 2px solid transparent;
   font-family: var(--font);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 500;
   color: var(--muted);
-  padding: 6px 13px;
-  border-radius: 6px;
+  padding: 10px 16px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: color 0.15s, border-color 0.15s;
   white-space: nowrap;
+  margin-bottom: -1px;
 }
-.sortBtn:hover { color: var(--ink); }
-.sortBtnActive {
-  background: var(--card);
+.sortTab:hover { color: var(--ink); }
+.sortTabActive {
   color: var(--ink);
-  box-shadow: 0 1px 3px rgba(28,25,22,0.1);
+  font-weight: 600;
+  border-bottom-color: var(--accent);
 }

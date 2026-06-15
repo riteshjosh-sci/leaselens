@@ -95,10 +95,10 @@ export default function ReportView() {
   }
 
   // Determine if lease or HOA
-  const docType = leaseData?.document_type || (
-    document?.filename?.toLowerCase().includes('hoa') ? 'HOA' : 'Lease'
-  )
-  const isLease = docType?.toLowerCase().includes('lease') || docType?.toLowerCase().includes('agreement for lease')
+  const isHoaFilename = document?.filename?.toLowerCase().includes('hoa')
+  const docType = leaseData?.document_type || (isHoaFilename ? 'HOA' : 'Lease')
+  // HOA only if explicitly set to HOA — everything else (Lease, Agreement for Lease, null) is treated as lease
+  const isLease = docType?.toUpperCase() !== 'HOA'
 
   // Commercial terms rows
   const commercialRows = isLease ? [
