@@ -3,6 +3,31 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import styles from './NegotiationDetail.module.css'
 
+// Parse counter text into labelled options if the AI provided multiple.
+// Matches "Option A: ..." / "Option B: ..." or "1. ... 2. ..." patterns.
+function parseOptions(text) {
+  if (!text) return null
+
+  // "Option A:" / "Option B:" (case-insensitive)
+  if (/option\s+[A-Z]\s*[:\-–]/i.test(text)) {
+    const parts = text.split(/\n*option\s+[A-Z]\s*[:\-–]\s*/i).filter(s => s.trim())
+    if (parts.length >= 2) {
+      return parts.map((p, i) => ({ label: `Option ${String.fromCharCode(65 + i)}`, text: p.trim() }))
+    }
+  }
+
+  // Paragraph-separated "1. ..." / "2. ..."
+  const numbered = text.split(/\n{1,2}\d+\.\s+/)
+  if (numbered.length >= 2 && /^\d+\.\s+/.test(text)) {
+    const all = text.split(/\n{1,2}(?=\d+\.\s)/).filter(s => s.trim())
+    if (all.length >= 2) {
+      return all.map((p, i) => ({ label: `Option ${i + 1}`, text: p.replace(/^\d+\.\s+/, '').trim() }))
+    }
+  }
+
+  return null
+}
+
 // Uncontrolled contenteditable — avoids cursor-jumping on every keystroke
 function EditableCounter({ clauseKey, text, resetKey, onChange }) {
   const ref = useRef(null)
@@ -58,13 +83,14 @@ const ResetIcon = () => (
 
 export default function ReviewTab({ negId, neg, ws, docs }) {
   const navigate = useNavigate()
-  const [decisions, setDecisions]     = useState({})
+  const [decisions, setDecisions]       = useState({})
   const [counterEdits, setCounterEdits] = useState({}) // user-edited counter text keyed by clauseKey
-  const [resetKeys, setResetKeys]     = useState({})
-  const [subTab, setSubTab]           = useState('clauses') // 'clauses' | 'summary'
-  const [activeId, setActiveId]       = useState(null)
-  const [lifecycle, setLifecycle]     = useState(neg?.lifecycle || 'reviewing')
-  const [copied, setCopied]           = useState(false)
+  const [resetKeys, setResetKeys]       = useState({})
+  const [selectedOptions, setSelectedOptions] = useState({}) // clauseKey → option index
+  const [subTab, setSubTab]             = useState('clauses') // 'clauses' | 'summary'
+  const [activeId, setActiveId]         = useState(null)
+  const [lifecycle, setLifecycle]       = useState(neg?.lifecycle || 'reviewing')
+  const [copied, setCopied]             = useState(false)
 
   useEffect(() => {
     if (!negId) return
@@ -152,6 +178,13 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
 
   const handleReset = (clauseKey, suggested) => {
     setCounterEdits(prev => ({ ...prev, [clauseKey]: suggested }))
+    setResetKeys(prev => ({ ...prev, [clauseKey]: (prev[clauseKey] || 0) + 1 }))
+  }
+
+  // Select a pre-parsed option (radio button) — loads its text into the editable box
+  const handleOptionSelect = (clauseKey, optionText, optionIdx) => {
+    setSelectedOptions(prev => ({ ...prev, [clauseKey]: optionIdx }))
+    setCounterEdits(prev => ({ ...prev, [clauseKey]: optionText }))
     setResetKeys(prev => ({ ...prev, [clauseKey]: (prev[clauseKey] || 0) + 1 }))
   }
 
@@ -300,7 +333,9 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
               "{c.quote}"
             </div>
           )}
-          <div className={styles.fcBlocks}>
+          {/* Only use 2-col grid when both blocks have content */}
+          <div className={styles.fcBlocks}
+            style={c.risk && c.legislation ? undefined : { gridTemplateColumns: '1fr' }}>
             {c.risk && (
               <div className={styles.fcBlock}>
                 <div className={styles.fcBlockH}>What it means for you</div>
@@ -316,31 +351,61 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
           </div>
         </div>
 
-        {dec !== 'accepted' && c.counter && (
-          <div className={styles.fcCounter}>
-            <div className={styles.fcCounterHead}>
-              <span className={styles.fcCounterLabel}>Suggested counter</span>
-              <span className={`${styles.editTag} ${edited ? styles.editTagEdited : styles.editTagSuggested}`}>
-                <span className={styles.editTagDot} />
-                {edited ? 'Edited by you' : 'Suggested wording'}
-              </span>
-              {edited && (
-                <button className={styles.resetLink} onClick={() => handleReset(c.clauseKey, c.counter)}>
-                  <ResetIcon /> Reset
-                </button>
+        {dec !== 'accepted' && c.counter && (() => {
+          const options = parseOptions(c.counter)
+          const selIdx  = selectedOptions[c.clauseKey] ?? 0
+
+          return (
+            <div className={styles.fcCounter}>
+              <div className={styles.fcCounterHead}>
+                <span className={styles.fcCounterLabel}>Suggested counter</span>
+                <span className={`${styles.editTag} ${edited ? styles.editTagEdited : styles.editTagSuggested}`}>
+                  <span className={styles.editTagDot} />
+                  {edited ? 'Edited by you' : 'Suggested wording'}
+                </span>
+                {edited && (
+                  <button className={styles.resetLink}
+                    onClick={() => {
+                      const base = options ? options[selIdx].text : c.counter
+                      handleReset(c.clauseKey, base)
+                    }}>
+                    <ResetIcon /> Reset
+                  </button>
+                )}
+              </div>
+
+              {/* Radio option picker — only shown when AI gave multiple options */}
+              {options && (
+                <div className={styles.optionPicker}>
+                  {options.map((opt, i) => (
+                    <label key={i}
+                      className={`${styles.optionLabel} ${selIdx === i ? styles.optionLabelActive : ''}`}>
+                      <input
+                        type="radio"
+                        className={styles.optionRadio}
+                        name={`opts-${c.clauseKey}`}
+                        checked={selIdx === i}
+                        onChange={() => handleOptionSelect(c.clauseKey, opt.text, i)}
+                      />
+                      <span className={styles.optionLabelText}>{opt.label}</span>
+                      <span className={styles.optionPreview}>{opt.text.slice(0, 80)}{opt.text.length > 80 ? '…' : ''}</span>
+                    </label>
+                  ))}
+                </div>
               )}
+
+              <EditableCounter
+                clauseKey={c.clauseKey}
+                text={options ? (counterEdits[c.clauseKey] ?? options[selIdx].text) : counterText}
+                resetKey={resetKeys[c.clauseKey] || 0}
+                onChange={(v) => handleCounterEdit(c.clauseKey, v)}
+              />
+              <div className={styles.counterHint}>
+                <PencilIcon /> Click the text above to edit — your wording is what gets sent.
+              </div>
             </div>
-            <EditableCounter
-              clauseKey={c.clauseKey}
-              text={counterText}
-              resetKey={resetKeys[c.clauseKey] || 0}
-              onChange={(v) => handleCounterEdit(c.clauseKey, v)}
-            />
-            <div className={styles.counterHint}>
-              <PencilIcon /> Click the text above to edit — your wording is what gets sent.
-            </div>
-          </div>
-        )}
+          )
+        })()}
 
         <div className={styles.fcActions}>
           <button

@@ -352,14 +352,22 @@
 }
 
 /* Queue (left rail) */
-.queue { position: sticky; top: 88px; }
+.queue { position: sticky; top: 88px; max-height: calc(100vh - 140px); display: flex; flex-direction: column; }
 .queueHead {
   display: flex; align-items: center; justify-content: space-between;
   padding: 4px 8px 10px; font-size: 10px; font-weight: 700;
   letter-spacing: .1em; text-transform: uppercase; color: var(--faint);
+  flex-shrink: 0;
 }
 .queueN { font-weight: 600; }
-.qList { display: flex; flex-direction: column; gap: 1px; }
+.qList {
+  display: flex; flex-direction: column; gap: 1px;
+  overflow-y: auto; flex: 1;
+  scrollbar-width: thin; scrollbar-color: var(--hair) transparent;
+}
+.qList::-webkit-scrollbar { width: 4px; }
+.qList::-webkit-scrollbar-track { background: transparent; }
+.qList::-webkit-scrollbar-thumb { background: var(--hair); border-radius: 4px; }
 .qItem {
   display: flex; align-items: center; gap: 9px; padding: 9px 10px;
   cursor: pointer; border-radius: 9px; transition: background .14s; opacity: .72;
@@ -627,6 +635,26 @@
   cursor: pointer; color: var(--ink-soft); text-align: center; transition: all .15s;
 }
 .sendExport:hover { border-color: var(--muted); color: var(--ink); }
+
+/* Option picker (radio buttons for multi-option counters) */
+.optionPicker {
+  display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px;
+}
+.optionLabel {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 13px;
+  border-radius: 9px; border: 1.5px solid rgba(44,80,214,.15);
+  background: rgba(255,255,255,.6); cursor: pointer; transition: all .15s;
+}
+.optionLabel:hover { border-color: rgba(44,80,214,.35); background: #fff; }
+.optionLabelActive { border-color: var(--accent); background: #fff; box-shadow: 0 0 0 3px var(--accent-soft); }
+.optionRadio { margin-top: 2px; flex-shrink: 0; accent-color: var(--accent); width: 15px; height: 15px; cursor: pointer; }
+.optionLabelText {
+  font-size: 11.5px; font-weight: 700; color: var(--accent-deep);
+  white-space: nowrap; flex-shrink: 0; padding-top: 1px;
+}
+.optionLabelActive .optionLabelText { color: var(--accent); }
+.optionPreview { font-size: 13px; color: var(--ink-soft); line-height: 1.45; }
+.optionLabelActive .optionPreview { color: var(--ink); }
 
 /* Responsive overrides for new review layout */
 @media (max-width: 1080px) {
