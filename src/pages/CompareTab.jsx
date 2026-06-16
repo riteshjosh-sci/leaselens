@@ -2,24 +2,67 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './CompareTab.module.css'
 
-// Word-level diff highlight — returns React nodes with changed words wrapped
+// Tokenise into words + whitespace/punctuation runs, preserving original string
+function tokenise(text) {
+  return text.match(/\S+|\s+/g) || []
+}
+
+// LCS-based word diff — returns array of { text, added } segments
+function diffTokens(oldTokens, newTokens) {
+  const m = oldTokens.length, n = newTokens.length
+  // Build LCS length table
+  const dp = Array.from({ length: m + 1 }, () => new Int32Array(n + 1))
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = oldTokens[i-1].toLowerCase() === newTokens[j-1].toLowerCase()
+        ? dp[i-1][j-1] + 1
+        : Math.max(dp[i-1][j], dp[i][j-1])
+
+  // Backtrack
+  const ops = []
+  let i = m, j = n
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && oldTokens[i-1].toLowerCase() === newTokens[j-1].toLowerCase()) {
+      ops.push({ text: newTokens[j-1], added: false }); i--; j--
+    } else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) {
+      ops.push({ text: newTokens[j-1], added: true }); j--
+    } else {
+      i-- // deleted from old — skip in new
+    }
+  }
+  return ops.reverse()
+}
+
+// Merge consecutive added tokens into highlight spans
 function HighlightedText({ oldText, newText }) {
   if (!oldText || !newText) return <>{newText}</>
-  const oldWords = new Set(
-    oldText.toLowerCase().split(/\b/).filter(w => /\w{3,}/.test(w))
+  const oldTok = tokenise(oldText)
+  const newTok = tokenise(newText)
+
+  // For short texts use full LCS; cap at 300 tokens each to avoid O(n²) on huge blobs
+  const ops = diffTokens(
+    oldTok.length > 300 ? oldTok.slice(0, 300) : oldTok,
+    newTok.length > 300 ? newTok.slice(0, 300) : newTok,
   )
-  const tokens = newText.split(/(\s+)/)
-  return (
-    <>
-      {tokens.map((token, i) => {
-        const clean = token.toLowerCase().replace(/[^a-z0-9]/g, '')
-        const isNew = clean.length >= 3 && !oldWords.has(clean)
-        return isNew
-          ? <mark key={i} className={styles.diffMark}>{token}</mark>
-          : <span key={i}>{token}</span>
-      })}
-    </>
-  )
+
+  // Group consecutive added runs
+  const nodes = []
+  let run = [], key = 0
+  const flush = () => {
+    if (!run.length) return
+    nodes.push(<mark key={key++} className={styles.diffMark}>{run.join('')}</mark>)
+    run = []
+  }
+  for (const op of ops) {
+    if (op.added) {
+      run.push(op.text)
+    } else {
+      flush()
+      nodes.push(<span key={key++}>{op.text}</span>)
+    }
+  }
+  flush()
+  return <>{nodes}</>
 }
 
 const ChevDown = ({ open }) => (

@@ -237,11 +237,16 @@
   padding: 3px 7px; border-radius: 5px; background: rgba(192,73,47,.12); color: #993621;
 }
 
-/* word-level diff highlight */
+/* phrase-level diff highlight — contiguous changed run */
 .diffMark {
-  background: rgba(94,140,106,.25); color: #2d5235;
-  border-radius: 3px; padding: 1px 2px;
+  background: rgba(94,140,106,.22);
+  color: #2a5238;
+  border-radius: 4px;
+  padding: 1px 4px;
   font-style: normal;
+  font-weight: 600;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 /* connector */
