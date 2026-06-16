@@ -108,7 +108,7 @@
 
 /* ── SUMMARY BAR (above clause columns) ── */
 .summaryBar {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 16px;
+  display: grid; grid-template-columns: auto 1fr; gap: 16px;
 }
 .summaryCard {
   background: var(--card); border: 1px solid var(--hair);
