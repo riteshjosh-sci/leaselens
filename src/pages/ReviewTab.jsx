@@ -1,24 +1,70 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import styles from './NegotiationDetail.module.css'
-import briefStyles from './ResponseBriefModal.module.css'
 
-const LIFECYCLE = ['Reviewing', 'Counter prepared', 'Sent to agent', 'Awaiting response', 'Agreed']
+// Uncontrolled contenteditable — avoids cursor-jumping on every keystroke
+function EditableCounter({ clauseKey, text, resetKey, onChange }) {
+  const ref = useRef(null)
+  useEffect(() => {
+    if (ref.current && ref.current.textContent !== text) {
+      ref.current.textContent = text
+    }
+  }, [clauseKey, resetKey])
+  return (
+    <div
+      className={styles.counterEdit}
+      contentEditable
+      suppressContentEditableWarning
+      ref={ref}
+      spellCheck
+      onInput={(e) => onChange(e.currentTarget.textContent)}
+    />
+  )
+}
+
+const PRIO_COLOR = { HIGH: 'var(--accent)', MEDIUM: 'var(--risk-m)', LOW: 'var(--risk-l)' }
+
+const ChevLeft = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <path d="M13 8H3.5M7 4.5L3.5 8 7 11.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const ChevRight = () => (
+  <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+    <path d="M3 8h9.5M9 4.5L12.5 8 9 11.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const CheckIcon = ({ s = 12 }) => (
+  <svg width={s} height={s} viewBox="0 0 16 16" fill="none">
+    <path d="M3 8.2l3.2 3.2L13 4.6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const CounterIcon = ({ s = 12 }) => (
+  <svg width={s} height={s} viewBox="0 0 16 16" fill="none">
+    <path d="M9.5 3.5L5 8l4.5 4.5M5 8h7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+const PencilIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+    <path d="M11 2.5l2.5 2.5L5 13.5 2 14l.5-3L11 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+  </svg>
+)
+const ResetIcon = () => (
+  <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+    <path d="M3 8a5 5 0 1 1 1.5 3.5M3 8V5m0 3h3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
 
 export default function ReviewTab({ negId, neg, ws, docs }) {
   const navigate = useNavigate()
-  const [decisions, setDecisions]         = useState({})
-  const [lifecycle, setLifecycle]         = useState(neg?.lifecycle || 'reviewing')
-  const [savingDecision, setSavingDecision] = useState(false)
-  const [openClauseKey, setOpenClauseKey] = useState(null)
-  const [filter, setFilter]               = useState('all')
-
-  // Brief modal state
-  const [briefOpen, setBriefOpen]   = useState(false)
-  const [briefText, setBriefText]   = useState('')
-  const [generating, setGenerating] = useState(false)
-  const [copied, setCopied]         = useState(false)
+  const [decisions, setDecisions]     = useState({})
+  const [counterEdits, setCounterEdits] = useState({}) // user-edited counter text keyed by clauseKey
+  const [resetKeys, setResetKeys]     = useState({})
+  const [subTab, setSubTab]           = useState('clauses') // 'clauses' | 'summary'
+  const [activeId, setActiveId]       = useState(null)
+  const [lifecycle, setLifecycle]     = useState(neg?.lifecycle || 'reviewing')
+  const [copied, setCopied]           = useState(false)
 
   useEffect(() => {
     if (!negId) return
@@ -35,44 +81,6 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
       })
   }, [negId])
 
-  const toggleDecision = async (clauseKey, action, clauseName) => {
-    const newDecision = decisions[clauseKey] === action ? 'open' : action
-    const newDecisions = { ...decisions, [clauseKey]: newDecision }
-    setDecisions(newDecisions)
-    setSavingDecision(true)
-    try {
-      if (newDecision === 'open') {
-        await supabase.from('clause_decisions')
-          .delete()
-          .eq('negotiation_id', negId)
-          .eq('clause_key', clauseKey)
-      } else {
-        await supabase.from('clause_decisions')
-          .upsert({
-            negotiation_id: negId,
-            clause_key: clauseKey,
-            clause_name: clauseName,
-            decision: newDecision,
-          }, { onConflict: 'negotiation_id,clause_key' })
-      }
-      const hasCountering = Object.values(newDecisions).some(d => d === 'countering')
-      const autoLifecycle = hasCountering ? 'counter_prepared' : 'reviewing'
-      if (['reviewing', 'counter_prepared'].includes(lifecycle)) {
-        await updateLifecycle(autoLifecycle)
-      }
-    } catch (e) {
-      console.error('Failed to save decision:', e)
-    }
-    setSavingDecision(false)
-  }
-
-  const updateLifecycle = async (newStage) => {
-    setLifecycle(newStage)
-    await supabase.from('negotiations').update({ lifecycle: newStage }).eq('id', negId)
-  }
-
-  const riskColor = { HIGH: 'var(--accent)', MEDIUM: 'var(--risk-m)', LOW: 'var(--risk-l)' }
-
   const latestReport = docs.find(d => d.reports?.[0]?.report_json)
   const allClauses = latestReport
     ? (latestReport.reports[0].report_json.clauses || []).map(c => ({
@@ -82,333 +90,441 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
       }))
     : []
 
-  const highClauses = allClauses.filter(c => c.danger === 'HIGH')
-  const medClauses  = allClauses.filter(c => c.danger === 'MEDIUM')
-  const lowClauses  = allClauses.filter(c => c.danger === 'LOW')
-  const countering  = allClauses.filter(c => decisions[c.clauseKey] === 'countering')
-  const agreed      = allClauses.filter(c => decisions[c.clauseKey] === 'accepted')
-  const toDecide    = allClauses.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
-
-  const filterClauses = (list) => {
-    if (filter === 'countering') return list.filter(c => decisions[c.clauseKey] === 'countering')
-    if (filter === 'agreed')     return list.filter(c => decisions[c.clauseKey] === 'accepted')
-    if (filter === 'open')       return list.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
-    return list
-  }
-
   useEffect(() => {
-    if (allClauses.length > 0 && openClauseKey === null) {
+    if (allClauses.length > 0 && !activeId) {
       const firstHigh = allClauses.find(c => c.danger === 'HIGH')
-      setOpenClauseKey(firstHigh?.clauseKey || allClauses[0]?.clauseKey || null)
+      setActiveId(firstHigh?.clauseKey || allClauses[0]?.clauseKey)
     }
   }, [allClauses.length])
 
-  // ── Generate response email──
-  const handleGenerateBrief = () => {
-    if (!countering.length) return
-    setBriefOpen(true)
-    setCopied(false)
+  const getCounterText = (c) => counterEdits[c.clauseKey] ?? c.counter ?? ''
+  const isEdited = (c) => {
+    const edited = counterEdits[c.clauseKey]
+    return edited !== undefined && edited.trim() !== (c.counter || '').trim()
+  }
 
-    const propertyName = neg?.property_name || 'the above premises'
-    const tenantName   = ws?.client_name || ''
+  const saveDecision = async (clauseKey, clauseName, newDecision) => {
+    if (newDecision === 'open') {
+      await supabase.from('clause_decisions')
+        .delete().eq('negotiation_id', negId).eq('clause_key', clauseKey)
+    } else {
+      await supabase.from('clause_decisions')
+        .upsert({ negotiation_id: negId, clause_key: clauseKey, clause_name: clauseName, decision: newDecision },
+          { onConflict: 'negotiation_id,clause_key' })
+    }
+  }
 
-    const clauseParas = countering.map(c => {
-      const counterText = c.counter || c.risk || ''
-      return `${c.name}\n${counterText}`
-    }).join('\n\n')
+  const updateLifecycle = async (newStage) => {
+    setLifecycle(newStage)
+    await supabase.from('negotiations').update({ lifecycle: newStage }).eq('id', negId)
+  }
 
-    const intro = tenantName
-      ? `Thank you for providing the heads of agreement for ${propertyName} on behalf of ${tenantName}. We have reviewed the terms and have the following comments:`
-      : `Thank you for providing the heads of agreement for ${propertyName}. We have reviewed the terms and have the following comments:`
+  const toggleDecision = async (clauseKey, action, clauseName) => {
+    const newDecision = decisions[clauseKey] === action ? 'open' : action
+    const newDecisions = { ...decisions, [clauseKey]: newDecision }
+    setDecisions(newDecisions)
+    try {
+      await saveDecision(clauseKey, clauseName, newDecision)
+      const hasCountering = Object.values(newDecisions).some(d => d === 'countering')
+      const autoStage = hasCountering ? 'counter_prepared' : 'reviewing'
+      if (['reviewing', 'counter_prepared'].includes(lifecycle)) {
+        await updateLifecycle(autoStage)
+      }
+    } catch (e) {
+      console.error('Failed to save decision:', e)
+    }
+  }
 
-    const email = `Dear [Agent name],\n\n${intro}\n\n${clauseParas}\n\nWe look forward to your response.\n\nRegards,\n`
+  // Decide and advance focus to next undecided clause
+  const decideAndAdvance = (clauseKey, action, clauseName) => {
+    toggleDecision(clauseKey, action, clauseName)
+    if (action !== 'open') {
+      const idx = allClauses.findIndex(c => c.clauseKey === clauseKey)
+      const next = allClauses.slice(idx + 1).find(c =>
+        !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open'
+      )
+      if (next) setTimeout(() => setActiveId(next.clauseKey), 240)
+    }
+  }
 
-    setBriefText(email)
+  const handleCounterEdit = (clauseKey, text) =>
+    setCounterEdits(prev => ({ ...prev, [clauseKey]: text }))
+
+  const handleReset = (clauseKey, suggested) => {
+    setCounterEdits(prev => ({ ...prev, [clauseKey]: suggested }))
+    setResetKeys(prev => ({ ...prev, [clauseKey]: (prev[clauseKey] || 0) + 1 }))
+  }
+
+  // Derived counts
+  const openClauses      = allClauses.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
+  const counteringClauses = allClauses.filter(c => decisions[c.clauseKey] === 'countering')
+  const agreedClauses    = allClauses.filter(c => decisions[c.clauseKey] === 'accepted')
+  const decided          = counteringClauses.length + agreedClauses.length
+
+  const activeIdx = allClauses.findIndex(c => c.clauseKey === activeId)
+  const active    = allClauses[activeIdx]
+
+  // Build copyable plain-text summary
+  const buildSummary = () => {
+    const prop = ws?.name || 'the property'
+    const tenant = ws?.client_name ? ` (${ws.client_name})` : ''
+    const lines = [`Lease review — ${prop}${tenant}`, '']
+    lines.push('AGREED')
+    if (agreedClauses.length) agreedClauses.forEach(c => lines.push(`• ${c.location || c.name} — ${c.name}.`))
+    else lines.push('• None yet.')
+    lines.push('')
+    lines.push('NOT AGREED — PROPOSED CHANGES')
+    if (counteringClauses.length) {
+      counteringClauses.forEach(c => {
+        lines.push(`• ${c.location || c.name} — ${c.name}.`)
+        const ct = getCounterText(c)
+        if (ct) lines.push(`  Proposed: ${ct}`)
+        lines.push('')
+      })
+    } else {
+      lines.push('• None yet.')
+    }
+    return lines.join('\n').trim()
   }
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(briefText).then(() => {
+    navigator.clipboard?.writeText(buildSummary()).then(() => {
       setCopied(true)
-      setTimeout(() => setCopied(false), 2500)
+      setTimeout(() => setCopied(false), 2000)
     })
   }
 
-  const ClauseItem = ({ c }) => {
-    const open = openClauseKey === c.clauseKey
-    const dec  = decisions[c.clauseKey] || 'open'
-
+  if (!allClauses.length) {
     return (
-      <div className={`${styles.negItem} ${open ? styles.negItemOpen : ''}`}>
-        <div className={styles.negRow} onClick={() => setOpenClauseKey(prev => prev === c.clauseKey ? null : c.clauseKey)}>
-          <span className={styles.prio} style={{ background: riskColor[c.danger] }} />
-          <div className={styles.tt}>
-            {c.location && <div className={styles.ref}>{c.location}</div>}
-            <div className={styles.nm}>{c.name}</div>
-          </div>
-          {dec === 'countering' && <span className={`${styles.sbadge} ${styles.sCounter}`}><span className={styles.sdot} />Countering</span>}
-          {dec === 'accepted'   && <span className={`${styles.sbadge} ${styles.sAgreed}`}><span className={styles.sdot} />You agreed</span>}
-          {dec === 'open'       && <span className={`${styles.sbadge} ${styles.sOpen}`}><span className={styles.sdot} />Needs decision</span>}
-          <svg className={`${styles.chev} ${open ? styles.chevOpen : ''}`} width="18" height="18" viewBox="0 0 20 20" fill="none">
-            <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </div>
-
-        {open && (
-          <div className={styles.negDetail}>
-            {c.quote && (
-              <div className={styles.docQuote}>
-                <span className={styles.qref}>Clause wording · {c.location}</span>
-                "{c.quote}"
-              </div>
-            )}
-            {c.risk && (
-              <div className={styles.nb}>
-                <div className={styles.nbH}>What it means for you</div>
-                <p>{c.risk}</p>
-              </div>
-            )}
-            {c.counter && (
-              <div className={`${styles.nb} ${styles.nbCounter}`}>
-                <div className={`${styles.nbH} ${styles.nbHAct}`}>Suggested counter</div>
-                <p>{c.counter}</p>
-              </div>
-            )}
-            {c.legislation && (
-              <div className={`${styles.nb} ${styles.nbLeg}`}>
-                <div className={styles.nbH}>Relevant legislation</div>
-                <p>{c.legislation}</p>
-              </div>
-            )}
-            <div className={styles.decide}>
-              <button
-                className={`${styles.dcBtn} ${styles.dcAgree} ${dec === 'accepted' ? styles.dcOn : ''}`}
-                onClick={e => { e.stopPropagation(); toggleDecision(c.clauseKey, 'accepted', c.name) }}>
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                  <path d="M3 8l3 3 7-7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Agree to clause
-              </button>
-              <button
-                className={`${styles.dcBtn} ${styles.dcCounter} ${dec === 'countering' ? styles.dcOn : ''}`}
-                onClick={e => { e.stopPropagation(); toggleDecision(c.clauseKey, 'countering', c.name) }}>
-                <svg width="13" height="13" viewBox="0 0 16 16" fill="none">
-                  <path d="M10 4L6 8l4 4M6 8h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
-                Counter this
-              </button>
-              <span className={styles.decideNote}>
-                {savingDecision ? 'Saving…' : dec === 'countering' ? 'Added to response brief' : dec === 'accepted' ? 'Marked as agreed' : 'Choose how to respond'}
-              </span>
-            </div>
-            <div className={styles.detailMeta}>
-              <button className={styles.tinyLink} onClick={() => navigate(`/report/${c.reportId}`)}>
-                View full report →
-              </button>
-            </div>
-          </div>
-        )}
+      <div className={styles.panel} style={{ marginTop: 24 }}>
+        <div className={styles.panelHead}><h2>Clauses</h2></div>
+        <div className={styles.empty}>No report yet — analyse a document to see clauses here.</div>
       </div>
     )
   }
 
-  const filteredHigh = filterClauses(highClauses)
-  const filteredMed  = filterClauses(medClauses)
-  const filteredLow  = filterClauses(lowClauses)
+  // ── Sub-tab + progress bar ──────────────────────────────────────────
+  const pct = allClauses.length ? (decided / allClauses.length) * 100 : 0
 
-  return (
-    <>
-      <div className={styles.wsBody}>
-        <div className={styles.colMain}>
+  const TabBar = () => (
+    <div className={styles.rvTabWrap}>
+      <div className={styles.rvTabs}>
+        <button
+          className={`${styles.rvTab} ${subTab === 'clauses' ? styles.rvTabActive : ''}`}
+          onClick={() => setSubTab('clauses')}>
+          <span className={styles.rvTabIcon}><PencilIcon /></span>
+          Clauses
+          {openClauses.length > 0 && <span className={styles.rvTabBadge}>{openClauses.length}</span>}
+        </button>
+        <button
+          className={`${styles.rvTab} ${styles.rvTabSummary} ${subTab === 'summary' ? styles.rvTabActive : ''}`}
+          onClick={() => setSubTab('summary')}>
+          <span className={styles.rvTabIcon}><CheckIcon s={12} /></span>
+          Summary
+          <span className={styles.rvTabBadge}>{decided}</span>
+        </button>
+      </div>
+      <div className={styles.rvProg}>
+        <div className={styles.rvProgBar}>
+          <i style={{ width: `${pct}%` }} />
+        </div>
+        <span className={styles.rvProgLbl}><b>{decided}</b> of {allClauses.length} reviewed</span>
+      </div>
+    </div>
+  )
 
-          {/* FACTS STRIP */}
-          {allClauses.length > 0 && (
-            <div className={styles.facts}>
-              <div className={styles.fact}><div className={styles.factL}>Versions</div><div className={styles.factV}>{docs.length} <small>uploaded</small></div></div>
-              <div className={styles.factDiv} />
-              <div className={styles.fact}><div className={styles.factL}>Clauses flagged</div><div className={styles.factV}>{allClauses.length} <small>total</small></div></div>
-              <div className={styles.factDiv} />
-              <div className={styles.fact}><div className={styles.factL}>High priority</div><div className={styles.factV} style={{ color: 'var(--accent)' }}>{highClauses.length}</div></div>
-              <div className={styles.factDiv} />
-              <div className={styles.fact}><div className={styles.factL}>To decide</div><div className={styles.factV}>{toDecide.length} <small>remaining</small></div></div>
+  // ── Queue (left column) ─────────────────────────────────────────────
+  const Queue = () => (
+    <div className={styles.queue}>
+      <div className={styles.queueHead}>
+        <span>Clauses</span>
+        <span className={styles.queueN}>{openClauses.length} to decide</span>
+      </div>
+      <div className={styles.qList}>
+        {allClauses.map(c => {
+          const dec = decisions[c.clauseKey] || 'open'
+          const isActive = c.clauseKey === activeId
+          return (
+            <div
+              key={c.clauseKey}
+              className={`${styles.qItem} ${isActive ? styles.qItemActive : ''}`}
+              onClick={() => setActiveId(c.clauseKey)}>
+              <span className={styles.qPrio} style={{ background: PRIO_COLOR[c.danger] }} />
+              <div className={styles.qtt}>
+                {c.location && <div className={styles.qRef}>{c.location}</div>}
+                <div className={styles.qNm}>{c.name}</div>
+              </div>
+              <span className={`${styles.qState} ${
+                dec === 'accepted'   ? styles.qStateAgreed :
+                dec === 'countering' ? styles.qStateCounter :
+                styles.qStateOpen
+              }`}>
+                {dec === 'accepted'   && <CheckIcon s={10} />}
+                {dec === 'countering' && <CounterIcon s={10} />}
+              </span>
             </div>
-          )}
+          )
+        })}
+      </div>
+    </div>
+  )
 
-          {/* LIFECYCLE */}
-          <div className={styles.lifecycle}>
-            <div className={styles.lcTop}>
-              <span className={styles.lcT}>Negotiation status</span>
-              {lifecycle === 'counter_prepared' && <span className={styles.lcNext}>Next: <b>send counters to agent</b></span>}
-              {lifecycle === 'sent'             && <span className={styles.lcNext}>Waiting for landlord response</span>}
-              {lifecycle === 'awaiting'         && <span className={styles.lcNext}>Chase if no response within 5 business days</span>}
-              {lifecycle === 'agreed'           && <span className={styles.lcNext} style={{ color: 'var(--risk-l)' }}>✓ Negotiation complete</span>}
-            </div>
-            <div className={styles.rail}>
-              {LIFECYCLE.map((s, i) => {
-                const lcIndex = { reviewing: 0, counter_prepared: 1, sent: 2, awaiting: 3, agreed: 4 }
-                const cur = lcIndex[lifecycle] ?? 0
-                const cls = i < cur ? styles.stageDone : i === cur ? styles.stageCurrent : styles.stageUpcoming
-                const stageKey = ['reviewing', 'counter_prepared', 'sent', 'awaiting', 'agreed'][i]
-                const isClickable = ['sent', 'awaiting', 'agreed'].includes(stageKey) && i >= cur
-                return (
-                  <div key={s}
-                    className={`${styles.stage} ${cls} ${isClickable ? styles.stageClickable : ''}`}
-                    onClick={() => isClickable && updateLifecycle(stageKey)}>
-                    <div className={styles.stageLine} />
-                    <div className={styles.stageNode}>
-                      {i < cur && (
-                        <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
-                          <path d="M3 8l3 3 7-7" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                        </svg>
-                      )}
-                    </div>
-                    <div className={styles.stageNm}>{s}</div>
-                  </div>
-                )
-              })}
-            </div>
+  // ── Focus card (right column) ───────────────────────────────────────
+  const FocusCard = ({ c, idx }) => {
+    const dec         = decisions[c.clauseKey] || 'open'
+    const counterText = getCounterText(c)
+    const edited      = isEdited(c)
+
+    const decBadgeClass =
+      dec === 'accepted'   ? styles.sAgreed :
+      dec === 'countering' ? styles.sCounter :
+      styles.sOpen
+
+    return (
+      <div className={styles.focusCard}>
+        <div className={styles.fcTop}>
+          <div className={styles.fcTagrow}>
+            {c.location && <span className={styles.fcRef}>{c.location}</span>}
+            <span className={`${styles.sbadge} ${decBadgeClass}`}>
+              <span className={styles.sdot} />
+              {dec === 'accepted' ? 'Agreed' : dec === 'countering' ? 'Countering' : 'To decide'}
+            </span>
           </div>
-
-          {/* CLAUSE LIST */}
-          {allClauses.length > 0 ? (
-            <div className={styles.panel}>
-              <div className={styles.panelHead}>
-                <h2>Clauses <span className={styles.ct}>· {allClauses.length}</span></h2>
-                <div className={styles.statFilter}>
-                  {[
-                    { key: 'all',        label: 'All',        count: allClauses.length },
-                    { key: 'open',       label: 'To decide',  count: toDecide.length },
-                    { key: 'countering', label: 'Countering', count: countering.length },
-                    { key: 'agreed',     label: 'Agreed',     count: agreed.length },
-                  ].map(f => (
-                    <button
-                      key={f.key}
-                      className={`${styles.sfBtn} ${filter === f.key ? styles.sfActive : ''}`}
-                      onClick={() => setFilter(f.key)}>
-                      {f.label} <span className={styles.c}>{f.count}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div className={styles.panelBody}>
-                {filteredHigh.length > 0 && (
-                  <div className={styles.negGroup}>
-                    <div className={styles.gh}>High priority <span className={styles.gc}>· {filteredHigh.length}</span></div>
-                    {filteredHigh.map(c => <ClauseItem key={c.clauseKey} c={c} />)}
-                  </div>
-                )}
-                {filteredMed.length > 0 && (
-                  <div className={styles.negGroup}>
-                    <div className={styles.gh}>Medium <span className={styles.gc}>· {filteredMed.length}</span></div>
-                    {filteredMed.map(c => <ClauseItem key={c.clauseKey} c={c} />)}
-                  </div>
-                )}
-                {filteredLow.length > 0 && (
-                  <div className={styles.negGroup}>
-                    <div className={styles.gh}>Low / standard <span className={styles.gc}>· {filteredLow.length}</span></div>
-                    {filteredLow.map(c => <ClauseItem key={c.clauseKey} c={c} />)}
-                  </div>
-                )}
-                {filteredHigh.length === 0 && filteredMed.length === 0 && filteredLow.length === 0 && (
-                  <div className={styles.empty}>No clauses in this filter.</div>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className={styles.panel}>
-              <div className={styles.panelHead}><h2>Clauses</h2></div>
-              <div className={styles.empty}>No report yet — analyse a document to see clauses here.</div>
-            </div>
-          )}
+          <div className={styles.fcName}>{c.name}</div>
         </div>
 
-        {/* STICKY RAIL */}
-        <div className={styles.railSide}>
-          <div className={styles.nextCard}>
-            <h3>Response brief</h3>
-            <div className={styles.briefCounts}>
-              <div className={styles.bc}><div className={styles.bn}>{countering.length}</div><div className={styles.bl}>Countering</div></div>
-              <div className={styles.bc}><div className={styles.bn}>{agreed.length}</div><div className={styles.bl}>Agreed</div></div>
-              <div className={styles.bc}><div className={styles.bn}>{toDecide.length}</div><div className={styles.bl}>To decide</div></div>
+        <div className={styles.fcBody}>
+          {c.quote && (
+            <div className={styles.fcQuote}>
+              <span className={styles.fcQref}>The clause, verbatim</span>
+              "{c.quote}"
             </div>
-            {countering.length > 0 ? (
-              <div className={styles.briefList}>
-                {countering.map(c => (
-                  <div key={c.clauseKey} className={styles.bi}>
-                    <span className={styles.bd} />{c.name}
+          )}
+          <div className={styles.fcBlocks}>
+            {c.risk && (
+              <div className={styles.fcBlock}>
+                <div className={styles.fcBlockH}>What it means for you</div>
+                <p>{c.risk}</p>
+              </div>
+            )}
+            {c.legislation && (
+              <div className={styles.fcBlock}>
+                <div className={`${styles.fcBlockH} ${styles.fcBlockHWarn}`}>Relevant legislation</div>
+                <p>{c.legislation}</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {dec !== 'accepted' && c.counter && (
+          <div className={styles.fcCounter}>
+            <div className={styles.fcCounterHead}>
+              <span className={styles.fcCounterLabel}>Suggested counter</span>
+              <span className={`${styles.editTag} ${edited ? styles.editTagEdited : styles.editTagSuggested}`}>
+                <span className={styles.editTagDot} />
+                {edited ? 'Edited by you' : 'Suggested wording'}
+              </span>
+              {edited && (
+                <button className={styles.resetLink} onClick={() => handleReset(c.clauseKey, c.counter)}>
+                  <ResetIcon /> Reset
+                </button>
+              )}
+            </div>
+            <EditableCounter
+              clauseKey={c.clauseKey}
+              text={counterText}
+              resetKey={resetKeys[c.clauseKey] || 0}
+              onChange={(v) => handleCounterEdit(c.clauseKey, v)}
+            />
+            <div className={styles.counterHint}>
+              <PencilIcon /> Click the text above to edit — your wording is what gets sent.
+            </div>
+          </div>
+        )}
+
+        <div className={styles.fcActions}>
+          <button
+            className={`${styles.actBtn} ${styles.actBtnAgree} ${dec === 'accepted' ? styles.actBtnAgreeOn : ''}`}
+            onClick={() => decideAndAdvance(c.clauseKey, 'accepted', c.name)}>
+            <CheckIcon s={14} /> Agree to clause
+          </button>
+          <button
+            className={`${styles.actBtn} ${styles.actBtnCounter} ${dec === 'countering' ? styles.actBtnCounterOn : ''}`}
+            onClick={() => decideAndAdvance(c.clauseKey, 'countering', c.name)}>
+            <CounterIcon s={14} /> Counter with this
+          </button>
+          <span className={`${styles.actNote} ${
+            dec === 'accepted'   ? styles.actNoteAgreed :
+            dec === 'countering' ? styles.actNoteCounter : ''
+          }`}>
+            {dec === 'accepted'   ? "You'll accept this clause as drafted"
+             : dec === 'countering' ? 'Added to your brief'
+             : 'Choose how to respond'}
+          </span>
+        </div>
+
+        <div className={styles.fcNav}>
+          <button className={styles.navBtn} disabled={idx === 0}
+            onClick={() => setActiveId(allClauses[idx - 1].clauseKey)}>
+            <ChevLeft /> Previous
+          </button>
+          <span className={styles.fcNavPos}>Clause {idx + 1} of {allClauses.length}</span>
+          <button className={`${styles.navBtn} ${styles.navBtnNext}`}
+            disabled={idx === allClauses.length - 1}
+            onClick={() => setActiveId(allClauses[idx + 1].clauseKey)}>
+            Next clause <ChevRight />
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Summary tab ─────────────────────────────────────────────────────
+  const SummaryTab = () => (
+    <div className={styles.summaryWrap}>
+      <div className={styles.summaryMain}>
+
+        <div className={styles.brief}>
+          <div className={styles.briefHead}>
+            <div className={styles.briefKicker}>Response brief</div>
+            <h2 className={styles.briefTitle}>
+              Negotiation response — {ws?.name || 'Workspace'}
+            </h2>
+            {ws?.client_name && <div className={styles.briefMeta}>{ws.client_name}</div>}
+          </div>
+
+          {openClauses.length > 0 && (
+            <div className={styles.toDecideNote}>
+              <span className={styles.toDecideIc}>{openClauses.length}</span>
+              <span className={styles.toDecideTx}>
+                <b>{openClauses.length} clause{openClauses.length !== 1 ? 's' : ''}</b> still need{openClauses.length === 1 ? 's' : ''} a decision before this brief is complete.
+              </span>
+              <button className={styles.toDecideGo} onClick={() => setSubTab('clauses')}>
+                Back to review →
+              </button>
+            </div>
+          )}
+
+          <div className={styles.briefSec}>
+            <div className={styles.briefSecHead}>
+              <span className={styles.briefSecTitle}>Clauses we're countering</span>
+              <span className={styles.briefSecCt}>· {counteringClauses.length}</span>
+            </div>
+            {counteringClauses.length ? (
+              <>
+                <p className={styles.briefSintro}>The wording below is what LeaseLens will package up for the agent. Each entry is either the AI suggestion or your edited version.</p>
+                {counteringClauses.map((c, i) => {
+                  const edited = isEdited(c)
+                  return (
+                    <div key={c.clauseKey} className={styles.counterItem}>
+                      <div className={styles.ciNum}>{i + 1}.</div>
+                      <div className={styles.ciBody}>
+                        <div className={styles.ciTop}>
+                          {c.location && <span className={styles.ciRef}>{c.location}</span>}
+                          <span className={styles.ciName}>{c.name}</span>
+                          <button className={styles.ciEdit}
+                            onClick={() => { setSubTab('clauses'); setActiveId(c.clauseKey) }}>
+                            Edit →
+                          </button>
+                        </div>
+                        <div className={styles.ciText}>"{getCounterText(c)}"</div>
+                        <span className={`${styles.editTag} ${styles.ciTag} ${edited ? styles.editTagEdited : styles.editTagSuggested}`}>
+                          <span className={styles.editTagDot} />
+                          {edited ? 'Your wording' : 'LeaseLens suggested wording'}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </>
+            ) : (
+              <div className={styles.briefEmpty}>Nothing to counter yet — counter a clause in Review and it lands here.</div>
+            )}
+          </div>
+
+          <div className={styles.briefSec}>
+            <div className={styles.briefSecHead}>
+              <span className={styles.briefSecTitle}>Accepted as drafted</span>
+              <span className={styles.briefSecCt}>· {agreedClauses.length}</span>
+            </div>
+            {agreedClauses.length ? (
+              <div className={styles.agreedList}>
+                {agreedClauses.map(c => (
+                  <div key={c.clauseKey} className={styles.agreedRow}>
+                    <span className={styles.agreedTick}><CheckIcon s={12} /></span>
+                    <div className={styles.agreedBody}>
+                      {c.location && <div className={styles.agreedRef}>{c.location}</div>}
+                      <div className={styles.agreedName}>{c.name}</div>
+                    </div>
+                    <span className={styles.agreedState}>Accepted</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <p>Agree or counter each clause and LeaseLens builds the response to send to the agent.</p>
+              <div className={styles.briefEmpty}>No clauses accepted yet.</div>
             )}
-            {toDecide.length > 0 && (
-              <p style={{ fontSize: 13, color: 'rgba(243,240,232,.7)', marginTop: 8 }}>
-                {toDecide.length} clause{toDecide.length > 1 ? 's' : ''} still need{toDecide.length === 1 ? 's' : ''} a decision.
-              </p>
-            )}
-            <button
-              className={styles.briefBtn}
-              disabled={countering.length === 0}
-              onClick={handleGenerateBrief}>
-              Generate response for agent →
+          </div>
+        </div>
+
+        <div className={styles.copyCard}>
+          <div className={styles.ccHead}>
+            <div>
+              <div className={styles.ccTitle}>Response summary</div>
+              <div className={styles.ccSub}>Plain text, ready to paste into an email</div>
+            </div>
+            <button className={`${styles.ccCopy} ${copied ? styles.ccCopyDone : ''}`} onClick={handleCopy}>
+              {copied ? '✓ Copied' : 'Copy'}
             </button>
           </div>
-
-          {allClauses.length > 0 && (
-            <div className={styles.sCard}>
-              <h3>Risk summary</h3>
-              <div className={styles.riskLegend}>
-                {[
-                  { label: 'High priority',  count: highClauses.length, color: 'var(--accent)' },
-                  { label: 'Medium',         count: medClauses.length,  color: 'var(--risk-m)' },
-                  { label: 'Low / standard', count: lowClauses.length,  color: 'var(--risk-l)' },
-                ].map(r => (
-                  <div key={r.label} className={styles.rkRow}>
-                    <span className={styles.rkDot} style={{ background: r.color }} />
-                    <span className={styles.rkNm}>{r.label}</span>
-                    <span className={styles.rkCt}>{r.count}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          <p className={styles.disclaimer}>LeaseLens provides informational analysis and does not constitute legal advice.</p>
+          <pre className={styles.ccPre}>{buildSummary()}</pre>
         </div>
       </div>
 
-      {/* RESPONSE BRIEF MODAL */}
-      {briefOpen && (
-        <div className={briefStyles.overlay} onClick={() => !generating && setBriefOpen(false)}>
-          <div className={briefStyles.modal} onClick={e => e.stopPropagation()}>
-            <div className={briefStyles.modalHead}>
-              <div>
-                <div className={briefStyles.kicker}>Response brief</div>
-                <h2 className={briefStyles.title}>Email to agent</h2>
-              </div>
-              <button className={briefStyles.closeBtn} onClick={() => setBriefOpen(false)}>✕</button>
+      <div className={styles.summarySide}>
+        <div className={styles.sendCard}>
+          <h3 className={styles.sendCardTitle}>Ready to send</h3>
+          <p className={styles.sendCardP}>
+            {openClauses.length
+              ? `Decide the last ${openClauses.length} clause${openClauses.length !== 1 ? 's' : ''} to finish your brief.`
+              : 'Every flagged clause has a decision. Send the brief to the landlord\'s agent or export it for your records.'}
+          </p>
+          <div className={styles.sendCounts}>
+            <div className={styles.sendCount}>
+              <div className={`${styles.sendN} ${styles.sendNCnt}`}>{counteringClauses.length}</div>
+              <div className={styles.sendL}>Countering</div>
             </div>
-              <>
-                <div className={briefStyles.hint}>
-                  Review and edit before sending. Replace [Agent name] with the agent's name.
-                </div>
-                <textarea
-                  className={briefStyles.emailBody}
-                  value={briefText}
-                  onChange={e => setBriefText(e.target.value)}
-                  rows={18}
-                />
-                <div className={briefStyles.modalFoot}>
-                  <button className={briefStyles.regenerateBtn} onClick={handleGenerateBrief}>
-                    Regenerate
-                  </button>
-                  <button className={briefStyles.copyBtn} onClick={handleCopy}>
-                    {copied ? '✓ Copied!' : 'Copy email'}
-                  </button>
-                </div>
-              </>
+            <div className={styles.sendCount}>
+              <div className={`${styles.sendN} ${styles.sendNAgr}`}>{agreedClauses.length}</div>
+              <div className={styles.sendL}>Agreed</div>
+            </div>
+            <div className={styles.sendCount}>
+              <div className={styles.sendN}>{openClauses.length}</div>
+              <div className={styles.sendL}>To decide</div>
+            </div>
           </div>
+          <button className={styles.sendExport} onClick={handleCopy}>
+            {copied ? '✓ Copied to clipboard' : 'Copy email to clipboard'}
+          </button>
         </div>
+        <p className={styles.disclaimer}>LeaseLens provides informational analysis and does not constitute legal advice.</p>
+      </div>
+    </div>
+  )
+
+  return (
+    <>
+      <TabBar />
+
+      {subTab === 'clauses' ? (
+        <div className={styles.reviewGrid}>
+          <Queue />
+          {active
+            ? <FocusCard c={active} idx={activeIdx} />
+            : <div className={styles.focusCard} style={{ padding: 32, color: 'var(--muted)' }}>Select a clause from the list.</div>
+          }
+        </div>
+      ) : (
+        <SummaryTab />
       )}
     </>
   )

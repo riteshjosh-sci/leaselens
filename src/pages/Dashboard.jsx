@@ -181,7 +181,7 @@ export default function Dashboard() {
         {/* HEAD */}
         <div className={styles.head}>
           <div>
-            <h1 className={styles.h1}>Properties</h1>
+            <h1 className={styles.h1}>Negotiations</h1>
             <div className={styles.summaryLine}>
               {active.length} in negotiation · {finalised.length} finalised · {totalDocs} document{totalDocs !== 1 ? 's' : ''} analysed
             </div>

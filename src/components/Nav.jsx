@@ -74,19 +74,6 @@ export default function Nav() {
                     Dashboard
                   </Link>
                 </li>
-                <li>
-                  <Link to="/dashboard" className={
-                    isActive('/workspace') || isActive('/negotiation') || isActive('/compare') || isActive('/report')
-                      ? styles.active : ''
-                  }>
-                    Workspaces
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/clause-library" className={isActive('/clause-library') ? styles.active : ''}>
-                    Clause library
-                  </Link>
-                </li>
               </ul>
             ) : (
               <ul className={styles.links}>
@@ -134,8 +121,6 @@ export default function Nav() {
             {user ? (
               <>
                 <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
-                <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Workspaces</Link>
-                <Link to="/clause-library" onClick={() => setMenuOpen(false)}>Clause library</Link>
                 <div className={styles.mobileDivider} />
                 <button onClick={handleSignOut}>Sign out</button>
               </>
