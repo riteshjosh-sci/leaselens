@@ -2,23 +2,51 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import styles from './CompareTab.module.css'
 
+// Word-level diff highlight — returns React nodes with changed words wrapped
+function HighlightedText({ oldText, newText }) {
+  if (!oldText || !newText) return <>{newText}</>
+  const oldWords = new Set(
+    oldText.toLowerCase().split(/\b/).filter(w => /\w{3,}/.test(w))
+  )
+  const tokens = newText.split(/(\s+)/)
+  return (
+    <>
+      {tokens.map((token, i) => {
+        const clean = token.toLowerCase().replace(/[^a-z0-9]/g, '')
+        const isNew = clean.length >= 3 && !oldWords.has(clean)
+        return isNew
+          ? <mark key={i} className={styles.diffMark}>{token}</mark>
+          : <span key={i}>{token}</span>
+      })}
+    </>
+  )
+}
+
+const ChevDown = ({ open }) => (
+  <svg
+    className={`${styles.rowChev} ${open ? styles.rowChevOpen : ''}`}
+    width="16" height="16" viewBox="0 0 20 20" fill="none">
+    <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.8"
+      strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+
 export default function CompareTab({ negId, docs }) {
   const navigate = useNavigate()
   const sortedDocs = [...docs].sort((a, b) => a.version_number - b.version_number)
 
-  // Default: second-to-last vs latest (previous vs current)
   const [leftIdx,  setLeftIdx]  = useState(Math.max(0, sortedDocs.length - 2))
   const [rightIdx, setRightIdx] = useState(sortedDocs.length - 1)
   const [picker,   setPicker]   = useState(null) // 'left' | 'right' | null
   const [comparison, setComparison] = useState(null)
   const [openRow,    setOpenRow]    = useState(null)
+  const [activeFilter, setActiveFilter] = useState(null) // 'added'|'modified'|'removed'|null
 
   const leftDoc  = sortedDocs[leftIdx]
   const rightDoc = sortedDocs[rightIdx]
 
   const pickerRef = useRef(null)
 
-  // Close picker on outside click
   useEffect(() => {
     if (!picker) return
     const handler = (e) => {
@@ -100,22 +128,31 @@ export default function CompareTab({ negId, docs }) {
     return { rows, summary, improved, flagged }
   }
 
-  // Auto-run whenever doc selection changes
   useEffect(() => {
     setOpenRow(null)
-    const result = buildComparison(leftDoc, rightDoc)
-    setComparison(result)
+    setActiveFilter(null)
+    setComparison(buildComparison(leftDoc, rightDoc))
   }, [leftIdx, rightIdx, docs])
 
   const handlePickVersion = (side, idx) => {
-    if (side === 'left') {
-      if (idx === rightIdx) return // can't compare doc to itself
-      setLeftIdx(idx)
-    } else {
-      if (idx === leftIdx) return
-      setRightIdx(idx)
-    }
+    if (side === 'left') { if (idx !== rightIdx) setLeftIdx(idx) }
+    else                 { if (idx !== leftIdx)  setRightIdx(idx) }
     setPicker(null)
+  }
+
+  const toggleFilter = (f) => {
+    setActiveFilter(prev => prev === f ? null : f)
+    setOpenRow(null)
+  }
+
+  const getFilteredRows = (rows) => {
+    if (!activeFilter || !rows) return rows
+    return rows.filter(r => {
+      if (activeFilter === 'added')    return !r.left && r.right
+      if (activeFilter === 'removed')  return r.left && !r.right
+      if (activeFilter === 'modified') return r.left && r.right && r.change !== 'same'
+      return true
+    })
   }
 
   const connCls = { imp: styles.connImp, risk: styles.connRsk, same: '', watch: styles.connWatch }
@@ -139,11 +176,10 @@ export default function CompareTab({ negId, docs }) {
     <div className={styles.pickerDropdown} ref={pickerRef}>
       <div className={styles.pickerHead}>Select version</div>
       {sortedDocs.map((doc, i) => {
-        const isOther = side === 'left' ? i === rightIdx : i === leftIdx
-        const isActive = side === 'left' ? i === leftIdx : i === rightIdx
+        const isOther  = side === 'left' ? i === rightIdx : i === leftIdx
+        const isActive = side === 'left' ? i === leftIdx  : i === rightIdx
         return (
-          <button
-            key={doc.id}
+          <button key={doc.id}
             className={`${styles.pickerRow} ${isActive ? styles.pickerRowActive : ''} ${isOther ? styles.pickerRowDisabled : ''}`}
             disabled={isOther}
             onClick={() => handlePickVersion(side, i)}>
@@ -152,21 +188,17 @@ export default function CompareTab({ negId, docs }) {
               <div className={styles.pickerFn}>{stripTimestamp(doc.filename)}</div>
               <div className={styles.pickerDate}>{doc.uploaded_at ? formatDate(doc.uploaded_at) : ''}</div>
             </div>
-            {isActive && (
-              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8.2l3.2 3.2L13 4.6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            )}
-            {!isActive && !isOther && doc.reports?.[0]?.report_json && (
-              <span className={styles.pickerHasReport} />
-            )}
+            {isActive
+              ? <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M3 8.2l3.2 3.2L13 4.6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              : !isOther && doc.reports?.[0]?.report_json && <span className={styles.pickerHasReport} />
+            }
           </button>
         )
       })}
     </div>
   )
 
-  // ── Doc card (clickable) ─────────────────────────────────────────
+  // ── Doc card ─────────────────────────────────────────────────────
   const DocCard = ({ side, doc, label, labelCls, active }) => (
     <div className={styles.docCardWrap}>
       <button
@@ -195,7 +227,47 @@ export default function CompareTab({ negId, docs }) {
   return (
     <div className={styles.wrap}>
 
-      {/* DOCUMENT SELECTOR */}
+      {/* 1. COMPARISON SUMMARY — at the very top, filterable */}
+      {comparison && (
+        <div className={styles.summaryStrip}>
+          <span className={styles.summaryLabel}>Comparison summary</span>
+          <div className={styles.summaryStats}>
+            {[
+              { key: 'added',    icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoAdd, label: 'Added',    val: comparison.summary.added },
+              { key: 'modified', icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L5 13.5 2 14l.5-3L11 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>, cls: styles.sumIcoMod, label: 'Modified', val: comparison.summary.modified },
+              { key: 'removed',  icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoRem, label: 'Removed',  val: comparison.summary.removed },
+            ].map(r => (
+              <button
+                key={r.key}
+                className={`${styles.statPill} ${activeFilter === r.key ? styles.statPillActive : ''}`}
+                onClick={() => toggleFilter(r.key)}
+                title={`Filter by ${r.label.toLowerCase()}`}>
+                <span className={`${styles.statIco} ${r.cls}`}>{r.icon}</span>
+                <span className={styles.statN}>{r.val}</span>
+                <span className={styles.statL}>{r.label}</span>
+              </button>
+            ))}
+            <div className={styles.statDivider} />
+            <div className={styles.statPill} style={{ cursor: 'default' }}>
+              <span className={`${styles.statIco} ${styles.sumIcoRk}`}>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1.6l5 2v3.4c0 3-2.1 5-5 5.4-2.9-.4-5-2.4-5-5.4V3.6l5-2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
+              </span>
+              <span className={`${styles.schip} ${
+                comparison.summary.riskClass === 'Up' ? styles.schipUp :
+                comparison.summary.riskClass === 'Down' ? styles.schipDown : styles.schipMixed
+              }`}>{comparison.summary.riskLabel}</span>
+              <span className={styles.statL}>Risk</span>
+            </div>
+          </div>
+          {activeFilter && (
+            <button className={styles.clearFilter} onClick={() => setActiveFilter(null)}>
+              Clear filter ✕
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* 2. DOC SELECTOR — sits directly above clause columns */}
       <div className={styles.docSelect}>
         <DocCard side="left"  doc={leftDoc}  label="Previous version" labelCls={styles.vtagOrig} active={picker === 'left'} />
         <div className={styles.vsBadge}>VS</div>
@@ -209,171 +281,150 @@ export default function CompareTab({ negId, docs }) {
         <div className={styles.noReport}>Revised version (v{rightDoc?.version_number}) has no report yet — run an analysis first.</div>
       )}
 
-      {/* COMPARISON RESULTS */}
+      {/* 3. CLAUSE COMPARISON — full width */}
       {comparison && (
-        <>
-          {/* SUMMARY BAR — above clause columns */}
-          <div className={styles.summaryBar}>
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryCardTitle}>Comparison summary</div>
-              <div className={styles.summaryStats}>
-                {[
-                  { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoAdd, label: 'Added',    val: comparison.summary.added },
-                  { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L5 13.5 2 14l.5-3L11 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>, cls: styles.sumIcoMod, label: 'Modified', val: comparison.summary.modified },
-                  { icon: <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoRem, label: 'Removed',  val: comparison.summary.removed },
-                ].map(r => (
-                  <div key={r.label} className={styles.statPill}>
-                    <span className={`${styles.statIco} ${r.cls}`}>{r.icon}</span>
-                    <span className={styles.statN}>{r.val}</span>
-                    <span className={styles.statL}>{r.label}</span>
-                  </div>
-                ))}
-                <div className={styles.statDivider} />
-                <div className={styles.statPill}>
-                  <span className={`${styles.statIco} ${styles.sumIcoRk}`}>
-                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 1.6l5 2v3.4c0 3-2.1 5-5 5.4-2.9-.4-5-2.4-5-5.4V3.6l5-2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
-                  </span>
-                  <span className={`${styles.schip} ${
-                    comparison.summary.riskClass === 'Up' ? styles.schipUp :
-                    comparison.summary.riskClass === 'Down' ? styles.schipDown : styles.schipMixed
-                  }`}>{comparison.summary.riskLabel}</span>
-                  <span className={styles.statL}>Risk</span>
-                </div>
-              </div>
+        <div className={styles.comparePanel}>
+          <div className={styles.compareHead}>
+            <div className={styles.chSide}>
+              <span className={styles.chT}>v{leftDoc?.version_number} — Previous</span>
+              <span className={styles.chCt}>{leftDoc?.reports?.[0]?.report_json?.clauses?.length || 0} clauses</span>
             </div>
-
-            <div className={styles.summaryCard}>
-              <div className={styles.summaryCardTitle}>Which version is better?</div>
-              <div className={styles.verdictRow}>
-                {comparison.improved.length > 0 && (
-                  <span className={styles.favVerdict}>
-                    <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1.6l5 2v3.4c0 3-2.1 5-5 5.4-2.9-.4-5-2.4-5-5.4V3.6l5-2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
-                    Revised — on balance
-                  </span>
-                )}
-                <div className={styles.verdictClauses}>
-                  {comparison.improved.slice(0, 3).map((nm, i) => (
-                    <span key={`g${i}`} className={styles.verdictChipGood}>
-                      <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M3 8.2l3.2 3.2L13 4.6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      {nm}
-                    </span>
-                  ))}
-                  {comparison.flagged.slice(0, 3).map((nm, i) => (
-                    <span key={`f${i}`} className={styles.verdictChipFlag}>
-                      <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M8 4v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="8" cy="12" r="1.1" fill="currentColor"/></svg>
-                      {nm}
-                    </span>
-                  ))}
-                </div>
-                <button className={styles.favCta} onClick={() => navigate(`/negotiation/${negId}#review`)}>
-                  Review clauses →
-                </button>
-              </div>
+            <div className={styles.chMid} />
+            <div className={styles.chSide}>
+              <span className={styles.chT}>v{rightDoc?.version_number} — Revised</span>
+              <span className={styles.chCt}>{rightDoc?.reports?.[0]?.report_json?.clauses?.length || 0} clauses</span>
             </div>
           </div>
 
-          {/* CLAUSE COMPARISON — full width */}
-          <div className={styles.comparePanel}>
-            <div className={styles.compareHead}>
-              <div className={styles.chSide}>
-                <span className={styles.chT}>v{leftDoc?.version_number} — Previous</span>
-                <span className={styles.chCt}>{leftDoc?.reports?.[0]?.report_json?.clauses?.length || 0} clauses</span>
-              </div>
-              <div className={styles.chMid} />
-              <div className={styles.chSide}>
-                <span className={styles.chT}>v{rightDoc?.version_number} — Revised</span>
-                <span className={styles.chCt}>{rightDoc?.reports?.[0]?.report_json?.clauses?.length || 0} clauses</span>
-              </div>
-            </div>
-
-            <div className={styles.crows}>
-              {comparison.rows.map((row, i) => {
-                const isOpen = openRow === i
-                return (
-                  <div key={i} className={`${styles.crow} ${isOpen ? styles.crowOpen : ''}`}>
-                    {row.left ? (
-                      <div className={`${styles.ccard} ${dotCls[row.change]} ${styles.ccardToggle}`}
-                        onClick={() => setOpenRow(isOpen ? null : i)}>
-                        <div className={styles.no}>{i + 1}</div>
-                        <div className={styles.ccTt}>
-                          <div className={styles.nm}>
-                            {row.left.nm}
-                            {row.left.tag === 'removed' && <span className={styles.tagRm}>Removed</span>}
-                          </div>
-                          <p>{row.left.text}</p>
+          <div className={styles.crows}>
+            {getFilteredRows(comparison.rows).map((row, i) => {
+              const isOpen    = openRow === i
+              const hasDetail = !!row.note
+              return (
+                <div key={i} className={`${styles.crow} ${isOpen ? styles.crowOpen : ''}`}>
+                  {row.left ? (
+                    <div className={`${styles.ccard} ${dotCls[row.change]} ${hasDetail ? styles.ccardToggle : ''}`}
+                      onClick={() => hasDetail && setOpenRow(isOpen ? null : i)}>
+                      <div className={styles.no}>{i + 1}</div>
+                      <div className={styles.ccTt}>
+                        <div className={styles.nm}>
+                          {row.left.nm}
+                          {row.left.tag === 'removed' && <span className={styles.tagRm}>Removed</span>}
                         </div>
-                        <span className={styles.sdot} />
+                        <p>{row.left.text}</p>
                       </div>
-                    ) : (
-                      <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in previous version</div>
-                    )}
-
-                    <div className={`${styles.conn} ${connCls[row.change]}`}>
-                      <span className={styles.connLine} />
-                      <span className={styles.connDot} />
+                      <span className={styles.sdot} />
+                      {hasDetail && <ChevDown open={isOpen} />}
                     </div>
+                  ) : (
+                    <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in previous version</div>
+                  )}
 
-                    {row.right ? (
-                      <div className={`${styles.ccard} ${tintCls[row.change]} ${styles.ccardToggle}`}
-                        onClick={() => setOpenRow(isOpen ? null : i)}>
-                        <div className={styles.no}>{i + 1}</div>
-                        <div className={styles.ccTt}>
-                          <div className={styles.nm}>
-                            {row.right.nm}
-                            {row.right.tag === 'new' && <span className={styles.tagNew}>New</span>}
-                          </div>
-                          <p>{row.right.text}</p>
-                        </div>
-                        <span className={styles.sdot} />
-                      </div>
-                    ) : (
-                      <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Removed in revised</div>
-                    )}
-
-                    {isOpen && row.note && (
-                      <div className={`${styles.ccNote} ${row.change === 'imp' ? styles.ccNoteImp : row.change === 'risk' ? styles.ccNoteRsk : styles.ccNoteSame}`}>
-                        <span className={styles.noteLead}>
-                          {row.change === 'imp' ? '✓ What changed' : row.change === 'risk' ? '⚠ What changed' : 'Unchanged'}
-                        </span>
-                        {row.note}
-                      </div>
-                    )}
+                  <div className={`${styles.conn} ${connCls[row.change]}`}>
+                    <span className={styles.connLine} />
+                    <span className={styles.connDot} />
                   </div>
-                )
-              })}
+
+                  {row.right ? (
+                    <div className={`${styles.ccard} ${tintCls[row.change]} ${hasDetail ? styles.ccardToggle : ''}`}
+                      onClick={() => hasDetail && setOpenRow(isOpen ? null : i)}>
+                      <div className={styles.no}>{i + 1}</div>
+                      <div className={styles.ccTt}>
+                        <div className={styles.nm}>
+                          {row.right.nm}
+                          {row.right.tag === 'new' && <span className={styles.tagNew}>New</span>}
+                        </div>
+                        <p>
+                          {row.left
+                            ? <HighlightedText oldText={row.left.text} newText={row.right.text} />
+                            : row.right.text}
+                        </p>
+                      </div>
+                      <span className={styles.sdot} />
+                      {hasDetail && <ChevDown open={isOpen} />}
+                    </div>
+                  ) : (
+                    <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Removed in revised</div>
+                  )}
+
+                  {isOpen && row.note && (
+                    <div className={`${styles.ccNote} ${row.change === 'imp' ? styles.ccNoteImp : row.change === 'risk' ? styles.ccNoteRsk : styles.ccNoteSame}`}>
+                      <span className={styles.noteLead}>
+                        {row.change === 'imp' ? '✓ What changed' : row.change === 'risk' ? '⚠ What changed' : 'Unchanged'}
+                      </span>
+                      {row.note}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+
+            {comparison.rows.length === 0 && (
+              <div className={styles.emptyFilter}>No clauses match this filter.</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 4. VERDICT STRIP — no title, just chips + Review clauses button */}
+      {comparison && (comparison.improved.length > 0 || comparison.flagged.length > 0) && (
+        <div className={styles.verdictStrip}>
+          <div className={styles.verdictLeft}>
+            {comparison.improved.length > 0 && (
+              <span className={styles.favVerdict}>
+                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1.6l5 2v3.4c0 3-2.1 5-5 5.4-2.9-.4-5-2.4-5-5.4V3.6l5-2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
+                Revised — on balance
+              </span>
+            )}
+            <div className={styles.verdictClauses}>
+              {comparison.improved.slice(0, 4).map((nm, i) => (
+                <span key={`g${i}`} className={styles.verdictChipGood}>
+                  <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M3 8.2l3.2 3.2L13 4.6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {nm}
+                </span>
+              ))}
+              {comparison.flagged.slice(0, 4).map((nm, i) => (
+                <span key={`f${i}`} className={styles.verdictChipFlag}>
+                  <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M8 4v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="8" cy="12" r="1.1" fill="currentColor"/></svg>
+                  {nm}
+                </span>
+              ))}
             </div>
           </div>
+          <button className={styles.favCta} onClick={() => navigate(`/negotiation/${negId}#review`)}>
+            Review clauses →
+          </button>
+        </div>
+      )}
 
-          {/* KEY DIFFERENCES */}
-          {(comparison.improved.length > 0 || comparison.flagged.length > 0) && (
-            <div className={styles.keydiff}>
-              <div className={styles.kdHead}>
-                <h2 className={styles.kdTitle}>Key differences</h2>
-                <div className={styles.kdSub}>The changes most worth knowing about.</div>
+      {/* 5. KEY DIFFERENCES */}
+      {comparison && (comparison.improved.length > 0 || comparison.flagged.length > 0) && (
+        <div className={styles.keydiff}>
+          <div className={styles.kdHead}>
+            <h2 className={styles.kdTitle}>Key differences</h2>
+            <div className={styles.kdSub}>The changes most worth knowing about.</div>
+          </div>
+          <div className={styles.kdGrid}>
+            {comparison.improved.slice(0, 3).map((nm, i) => (
+              <div key={`imp-${i}`} className={`${styles.kdCard} ${styles.kdImp}`}>
+                <div className={`${styles.kt} ${styles.ktImp}`}>
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8.2l3.2 3.2L13 4.6" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {nm}
+                </div>
+                <span className={`${styles.kdTag} ${styles.kdTagImp}`}><span className={styles.kdTagD} />Favourable</span>
               </div>
-              <div className={styles.kdGrid}>
-                {comparison.improved.slice(0, 3).map((nm, i) => (
-                  <div key={`imp-${i}`} className={`${styles.kdCard} ${styles.kdImp}`}>
-                    <div className={`${styles.kt} ${styles.ktImp}`}>
-                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8.2l3.2 3.2L13 4.6" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      {nm}
-                    </div>
-                    <span className={`${styles.kdTag} ${styles.kdTagImp}`}><span className={styles.kdTagD} />Favourable</span>
-                  </div>
-                ))}
-                {comparison.flagged.slice(0, 3).map((nm, i) => (
-                  <div key={`rsk-${i}`} className={`${styles.kdCard} ${styles.kdRsk}`}>
-                    <div className={`${styles.kt} ${styles.ktRsk}`}>
-                      <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 4v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="8" cy="12" r="1.1" fill="currentColor"/></svg>
-                      {nm}
-                    </div>
-                    <span className={`${styles.kdTag} ${styles.kdTagRsk}`}><span className={styles.kdTagD} />Higher risk</span>
-                  </div>
-                ))}
+            ))}
+            {comparison.flagged.slice(0, 3).map((nm, i) => (
+              <div key={`rsk-${i}`} className={`${styles.kdCard} ${styles.kdRsk}`}>
+                <div className={`${styles.kt} ${styles.ktRsk}`}>
+                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 4v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="8" cy="12" r="1.1" fill="currentColor"/></svg>
+                  {nm}
+                </div>
+                <span className={`${styles.kdTag} ${styles.kdTagRsk}`}><span className={styles.kdTagD} />Higher risk</span>
               </div>
-            </div>
-          )}
-        </>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   )

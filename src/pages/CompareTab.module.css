@@ -5,7 +5,56 @@
 .empty { padding: 48px 0; color: var(--muted); font-size: 15px; }
 .empty p + p { margin-top: 6px; font-size: 13px; }
 
-/* ── DOCUMENT SELECTOR ── */
+/* ── 1. SUMMARY STRIP — filterable stat pills at very top ── */
+.summaryStrip {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--card); border: 1px solid var(--hair);
+  border-radius: 14px; padding: 14px 20px;
+}
+.summaryLabel {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); margin-right: 4px; white-space: nowrap;
+}
+.summaryStats { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+.statPill {
+  display: flex; align-items: center; gap: 7px;
+  background: var(--paper); border: 1.5px solid var(--hair);
+  border-radius: 100px; padding: 6px 13px 6px 7px;
+  font-family: var(--font); cursor: pointer;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.statPill:hover { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.statPillActive {
+  border-color: var(--accent); background: var(--accent-soft);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.statIco {
+  width: 26px; height: 26px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.sumIcoAdd { background: rgba(94,140,106,.12); color: #3f6b4e; }
+.sumIcoMod { background: var(--accent-soft); color: var(--accent-deep); }
+.sumIcoRem { background: rgba(192,73,47,.12); color: #993621; }
+.sumIcoRk  { background: rgba(194,146,43,.13); color: #8a6312; }
+.statN { font-size: 18px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
+.statL { font-size: 12px; color: var(--muted); font-weight: 500; }
+.statDivider { width: 1px; height: 26px; background: var(--hair); margin: 0 4px; }
+
+.schip { font-size: 13px; font-weight: 700; }
+.schipUp    { color: #993621; }
+.schipDown  { color: #3f6b4e; }
+.schipMixed { color: #8a6312; }
+
+.clearFilter {
+  margin-left: auto; font-size: 11.5px; font-weight: 700;
+  color: var(--accent); background: none; border: none; cursor: pointer;
+  font-family: var(--font); white-space: nowrap; padding: 4px 0;
+}
+.clearFilter:hover { text-decoration: underline; }
+
+/* ── 2. DOC SELECTOR — directly above clause columns ── */
 .docSelect {
   display: grid;
   grid-template-columns: 1fr 46px 1fr;
@@ -13,7 +62,6 @@
   align-items: center;
 }
 
-/* Wrapper needed to position the picker dropdown */
 .docCardWrap { position: relative; }
 
 .docCard {
@@ -106,62 +154,7 @@
   font-size: 13px; color: #8a6312;
 }
 
-/* ── SUMMARY BAR (above clause columns) ── */
-.summaryBar {
-  display: grid; grid-template-columns: auto 1fr; gap: 16px;
-}
-.summaryCard {
-  background: var(--card); border: 1px solid var(--hair);
-  border-radius: 14px; padding: 18px 22px;
-}
-.summaryCardTitle {
-  font-size: 11px; font-weight: 700; letter-spacing: .1em;
-  text-transform: uppercase; color: var(--muted); margin-bottom: 14px;
-}
-
-.summaryStats { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.statPill { display: flex; align-items: center; gap: 7px; }
-.statIco {
-  width: 28px; height: 28px; border-radius: 8px;
-  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-}
-.sumIcoAdd { background: rgba(94,140,106,.12); color: #3f6b4e; }
-.sumIcoMod { background: var(--accent-soft); color: var(--accent-deep); }
-.sumIcoRem { background: rgba(192,73,47,.12); color: #993621; }
-.sumIcoRk  { background: rgba(194,146,43,.13); color: #8a6312; }
-.statN { font-size: 20px; font-weight: 600; letter-spacing: -.02em; color: var(--ink); }
-.statL { font-size: 12px; color: var(--muted); font-weight: 500; }
-.statDivider { width: 1px; height: 28px; background: var(--hair); margin: 0 4px; }
-
-.schip { font-size: 13px; font-weight: 700; }
-.schipUp    { color: #993621; }
-.schipDown  { color: #3f6b4e; }
-.schipMixed { color: #8a6312; }
-
-.verdictRow { display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
-.favVerdict {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-size: 12.5px; font-weight: 700; color: #3f6b4e;
-  background: rgba(94,140,106,.12); padding: 6px 13px; border-radius: 100px;
-  flex-shrink: 0;
-}
-.verdictClauses { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
-.verdictChipGood, .verdictChipFlag {
-  display: inline-flex; align-items: center; gap: 5px;
-  font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 100px;
-}
-.verdictChipGood { background: rgba(94,140,106,.1); color: #3f6b4e; }
-.verdictChipFlag { background: rgba(192,73,47,.1); color: #993621; }
-
-.favCta {
-  padding: 8px 16px; background: var(--accent); color: #fff;
-  border: none; border-radius: var(--radius-sm);
-  font-size: 13px; font-weight: 700; cursor: pointer; font-family: var(--font);
-  white-space: nowrap; transition: background .15s; flex-shrink: 0;
-}
-.favCta:hover { background: var(--accent-deep); }
-
-/* ── COMPARE PANEL (full width) ── */
+/* ── 3. COMPARE PANEL — full width ── */
 .comparePanel {
   background: var(--card); border: 1px solid var(--hair);
   border-radius: 16px; padding: 8px 22px 24px;
@@ -180,10 +173,10 @@
 }
 .chMid {}
 
-/* ── ROWS ── */
 .crows { display: flex; flex-direction: column; gap: 13px; }
 
 .crow { display: grid; grid-template-columns: 1fr 56px 1fr; align-items: stretch; }
+.crowOpen {}
 
 .ccard {
   background: var(--card); border: 1px solid var(--hair); border-radius: 12px;
@@ -192,6 +185,7 @@
 }
 .ccardToggle { cursor: pointer; }
 .ccardToggle:hover { box-shadow: 0 4px 16px -8px rgba(28,25,22,.2); }
+.crowOpen .ccardToggle { border-bottom-left-radius: 6px; border-bottom-right-radius: 6px; }
 
 .ccardEmpty {
   background: transparent; border: 1.5px dashed var(--hair);
@@ -226,6 +220,14 @@
 .ccTt p { font-size: 13px; line-height: 1.5; color: var(--ink-soft); margin-top: 6px; }
 .sdot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-top: 7px; background: #B6AF9F; }
 
+/* expansion chevron */
+.rowChev {
+  flex-shrink: 0; color: var(--muted); margin-top: 4px;
+  transition: transform .2s, color .15s;
+}
+.rowChevOpen { transform: rotate(180deg); color: var(--accent); }
+.ccardToggle:hover .rowChev { color: var(--accent); }
+
 .tagNew {
   font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
   padding: 3px 7px; border-radius: 5px; background: rgba(94,140,106,.12); color: #3f6b4e;
@@ -233,6 +235,13 @@
 .tagRm {
   font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
   padding: 3px 7px; border-radius: 5px; background: rgba(192,73,47,.12); color: #993621;
+}
+
+/* word-level diff highlight */
+.diffMark {
+  background: rgba(94,140,106,.25); color: #2d5235;
+  border-radius: 3px; padding: 1px 2px;
+  font-style: normal;
 }
 
 /* connector */
@@ -260,7 +269,38 @@
 .ccNoteRsk .noteLead  { color: #993621; }
 .ccNoteSame .noteLead { color: var(--muted); }
 
-/* ── KEY DIFFERENCES ── */
+.emptyFilter { padding: 32px; text-align: center; color: var(--muted); font-size: 14px; }
+
+/* ── 4. VERDICT STRIP — no title, chips + CTA only ── */
+.verdictStrip {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--card); border: 1px solid var(--hair);
+  border-radius: 14px; padding: 14px 20px;
+}
+.verdictLeft { display: flex; align-items: center; gap: 10px; flex: 1; flex-wrap: wrap; min-width: 0; }
+.favVerdict {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 12.5px; font-weight: 700; color: #3f6b4e;
+  background: rgba(94,140,106,.12); padding: 6px 13px; border-radius: 100px;
+  flex-shrink: 0; white-space: nowrap;
+}
+.verdictClauses { display: flex; flex-wrap: wrap; gap: 6px; }
+.verdictChipGood, .verdictChipFlag {
+  display: inline-flex; align-items: center; gap: 5px;
+  font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 100px;
+}
+.verdictChipGood { background: rgba(94,140,106,.1); color: #3f6b4e; }
+.verdictChipFlag { background: rgba(192,73,47,.1); color: #993621; }
+
+.favCta {
+  padding: 9px 18px; background: var(--accent); color: #fff;
+  border: none; border-radius: var(--radius-sm);
+  font-size: 13.5px; font-weight: 700; cursor: pointer; font-family: var(--font);
+  white-space: nowrap; transition: background .15s; flex-shrink: 0;
+}
+.favCta:hover { background: var(--accent-deep); }
+
+/* ── 5. KEY DIFFERENCES ── */
 .keydiff { background: var(--card); border: 1px solid var(--hair); border-radius: 16px; padding: 24px 26px; }
 .kdHead { margin-bottom: 18px; }
 .kdTitle { font-size: 19px; font-weight: 600; letter-spacing: -.01em; }
@@ -279,8 +319,8 @@
 
 /* ── RESPONSIVE ── */
 @media (max-width: 1100px) {
-  .summaryBar { grid-template-columns: 1fr; }
-  .kdGrid     { grid-template-columns: 1fr 1fr; }
+  .summaryStrip { gap: 8px; }
+  .kdGrid { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 680px) {
   .docSelect { grid-template-columns: 1fr; }
@@ -288,5 +328,5 @@
   .crow      { grid-template-columns: 1fr; gap: 8px; }
   .conn      { display: none; }
   .kdGrid    { grid-template-columns: 1fr; }
-  .verdictRow { flex-direction: column; }
+  .verdictStrip { flex-direction: column; align-items: flex-start; }
 }
