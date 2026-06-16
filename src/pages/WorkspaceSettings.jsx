@@ -19,7 +19,9 @@ export default function WorkspaceSettings() {
   const [logoUploading, setLogoUploading] = useState(false)
   const [saved, setSaved]             = useState(false)
   const [error, setError]             = useState('')
-  const [shareLinks, setShareLinks]   = useState([]) // existing share tokens for this ws
+  const [shareLinks, setShareLinks]   = useState([])
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleting, setDeleting]       = useState(false)
 
   // form state
   const [name, setName]               = useState('')
@@ -111,6 +113,45 @@ export default function WorkspaceSettings() {
     setShareLinks(prev => prev.filter(t => t.id !== tokenId))
   }
 
+  const handleDeleteWorkspace = async () => {
+    setDeleting(true)
+    try {
+      // Soft-delete all negotiations in this workspace
+      const negIds = negotiations.map(n => n.id)
+      if (negIds.length > 0) {
+        // Soft-delete all documents in those negotiations
+        await supabase
+          .from('documents')
+          .update({ is_deleted: true })
+          .in('negotiation_id', negIds)
+
+        // Soft-delete all negotiations
+        await supabase
+          .from('negotiations')
+          .update({ is_deleted: true })
+          .in('id', negIds)
+      }
+
+      // Soft-delete the workspace
+      await supabase
+        .from('workspaces')
+        .update({ is_deleted: true })
+        .eq('id', id)
+
+      // Revoke all share tokens
+      await supabase
+        .from('share_tokens')
+        .delete()
+        .eq('workspace_id', id)
+
+      navigate('/dashboard')
+    } catch (e) {
+      setError('Failed to delete workspace. Please try again.')
+      setDeleting(false)
+      setDeleteConfirm(false)
+    }
+  }
+
   const shareUrl = (token) => `${window.location.origin}/shared/${token}`
 
   const formatDate = d => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -188,7 +229,7 @@ export default function WorkspaceSettings() {
             {/* SHARE LINKS */}
             <div className={styles.section}>
               <div className={styles.sectionTitle}>Client share links</div>
-              <div className={styles.sectionSub}>Generate a read-only link to share this workspace's reports with a client. No login required.</div>
+              <div className={styles.sectionSub}>Generate a read-only link to share this workspace&apos;s reports with a client. No login required.</div>
               <button className="btn-ghost" style={{ marginBottom: 16 }} onClick={handleCreateShareLink}>+ Generate share link</button>
               {shareLinks.length > 0 && (
                 <div className={styles.tokenList}>
@@ -207,6 +248,23 @@ export default function WorkspaceSettings() {
                   ))}
                 </div>
               )}
+            </div>
+
+            {/* DANGER ZONE */}
+            <div className={`${styles.section} ${styles.dangerSection}`}>
+              <div className={styles.sectionTitle}>Danger zone</div>
+              <div className={styles.dangerRow}>
+                <div>
+                  <div className={styles.dangerLabel}>Delete workspace</div>
+                  <div className={styles.dangerSub}>
+                    Removes this workspace and all its negotiations from your dashboard.
+                    Anonymised clause data is retained to improve LeaseLens — no personally identifying information is kept.
+                  </div>
+                </div>
+                <button className={styles.deleteBtn} onClick={() => setDeleteConfirm(true)}>
+                  Delete workspace
+                </button>
+              </div>
             </div>
 
           </div>
@@ -245,6 +303,31 @@ export default function WorkspaceSettings() {
         </div>
       </div>
       <Footer />
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteConfirm && (
+        <div className={styles.overlay} onClick={() => !deleting && setDeleteConfirm(false)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalIcon}>⚠</div>
+            <h2 className={styles.modalTitle}>Delete "{ws.name}"?</h2>
+            <p className={styles.modalBody}>
+              This will remove the workspace and all its negotiations from your dashboard.
+              Anonymised clause data is kept to improve LeaseLens analysis — no personally identifying information is retained.
+            </p>
+            <p className={styles.modalBody} style={{ marginTop: 8 }}>
+              <strong>This cannot be undone.</strong>
+            </p>
+            <div className={styles.modalActions}>
+              <button className="btn-ghost" onClick={() => setDeleteConfirm(false)} disabled={deleting}>
+                Cancel
+              </button>
+              <button className={styles.deleteConfirmBtn} onClick={handleDeleteWorkspace} disabled={deleting}>
+                {deleting ? 'Deleting…' : 'Yes, delete workspace'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
