@@ -136,17 +136,22 @@ export default function Dashboard() {
     const { summary, total } = getDocSummary(ws)
     const latestDate         = getLatestDate(ws)
 
-    // Worker writes extracted tenant_name + premises_address onto negotiations
-    // Prefer the most-recently-updated negotiation that has extracted data
+    // Sanity-check extracted values — reject anything that looks like clause text
+    const CLAUSE_WORDS = ['lease', 'landlord', 'premises', 'herein', 'pursuant',
+      'thereof', 'together with', 'non-exclusive', 'the term']
+    const isClauseText = v => !v || v.length > 80
+      || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
+
     const negs = ws.negotiations || []
     const negWithData = negs.find(n => n.tenant_name || n.premises_address)
-    const extractedTenant  = negWithData?.tenant_name    || null
-    const extractedAddress = negWithData?.premises_address || null
+    const extractedTenant  = !isClauseText(negWithData?.tenant_name)  ? negWithData.tenant_name  : null
+    const extractedAddress = !isClauseText(negWithData?.premises_address) ? negWithData.premises_address : null
+
     const displayName    = extractedTenant  || ws.client_name || ws.name
     const displayAddress = extractedAddress
-      || (extractedTenant  && ws.name)   // extracted tenant but no address → show ws.name
-      || (ws.client_name   && ws.name)   // user-entered tenant → show ws.name as property
-      || null                            // only ws.name — don't repeat it
+      || (extractedTenant  && ws.name)
+      || (ws.client_name   && ws.name)
+      || null
 
     return (
       <div
