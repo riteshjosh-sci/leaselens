@@ -233,7 +233,7 @@ export default function ReportView() {
             <div className={styles.fileIcon}>
               {document?.filename?.split('.').pop()?.toUpperCase() || 'DOC'}
             </div>
-            <div>
+            <div className={styles.docTitleWrap}>
               <h1 className={styles.docTitle}>
                 {negotiation?.property_name || stripTimestamp(document?.filename)}
               </h1>
