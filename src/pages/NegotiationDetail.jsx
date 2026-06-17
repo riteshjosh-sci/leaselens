@@ -116,7 +116,7 @@ export default function NegotiationDetail() {
         <div className={styles.wsHead}>
           <div className={styles.wsId}>
             <div className={styles.wsBadge}>{(neg.property_name || 'N')[0]?.toUpperCase()}</div>
-            <div>
+            <div className={styles.wsNameWrap}>
               <div className={styles.wsKicker}>Workspace</div>
               <h1 className={styles.wsName}>{neg.property_name || 'Unnamed negotiation'}</h1>
               {ws?.client_name && <div className={styles.wsSub}>{ws.client_name}</div>}

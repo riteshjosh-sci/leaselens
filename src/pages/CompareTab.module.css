@@ -78,7 +78,7 @@
 .docCard:hover { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .docCardOpen  { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 
-.dcMain { display: flex; flex-direction: column; gap: 0; }
+.dcMain { display: flex; flex-direction: column; gap: 0; min-width: 0; }
 
 .vtag {
   display: inline-flex; align-items: center; gap: 7px;
@@ -92,7 +92,7 @@
 .vtagRev .vd  { background: #5E8C6A; }
 .vd { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
 
-.drow { display: flex; align-items: center; gap: 13px; }
+.drow { display: flex; align-items: center; gap: 13px; min-width: 0; }
 .ficon {
   width: 36px; height: 44px; border-radius: 6px;
   background: var(--paper); border: 1px solid var(--hair);
