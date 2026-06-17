@@ -139,14 +139,14 @@
 
 /* DOC SECTION */
 .docSection { background:var(--paper); border-top:1px solid var(--hair-lt); padding:10px 18px 14px; display:flex; flex-direction:column; gap:6px; }
-.docRow { display:flex; align-items:center; gap:12px; padding:10px 12px; background:var(--card); border:1px solid var(--hair-lt); border-radius:10px; transition:border-color 0.15s; }
+.docRow { display:flex; align-items:center; gap:12px; padding:10px 12px; background:var(--card); border:1px solid var(--hair-lt); border-radius:10px; transition:border-color 0.15s; min-width:0; overflow:hidden; }
 .docRow:hover { border-color:var(--accent); }
 .docRowLatest { border-left:3px solid var(--accent); }
 .fic { background:var(--paper); border:1px solid var(--hair); border-radius:5px; padding:5px 6px; font-size:9px; font-weight:700; color:var(--accent); letter-spacing:0.06em; flex-shrink:0; }
 .dm { flex:1; min-width:0; overflow:hidden; }
-.docRole { font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:2px; white-space:nowrap; }
+.docRole { font-size:11px; font-weight:700; color:var(--accent); text-transform:uppercase; letter-spacing:0.06em; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .docFn { font-size:12px; font-weight:600; color:var(--ink); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
-.docVmeta { font-size:11px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.docVmeta { font-size:11px; color:var(--muted); margin-top:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 .docActions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
 .docDel { background:none; border:none; color:var(--faint); cursor:pointer; font-size:12px; padding:2px 4px; transition:color 0.15s; }
 .docDel:hover { color:var(--risk-h); }
@@ -232,6 +232,27 @@
   .railSide { flex-direction:column; }
   .railSide > * { flex:none; width:100%; }
   .crumb { font-size:12px; }
+
+  /* Doc rows: hide version meta on very small screens to give filename room */
+  .docVmeta { display:none; }
+  .docActions { gap:6px; }
+  /* Tab bar: reduce tab padding so all tabs fit without scrolling */
+  .wstab { padding:10px 11px; font-size:13px; gap:5px; }
+  .wc    { font-size:10px; padding:2px 5px; }
+}
+
+@media (max-width:380px) {
+  .page { padding:76px 12px 56px; }
+  .wsName { font-size:18px; }
+  .wsBadge { width:38px; height:38px; font-size:17px; }
+  /* Negotiation name + ref in list */
+  .nm  { font-size:13.5px; }
+  .ref { font-size:10.5px; }
+  /* Doc row: just show filename, hide ext badge too */
+  .fic { display:none; }
+  .docFn { font-size:11.5px; }
+  /* Tab labels drop to icon+count only */
+  .wstab { padding:10px 10px; font-size:12.5px; }
 }
 
 .sfBtn { border:none; background:transparent; font-family:var(--font); font-size:13px; font-weight:600; color:var(--ink-soft); padding:6px 13px; border-radius:7px; cursor:pointer; transition:all 0.15s; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
@@ -251,7 +272,11 @@
   border-bottom: 1px solid var(--hair);
   margin-bottom: 0;
   padding-bottom: 0;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.wstabs::-webkit-scrollbar { display: none; }
 
 .wstab {
   display: inline-flex;

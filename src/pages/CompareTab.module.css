@@ -327,11 +327,70 @@
   .summaryStrip { gap: 8px; }
   .kdGrid { grid-template-columns: 1fr 1fr; }
 }
+
+/* ── Tablet (≤ 860px) — clause columns still side-by-side but tighter ── */
+@media (max-width: 860px) {
+  /* Doc cards: shrink filename area */
+  .fn   { font-size: 13px; }
+  .fmeta { font-size: 11px; }
+  .ficon { width: 30px; height: 38px; font-size: 7.5px; }
+
+  /* Clause column headers */
+  .compareHead { grid-template-columns: 1fr 40px 1fr; padding: 12px 4px 10px; }
+  .chT  { font-size: 13px; }
+  .chCt { font-size: 10.5px; padding: 3px 8px; }
+  .chMid {}
+
+  /* Clause cards */
+  .ccard { padding: 12px 13px; gap: 10px; }
+  .no    { width: 20px; height: 20px; font-size: 10.5px; border-radius: 5px; }
+  .nm    { font-size: 13px; }
+  .ccTt p { font-size: 12.5px; }
+  .conn  { grid-column: unset; }
+  .connDot { width: 11px; height: 11px; }
+
+  /* Summary strip wraps */
+  .summaryStrip { flex-wrap: wrap; }
+  .clearFilter  { margin-left: 0; }
+}
+
+/* ── Large phone (≤ 680px) — stack doc cards, collapse clause rows ── */
 @media (max-width: 680px) {
-  .docSelect { grid-template-columns: 1fr; }
+  .docSelect { grid-template-columns: 1fr; gap: 10px; }
   .vsBadge   { display: none; }
-  .crow      { grid-template-columns: 1fr; gap: 8px; }
-  .conn      { display: none; }
-  .kdGrid    { grid-template-columns: 1fr; }
-  .verdictStrip { flex-direction: column; align-items: flex-start; }
+
+  /* Clause rows stack vertically */
+  .crow { grid-template-columns: 1fr; gap: 6px; }
+  .conn { display: none; }
+
+  /* Restore card padding now that they're full-width */
+  .ccard { padding: 14px 16px; }
+
+  /* Column header becomes simple label row */
+  .compareHead { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .chMid       { display: none; }
+  .chSide      { flex-direction: column; align-items: flex-start; gap: 3px; }
+
+  /* Key diff grid */
+  .kdGrid { grid-template-columns: 1fr; }
+
+  /* Verdict strip */
+  .verdictStrip { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .favCta { width: 100%; text-align: center; }
+
+  /* Summary strip pills stack if needed */
+  .summaryStats { gap: 4px; }
+}
+
+/* ── Narrow phone (≤ 400px) ── */
+@media (max-width: 400px) {
+  .wrap { padding: 16px 0; gap: 14px; }
+  .summaryStrip { padding: 12px 14px; }
+  .statPill { padding: 5px 10px 5px 6px; }
+  .statN    { font-size: 15px; }
+  .statL    { font-size: 11px; }
+  .comparePanel { padding: 6px 14px 18px; }
+  .keydiff  { padding: 18px 16px; }
+  .verdictStrip { padding: 12px 14px; }
+  .docCard  { padding: 13px 14px; }
 }
