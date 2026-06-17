@@ -27,10 +27,9 @@ export default function Dashboard() {
         .select(`
           id, name, client_name, logo_path, created_at,
           negotiations (
-            id, status, lifecycle,
+            id, status, lifecycle, tenant_name, premises_address,
             documents (
-              id, filename, uploaded_at, overall_risk,
-              lease_data ( tenant_name, premises_address )
+              id, filename, uploaded_at, overall_risk
             )
           )
         `)
@@ -137,18 +136,17 @@ export default function Dashboard() {
     const { summary, total } = getDocSummary(ws)
     const latestDate         = getLatestDate(ws)
 
-    // Pull tenant_name / premises_address from latest document's lease_data
-    const allDocs = ws.negotiations?.flatMap(n => n.documents || []) || []
-    const latestDoc = allDocs.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))[0]
-    // Supabase returns nested one-to-one as array — unwrap it
-    const leaseData = Array.isArray(latestDoc?.lease_data)
-      ? latestDoc.lease_data[0]
-      : latestDoc?.lease_data
-    const displayName    = leaseData?.tenant_name || ws.client_name || ws.name
-    const displayAddress = leaseData?.premises_address
-      || (leaseData?.tenant_name && ws.name)   // extracted name → show ws.name as address
-      || (ws.client_name && ws.name)            // user-entered tenant → show ws.name as address
-      || null                                   // only ws.name available → don't repeat it
+    // Worker writes extracted tenant_name + premises_address onto negotiations
+    // Prefer the most-recently-updated negotiation that has extracted data
+    const negs = ws.negotiations || []
+    const negWithData = negs.find(n => n.tenant_name || n.premises_address)
+    const extractedTenant  = negWithData?.tenant_name    || null
+    const extractedAddress = negWithData?.premises_address || null
+    const displayName    = extractedTenant  || ws.client_name || ws.name
+    const displayAddress = extractedAddress
+      || (extractedTenant  && ws.name)   // extracted tenant but no address → show ws.name
+      || (ws.client_name   && ws.name)   // user-entered tenant → show ws.name as property
+      || null                            // only ws.name — don't repeat it
 
     return (
       <div
