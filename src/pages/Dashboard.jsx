@@ -140,9 +140,15 @@ export default function Dashboard() {
     // Pull tenant_name / premises_address from latest document's lease_data
     const allDocs = ws.negotiations?.flatMap(n => n.documents || []) || []
     const latestDoc = allDocs.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))[0]
-    const leaseData = latestDoc?.lease_data
-    const displayName    = leaseData?.tenant_name    || ws.client_name || ws.name
-    const displayAddress = leaseData?.premises_address || (leaseData?.tenant_name ? ws.name : null)
+    // Supabase returns nested one-to-one as array — unwrap it
+    const leaseData = Array.isArray(latestDoc?.lease_data)
+      ? latestDoc.lease_data[0]
+      : latestDoc?.lease_data
+    const displayName    = leaseData?.tenant_name || ws.client_name || ws.name
+    const displayAddress = leaseData?.premises_address
+      || (leaseData?.tenant_name && ws.name)   // extracted name → show ws.name as address
+      || (ws.client_name && ws.name)            // user-entered tenant → show ws.name as address
+      || null                                   // only ws.name available → don't repeat it
 
     return (
       <div
