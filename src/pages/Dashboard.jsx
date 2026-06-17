@@ -137,9 +137,9 @@ export default function Dashboard() {
     const latestDate         = getLatestDate(ws)
 
     // Sanity-check extracted values — reject anything that looks like clause text
-    const CLAUSE_WORDS = ['lease', 'landlord', 'premises', 'herein', 'pursuant',
+    const CLAUSE_WORDS = ['takes a lease', 'landlord', 'herein', 'pursuant',
       'thereof', 'together with', 'non-exclusive', 'the term']
-    const isClauseText = v => !v || v.length > 80
+    const isClauseText = v => !v || v.length > 150
       || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
 
     const negs = ws.negotiations || []
