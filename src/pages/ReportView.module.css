@@ -42,6 +42,7 @@
 .appMain { max-width:var(--maxw); margin:0 auto; padding:32px var(--gut) 80px; display:grid; grid-template-columns:1fr 320px; gap:28px; align-items:start; width:100%; box-sizing:border-box; }
 
 /* ── BRIEFING ── */
+.briefing { min-width:0; width:100%; }
 .briefingHead { display:flex; align-items:center; justify-content:space-between; margin-bottom:18px; flex-wrap:wrap; gap:12px; min-width:0; overflow:hidden; }
 .briefingTitle { font-size:20px; font-weight:600; letter-spacing:-0.015em; color:var(--ink); }
 .briefingTitle span { font-size:14px; font-weight:500; color:var(--muted); }
@@ -54,9 +55,9 @@
 .filterTabActive .filterCount { color:var(--accent); }
 
 /* ── CLAUSE LIST ── */
-.clauseList { display:flex; flex-direction:column; gap:10px; margin-bottom:28px; }
+.clauseList { display:flex; flex-direction:column; gap:10px; margin-bottom:28px; min-width:0; width:100%; }
 
-.clauseItem { background:var(--card); border:1px solid var(--hair); border-radius:var(--radius); overflow:hidden; transition:border-color 0.2s, box-shadow 0.2s; min-width:0; width:100%; }
+.clauseItem { background:var(--card); border:1px solid var(--hair); border-radius:var(--radius); overflow:hidden; transition:border-color 0.2s, box-shadow 0.2s; min-width:0; width:100%; box-sizing:border-box; }
 .clauseItem:hover { border-color:rgba(28,25,22,0.18); }
 .clauseOpen { border-color:rgba(28,25,22,0.18) !important; box-shadow:0 14px 40px -26px rgba(28,25,22,0.4); }
 
