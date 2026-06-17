@@ -65,14 +65,6 @@ function HighlightedText({ oldText, newText }) {
   return <>{nodes}</>
 }
 
-const ChevDown = ({ open }) => (
-  <svg
-    className={`${styles.rowChev} ${open ? styles.rowChevOpen : ''}`}
-    width="16" height="16" viewBox="0 0 20 20" fill="none">
-    <path d="M5 8l5 5 5-5" stroke="currentColor" strokeWidth="1.8"
-      strokeLinecap="round" strokeLinejoin="round"/>
-  </svg>
-)
 
 export default function CompareTab({ negId, docs }) {
   const navigate = useNavigate()
@@ -82,7 +74,6 @@ export default function CompareTab({ negId, docs }) {
   const [rightIdx, setRightIdx] = useState(sortedDocs.length - 1)
   const [picker,   setPicker]   = useState(null) // 'left' | 'right' | null
   const [comparison, setComparison] = useState(null)
-  const [openRow,    setOpenRow]    = useState(null)
   const [activeFilter, setActiveFilter] = useState(null) // 'added'|'modified'|'removed'|null
 
   const leftDoc  = sortedDocs[leftIdx]
@@ -142,8 +133,8 @@ export default function CompareTab({ negId, docs }) {
       }
       rows.push({
         change,
-        left:  clauseA ? { nm: clauseA.name, text: clauseA.risk || clauseA.quote || '', tag: null } : null,
-        right: { nm: clauseB.name, text: clauseB.risk || clauseB.quote || '', tag: !clauseA ? 'new' : null },
+        left:  clauseA ? { nm: clauseA.name, text: clauseA.quote || clauseA.risk || '', tag: null } : null,
+        right: { nm: clauseB.name, text: clauseB.quote || clauseB.risk || '', tag: !clauseA ? 'new' : null },
         note: clauseB.risk || '',
       })
     })
@@ -172,7 +163,6 @@ export default function CompareTab({ negId, docs }) {
   }
 
   useEffect(() => {
-    setOpenRow(null)
     setActiveFilter(null)
     setComparison(buildComparison(leftDoc, rightDoc))
   }, [leftIdx, rightIdx, docs])
@@ -185,7 +175,6 @@ export default function CompareTab({ negId, docs }) {
 
   const toggleFilter = (f) => {
     setActiveFilter(prev => prev === f ? null : f)
-    setOpenRow(null)
   }
 
   const getFilteredRows = (rows) => {
@@ -274,6 +263,7 @@ export default function CompareTab({ negId, docs }) {
       {comparison && (
         <div className={styles.summaryStrip}>
           <span className={styles.summaryLabel}>Comparison summary</span>
+          <span className={styles.filterLabel}>Filter:</span>
           <div className={styles.summaryStats}>
             {[
               { key: 'added',    icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoAdd, label: 'Added',    val: comparison.summary.added },
@@ -341,13 +331,10 @@ export default function CompareTab({ negId, docs }) {
 
           <div className={styles.crows}>
             {getFilteredRows(comparison.rows).map((row, i) => {
-              const isOpen    = openRow === i
-              const hasDetail = !!row.note
               return (
-                <div key={i} className={`${styles.crow} ${isOpen ? styles.crowOpen : ''}`}>
+                <div key={i} className={styles.crow}>
                   {row.left ? (
-                    <div className={`${styles.ccard} ${dotCls[row.change]} ${hasDetail ? styles.ccardToggle : ''}`}
-                      onClick={() => hasDetail && setOpenRow(isOpen ? null : i)}>
+                    <div className={`${styles.ccard} ${dotCls[row.change]}`}>
                       <div className={styles.no}>{i + 1}</div>
                       <div className={styles.ccTt}>
                         <div className={styles.nm}>
@@ -357,7 +344,6 @@ export default function CompareTab({ negId, docs }) {
                         <p>{row.left.text}</p>
                       </div>
                       <span className={styles.sdot} />
-                      {hasDetail && <ChevDown open={isOpen} />}
                     </div>
                   ) : (
                     <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in previous version</div>
@@ -369,8 +355,7 @@ export default function CompareTab({ negId, docs }) {
                   </div>
 
                   {row.right ? (
-                    <div className={`${styles.ccard} ${tintCls[row.change]} ${hasDetail ? styles.ccardToggle : ''}`}
-                      onClick={() => hasDetail && setOpenRow(isOpen ? null : i)}>
+                    <div className={`${styles.ccard} ${tintCls[row.change]}`}>
                       <div className={styles.no}>{i + 1}</div>
                       <div className={styles.ccTt}>
                         <div className={styles.nm}>
@@ -384,20 +369,23 @@ export default function CompareTab({ negId, docs }) {
                         </p>
                       </div>
                       <span className={styles.sdot} />
-                      {hasDetail && <ChevDown open={isOpen} />}
                     </div>
                   ) : (
                     <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Removed in revised</div>
                   )}
 
-                  {isOpen && row.note && (
-                    <div className={`${styles.ccNote} ${row.change === 'imp' ? styles.ccNoteImp : row.change === 'risk' ? styles.ccNoteRsk : styles.ccNoteSame}`}>
+                  {row.change === 'same' ? (
+                    <div className={`${styles.ccNote} ${styles.ccNoteSame}`}>
+                      <span className={styles.noteLead}>Unchanged</span>
+                    </div>
+                  ) : row.note ? (
+                    <div className={`${styles.ccNote} ${row.change === 'imp' ? styles.ccNoteImp : styles.ccNoteRsk}`}>
                       <span className={styles.noteLead}>
-                        {row.change === 'imp' ? '✓ What changed' : row.change === 'risk' ? '⚠ What changed' : 'Unchanged'}
+                        {row.change === 'imp' ? '✓ What changed' : '⚠ What changed'}
                       </span>
                       {row.note}
                     </div>
-                  )}
+                  ) : null}
                 </div>
               )
             })}

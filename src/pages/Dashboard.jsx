@@ -29,7 +29,8 @@ export default function Dashboard() {
           negotiations (
             id, status, lifecycle,
             documents (
-              id, filename, uploaded_at, overall_risk
+              id, filename, uploaded_at, overall_risk,
+              lease_data ( tenant_name, premises_address )
             )
           )
         `)
@@ -136,16 +137,23 @@ export default function Dashboard() {
     const { summary, total } = getDocSummary(ws)
     const latestDate         = getLatestDate(ws)
 
+    // Pull tenant_name / premises_address from latest document's lease_data
+    const allDocs = ws.negotiations?.flatMap(n => n.documents || []) || []
+    const latestDoc = allDocs.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))[0]
+    const leaseData = latestDoc?.lease_data
+    const displayName    = leaseData?.tenant_name    || ws.client_name || ws.name
+    const displayAddress = leaseData?.premises_address || (leaseData?.tenant_name ? ws.name : null)
+
     return (
       <div
         className={`${styles.wcard} ${fin ? styles.wcardFin : ''}`}
         onClick={() => navigate(`/workspace/${ws.id}`)}
       >
         <div className={styles.wcTop}>
-          <div className={styles.wcBadge}>{ws.name[0]?.toUpperCase()}</div>
+          <div className={styles.wcBadge}>{(displayName)[0]?.toUpperCase()}</div>
           <div className={styles.wcId}>
-            <div className={styles.wcName}>{ws.name}</div>
-            {ws.client_name && <div className={styles.wcTn}>{ws.client_name}</div>}
+            <div className={styles.wcName}>{displayName}</div>
+            {displayAddress && <div className={styles.wcTn}>{displayAddress}</div>}
           </div>
           <span className={`${styles.statusChip} ${status.cls}`}>
             <span className={styles.d} />{status.label}
