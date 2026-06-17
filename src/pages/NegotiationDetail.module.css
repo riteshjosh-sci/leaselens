@@ -16,8 +16,8 @@
 .wsBadge { width:48px; height:48px; border-radius:12px; background:var(--ink); color:var(--paper); font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .wsKicker { font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); margin-bottom:5px; }
 .wsNameWrap { min-width:0; flex:1; }
-.wsName { font-size:32px; font-weight:600; letter-spacing:-0.025em; color:var(--ink); line-height:1.05; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.wsSub { font-size:14px; color:var(--muted); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.wsName { font-size:32px; font-weight:600; letter-spacing:-0.025em; color:var(--ink); line-height:1.1; overflow-wrap:break-word; word-break:break-word; }
+.wsSub { font-size:14px; color:var(--muted); margin-top:4px; overflow-wrap:break-word; word-break:break-word; }
 .wsActions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .statusChip { display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:700; padding:6px 14px; border-radius:100px; background:var(--accent-soft); color:var(--accent-deep); }
 .statusD { width:7px; height:7px; border-radius:50%; background:var(--accent); }
@@ -226,7 +226,7 @@
 }
 @media (max-width:480px) {
   .page { padding:80px 16px 60px; }
-  .wsName { font-size:20px; }
+  .wsName { font-size:18px; }
   .lifecycle { display:none; }
   .negControls { opacity:1; }
   .sbadge { display:none; }
@@ -244,7 +244,7 @@
 
 @media (max-width:380px) {
   .page { padding:76px 12px 56px; }
-  .wsName { font-size:18px; }
+  .wsName { font-size:16px; }
   .wsBadge { width:38px; height:38px; font-size:17px; }
   /* Negotiation name + ref in list */
   .nm  { font-size:13.5px; }
