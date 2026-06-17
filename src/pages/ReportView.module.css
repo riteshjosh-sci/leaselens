@@ -4,8 +4,8 @@
 .page { min-height:100vh; background:var(--paper); display:flex; flex-direction:column; overflow-x:hidden; width:100%; }
 
 /* ── BREADCRUMB ── */
-.crumb { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); padding:12px var(--gut); flex-wrap:nowrap; overflow:hidden; background:var(--paper); border-bottom:1px solid var(--hair-lt); }
-.crumb button { background:none; border:none; color:var(--muted); cursor:pointer; font-family:var(--font); font-size:12px; padding:0; transition:color 0.15s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:140px; }
+.crumb { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); padding:10px var(--gut); flex-wrap:nowrap; overflow:hidden; background:var(--paper); border-bottom:1px solid var(--hair-lt); }
+.crumb button { background:none; border:none; color:var(--muted); cursor:pointer; font-family:var(--font); font-size:12px; padding:0; transition:color 0.15s; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:180px; flex-shrink:1; }
 .crumb button:hover { color:var(--accent); }
 .crumb span { color:var(--faint); flex-shrink:0; }
 .crumb > span:last-child { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex-shrink:2; color:var(--ink-soft); }
@@ -20,16 +20,16 @@
   overflow:hidden;
 }
 .docBarInner { max-width:var(--maxw); margin:0 auto; padding:16px 28px; display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; overflow:hidden; width:100%; box-sizing:border-box; }
-.docId { display:flex; align-items:center; gap:14px; min-width:0; overflow:hidden; flex:1; }
+.docId { display:flex; align-items:flex-start; gap:14px; min-width:0; flex:1; }
 .fileIcon { background:var(--ink); color:var(--paper); font-size:9px; font-weight:700; letter-spacing:0.06em; padding:7px 8px; border-radius:6px; flex-shrink:0; line-height:1; }
-.docTitle { font-size:20px; font-weight:600; letter-spacing:-0.02em; color:var(--ink); margin-bottom:4px; line-height:1.1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100%; }
+.docTitle { font-size:20px; font-weight:600; letter-spacing:-0.02em; color:var(--ink); margin-bottom:4px; line-height:1.2; overflow-wrap:break-word; word-break:break-word; }
 .docMeta { display:flex; align-items:center; gap:7px; font-size:12.5px; color:var(--muted); flex-wrap:wrap; }
 .sep { width:3px; height:3px; border-radius:50%; background:var(--faint); }
 .docRisk { font-weight:700; font-size:11px; letter-spacing:0.06em; }
 .docRiskHigh   { color:var(--accent-deep); }
 .docRiskMedium { color:#8a6312; }
 .docRiskLow    { color:#3f6b4e; }
-.docActions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.docActions { display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
 
 /* Buttons */
 .btnOutline { display:flex; align-items:center; gap:6px; background:transparent; border:1px solid var(--hair); color:var(--ink-soft); border-radius:var(--radius-sm); padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); transition:all 0.15s; }
@@ -157,57 +157,78 @@
 /* Analysis complete banner */
 .completeBanner { background:var(--risk-l-bg); border:1px solid #b8d8c4; border-left:3px solid var(--risk-l); border-radius:var(--radius-sm); padding:12px 20px; display:flex; align-items:center; gap:10px; margin-bottom:12px; font-size:14px; color:var(--risk-l); font-weight:500; }
 
+/* ── Tablet (≤ 1080px) ── */
 @media (max-width:1080px) {
   .appMain { grid-template-columns:1fr; padding:24px 20px 60px; }
   .summaryCol { position:static; flex-direction:row; flex-wrap:wrap; }
   .summaryCol > * { flex:1 1 240px; }
   .docBarInner { padding:14px 20px; }
 }
+
+/* ── Large phone (≤ 768px) ── */
+@media (max-width:768px) {
+  .crumb { padding:8px 16px; }
+  .crumb button { max-width:140px; font-size:11.5px; }
+  .docBarInner { padding:12px 16px; gap:10px; }
+  .docTitle { font-size:17px; }
+  .docMeta { font-size:11.5px; }
+  .appMain { padding:18px 16px 60px; }
+  .briefingTitle { font-size:18px; }
+}
+
+/* ── Phone (≤ 680px) — doc bar stacks, sidebar goes horizontal ── */
 @media (max-width:680px) {
-  .docBar { top:44px; }
+  .docBar { top:56px; }
   .docBarInner { padding:10px 14px; flex-direction:column; align-items:flex-start; gap:8px; }
-  .docTitle { font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+  .docId { width:100%; }
+  .docTitle { font-size:15px; }
   .docMeta { font-size:11px; gap:5px; }
-  .docActions { width:100%; flex-wrap:wrap; gap:6px; }
+  .docActions { width:100%; gap:6px; }
   .btnOutline, .btnInk { flex:1; justify-content:center; min-width:0; font-size:12px; padding:7px 8px; }
   .appMain { padding:14px 12px 60px; }
-  .briefingTitle { font-size:17px; }
+
+  /* Clause list */
+  .briefingHead { flex-direction:column; align-items:flex-start; gap:10px; }
+  .briefingTitle { font-size:16px; }
+  .filterTabs { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .filterTabs::-webkit-scrollbar { display:none; }
+  .filterTab { flex-shrink:0; padding:5px 10px; font-size:12px; }
   .clauseList { gap:8px; }
-  .clauseSummary { padding:12px 12px; gap:8px; }
-  .clauseName { font-size:13.5px; }
+  .clauseSummary { padding:12px; gap:8px; }
+  .clauseName { font-size:14px; overflow-wrap:break-word; word-break:break-word; white-space:normal; }
   .clauseRef { font-size:10px; }
   .pill { display:none; }
-  .clauseDetail { padding:0 12px 14px; overflow:hidden; box-sizing:border-box; }
+  .clauseDetail { padding:0 12px 14px; }
+  .docQuote { font-size:13px; padding:11px 12px; line-height:1.5; }
   .qref { font-size:10px; }
-  .docQuote { font-size:13px; padding:11px 12px; word-break:break-word; overflow:hidden; line-height:1.5; }
   .blockHead { font-size:10.5px; }
   .analysisBlock p { font-size:13px; line-height:1.55; }
   .counterBlock { padding:10px 12px; }
   .counterBlock p { font-size:13px; }
   .legBlock { padding:9px 11px; }
   .legBlock p { font-size:13px; }
-  .filterTabs { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
-  .filterTabs::-webkit-scrollbar { display:none; }
-  .filterTab { flex-shrink:0; padding:5px 10px; font-size:12px; }
-  .briefingHead { flex-direction:column; align-items:flex-start; gap:10px; }
-  .summaryText { font-size:13px; }
   .nextSteps { padding:16px 14px; }
   .nextSteps h2 { font-size:16px; }
   .nextSteps li { font-size:13px; }
-  .clauseItem { min-width:0; overflow:hidden; width:100%; }
+  .disclaimer { font-size:11px; padding:10px 14px; }
   .chipBtn { font-size:12px; padding:7px 11px; }
+
+  /* Sidebar */
+  .summaryText { font-size:13px; }
   .sCard { padding:16px; }
   .sCard h3 { font-size:11px; }
   .scoreNum { font-size:32px; }
   .legendRow { font-size:12.5px; }
   .jumpItem { font-size:12.5px; }
-  .disclaimer { font-size:11px; padding:10px 14px; }
 }
 
+/* ── Narrow phone (≤ 480px) ── */
 @media (max-width:480px) {
-  .appBar { padding:0 12px; }
+  .docBar { top:52px; }
+  .crumb { padding:7px 12px; }
+  .crumb button { max-width:100px; font-size:11px; }
   .appMain { padding:12px 10px 60px; }
-  .clauseSummary { padding:10px; gap:8px; }
+  .clauseSummary { padding:10px; gap:6px; }
   .clauseDetail { padding:0 10px 12px; }
   .docQuote { font-size:12.5px; padding:9px 10px; }
   .summaryCol { flex-direction:column; }
@@ -215,6 +236,17 @@
   .scoreNum { font-size:28px; }
   .nextSteps { padding:14px 12px; }
   .nextSteps li { font-size:12.5px; }
+  /* Doc bar: make actions wrap to 2-per-row */
+  .btnOutline, .btnInk { font-size:11.5px; padding:6px 6px; }
+}
+
+/* ── Very narrow (≤ 380px) ── */
+@media (max-width:380px) {
+  .docTitle { font-size:14px; }
+  .clauseName { font-size:13px; }
+  .briefingTitle { font-size:15px; }
+  .docActions { flex-direction:column; }
+  .btnOutline, .btnInk { width:100%; flex:none; }
 }
 
 /* ── COMMERCIALS TABLE ── */
@@ -271,4 +303,9 @@
 }
 @media (max-width: 600px) {
   .commercialsGrid { grid-template-columns: repeat(2, 1fr); }
+  .commercials { padding: 16px 16px; }
+  .comValue { font-size: 14px; }
+}
+@media (max-width: 380px) {
+  .commercialsGrid { grid-template-columns: 1fr 1fr; gap: 12px 12px; }
 }
