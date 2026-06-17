@@ -8,18 +8,21 @@ import styles from './NegotiationDetail.module.css'
 function parseOptions(text) {
   if (!text) return null
 
+  // Normalise literal \n sequences that survive JSON serialisation
+  const t = text.replace(/\\n/g, '\n')
+
   // "Option A:" / "Option B:" — handle markdown bold (**Option A:**) too
   const optionLetterRe = /\*{0,2}option\s+[A-Z]\*{0,2}\s*[:\-–]/i
-  if (optionLetterRe.test(text)) {
-    const parts = text.split(/\n*\*{0,2}option\s+[A-Z]\*{0,2}\s*[:\-–]\s*/i).filter(s => s.trim())
+  if (optionLetterRe.test(t)) {
+    const parts = t.split(/\n*\*{0,2}option\s+[A-Z]\*{0,2}\s*[:\-–]\s*/i).filter(s => s.trim())
     if (parts.length >= 2) {
       return parts.map((p, i) => ({ label: `Option ${String.fromCharCode(65 + i)}`, text: p.trim() }))
     }
   }
 
-  // "1." / "2." at start of line (with optional newline before)
-  if (/(?:^|\n)\s*\d+\.\s+/.test(text)) {
-    const all = text.split(/\n\s*(?=\d+\.\s)/).filter(s => s.trim())
+  // "1." / "2." at start of line
+  if (/(?:^|\n)\s*\d+\.\s+/.test(t)) {
+    const all = t.split(/\n\s*(?=\d+\.\s)/).filter(s => s.trim())
     if (all.length >= 2) {
       return all.map((p, i) => ({ label: `Option ${i + 1}`, text: p.replace(/^\d+\.\s+/, '').trim() }))
     }
