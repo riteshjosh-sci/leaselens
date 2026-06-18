@@ -108,8 +108,8 @@ export default function Analyser() {
       setReport(jobData.report_json)
       setLoading(false)
       if (negotiationId) {
-        // Came from existing negotiation — go back to its documents tab
-        setTimeout(() => navigate(`/negotiation/${negotiationId}#documents`), 1500)
+        // Came from existing negotiation — go to compare tab so user can see what changed
+        setTimeout(() => navigate(`/negotiation/${negotiationId}#compare`), 1500)
       } else if (negIdRef.current && !negotiationId) {
         setShowPropertyPrompt(true)
       }

@@ -10,9 +10,15 @@ import DocumentsTab from './DocumentsTab'
 import ActivityTab from './ActivityTab'
 import styles from './NegotiationDetail.module.css'
 
-const TABS = [
+const TABS_ONE = [
   { key: 'review',    label: 'Review' },
   { key: 'compare',   label: 'Compare' },
+  { key: 'documents', label: 'Documents' },
+  { key: 'activity',  label: 'Activity' },
+]
+const TABS_MULTI = [
+  { key: 'compare',   label: 'Compare' },
+  { key: 'review',    label: 'Review' },
   { key: 'documents', label: 'Documents' },
   { key: 'activity',  label: 'Activity' },
 ]
@@ -28,9 +34,10 @@ export default function NegotiationDetail() {
   const [docs,    setDocs]    = useState([])
   const [loading, setLoading] = useState(true)
 
-  // Derive active tab from URL hash or default to review
+  const TABS = docs.length >= 2 ? TABS_MULTI : TABS_ONE
+  // Derive active tab from URL hash or default to first tab
   const hashTab = location.hash.replace('#', '')
-  const activeTab = TABS.find(t => t.key === hashTab)?.key || 'review'
+  const activeTab = TABS.find(t => t.key === hashTab)?.key || TABS[0].key
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -44,7 +51,7 @@ export default function NegotiationDetail() {
     const { data: negData, error } = await supabase
       .from('negotiations')
       .select(`
-        id, property_name, created_at, status, lifecycle, workspace_id,
+        id, property_name, asset_class, property_type, created_at, status, lifecycle, workspace_id,
         documents (
           id, filename, version_number, uploaded_at, overall_risk, file_path,
           reports ( id, report_json, created_at )
@@ -76,7 +83,16 @@ export default function NegotiationDetail() {
   }
 
   const handleAddVersion = () => {
-    navigate('/analyser', { state: { negotiationId: negId, workspaceId: ws?.id } })
+    navigate('/analyser', {
+      state: {
+        negotiationId: negId,
+        workspaceId: ws?.id,
+        prefill: {
+          asset_class:   neg?.asset_class   || 'retail',
+          property_type: neg?.property_type || '',
+        },
+      }
+    })
   }
 
   // Status chip derived from lifecycle
