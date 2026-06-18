@@ -581,18 +581,18 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
 
   return (
     <>
-      <TabBar />
+      {TabBar()}
 
       {subTab === 'clauses' ? (
         <div className={styles.reviewGrid}>
-          <Queue />
+          {Queue()}
           {active
-            ? <FocusCard c={active} idx={activeIdx} />
+            ? FocusCard({ c: active, idx: activeIdx })
             : <div className={styles.focusCard} style={{ padding: 32, color: 'var(--muted)' }}>Select a clause from the list.</div>
           }
         </div>
       ) : (
-        <SummaryTab />
+        SummaryTab()
       )}
     </>
   )
