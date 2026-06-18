@@ -412,14 +412,14 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
 
         <div className={styles.fcActions}>
           <button
-            className={`${styles.actBtn} ${styles.actBtnAgree} ${dec === 'accepted' ? styles.actBtnAgreeOn : ''}`}
-            onClick={() => decideAndAdvance(c.clauseKey, 'accepted', c.name)}>
-            <CheckIcon s={14} /> Agree to clause
-          </button>
-          <button
             className={`${styles.actBtn} ${styles.actBtnCounter} ${dec === 'countering' ? styles.actBtnCounterOn : ''}`}
             onClick={() => decideAndAdvance(c.clauseKey, 'countering', c.name)}>
             <CounterIcon s={14} /> Counter with this
+          </button>
+          <button
+            className={`${styles.actBtn} ${styles.actBtnAgree} ${dec === 'accepted' ? styles.actBtnAgreeOn : ''}`}
+            onClick={() => decideAndAdvance(c.clauseKey, 'accepted', c.name)}>
+            <CheckIcon s={14} /> Agree to clause
           </button>
           <span className={`${styles.actNote} ${
             dec === 'accepted'   ? styles.actNoteAgreed :

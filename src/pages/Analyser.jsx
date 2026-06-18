@@ -268,9 +268,18 @@ export default function Analyser() {
           .eq('name', 'New workspace') // only rename if still default
       }
 
+      // Navigate to the report page for the latest document
+      const { data: docs } = await supabase
+        .from('documents')
+        .select('id')
+        .eq('negotiation_id', neg.id)
+        .order('uploaded_at', { ascending: false })
+        .limit(1)
+
       setShowPropertyPrompt(false)
-      // Navigate to the workspace
-      if (neg.workspace_id) {
+      if (docs?.[0]) {
+        navigate(`/report/${docs[0].id}`)
+      } else if (neg.workspace_id) {
         navigate(`/workspace/${neg.workspace_id}`)
       } else {
         navigate('/dashboard')
