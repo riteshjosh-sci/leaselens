@@ -381,7 +381,7 @@ export default function Home() {
       <section className={`${styles.section} ${styles.sectionDark} ${styles.final}`}>
         <div className={styles.wrap}>
           <span className={`${styles.eyebrow} ${styles.eyebrowLt} ${styles.eyebrowCenter}`}>Lease intelligence</span>
-          <h2 style={{ color: 'var(--paper)', marginTop: 20 }}>Know what you're signing<br />before you sign it.</h2>
+          <h2 style={{ color: 'var(--paper)', marginTop: 20 }}>Know what you're signing<br />before you sign.</h2>
           <p>Upload your lease and see the first flags in under a minute. No account needed to start.</p>
           <div className={styles.finalActions}>
             <button className={`${styles.btn} ${styles.btnFinalPrimary}`} onClick={handleCTA}>Scan my document →</button>

@@ -27,9 +27,6 @@ export default function Analyser() {
   const [docType, setDocType]   = useState('hoa')  // 'hoa' | 'lease' — replaces finalised toggle
   const [assetClass, setAssetClass] = useState(prefill.asset_class || 'retail')
   const [propertyType, setPropertyType] = useState(prefill.property_type || '')
-  const [landlordType, setLandlordType] = useState(prefill.landlord_type || '')
-  const [suburb, setSuburb] = useState(prefill.suburb || '')
-  const [postcode, setPostcode] = useState(prefill.postcode || '')
   const [file, setFile] = useState(null)
   const [pasteText, setPasteText] = useState('')
   const [showPaste, setShowPaste] = useState(false)
@@ -205,9 +202,6 @@ export default function Analyser() {
         status: 'pending',
         asset_class: assetClass,
         property_type: propertyType || null,
-        landlord_type: landlordType || null,
-        suburb: suburb || null,
-        postcode: postcode || null,
         finalised: docType === 'lease', // lease = terms agreed, HOA = still negotiating
       }).select().single()
 
@@ -300,7 +294,7 @@ export default function Analyser() {
       <div className={styles.page}>
         <div className={styles.main}>
           <button className={styles.back} onClick={() => navigate(-1)}>← Back</button>
-          <h1 className={styles.h1}>Know what you're signing <em>before you sign it.</em></h1>
+          <h1 className={styles.h1}>Know what you're signing <em>before you sign.</em></h1>
           <p className={styles.sub}>Drag and drop your document below, or paste the text. LeaseLens analyses the terms and provides a clear outline of risk, impact and suggested response.</p>
 
           <div className={styles.card}>
@@ -353,26 +347,6 @@ export default function Analyser() {
                     <option value="mixed_use">Mixed Use</option>
                     <option value="other">Other</option>
                   </select>
-                </div>
-              </div>
-              <div className={styles.metaRow}>
-                <div className={styles.metaField}>
-                  <label className={styles.metaLabel}>Landlord type</label>
-                  <select className="input" value={landlordType} onChange={e => setLandlordType(e.target.value)}>
-                    <option value="">Select...</option>
-                    <option value="institutional">Institutional</option>
-                    <option value="private">Private</option>
-                    <option value="government">Government</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
-                <div className={styles.metaField}>
-                  <label className={styles.metaLabel}>Suburb</label>
-                  <input className="input" type="text" value={suburb} onChange={e => setSuburb(e.target.value)} placeholder="e.g. Fremantle" />
-                </div>
-                <div className={styles.metaField}>
-                  <label className={styles.metaLabel}>Postcode</label>
-                  <input className="input" type="text" value={postcode} onChange={e => setPostcode(e.target.value)} placeholder="e.g. 6160" maxLength={4} />
                 </div>
               </div>
             </div>
