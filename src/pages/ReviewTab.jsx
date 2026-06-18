@@ -359,7 +359,7 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
           const selIdx  = selectedOptions[c.clauseKey] ?? 0
 
           return (
-            <div className={styles.fcCounter}>
+            <div className={`${styles.fcCounter} ${c.danger === 'LOW' ? styles.fcCounterFav : ''}`}>
               <div className={styles.fcCounterHead}>
                 <span className={styles.fcCounterLabel}>Suggested counter</span>
                 <span className={`${styles.editTag} ${edited ? styles.editTagEdited : styles.editTagSuggested}`}>
