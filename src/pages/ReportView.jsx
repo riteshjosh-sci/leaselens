@@ -236,6 +236,9 @@ export default function ReportView() {
             <div className={styles.docTitleWrap}>
               <h1 className={styles.docTitle}>
                 {negotiation?.property_name || stripTimestamp(document?.filename)}
+                {document?.version_number && (
+                  <span className={styles.docVersionBadge}>V{document.version_number}</span>
+                )}
               </h1>
               <div className={styles.docMeta}>
                 <span>Version {document?.version_number}</span>
