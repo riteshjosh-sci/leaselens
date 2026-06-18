@@ -260,7 +260,7 @@ export default function ReportView() {
               </svg>
               Export PDF
             </button>
-            <button className={styles.btnInk} onClick={() => navigate('/analyser', { state: { negotiationId: negotiation?.id, workspaceId: workspace?.id, prefill: { asset_class: negotiation?.asset_class || 'retail', property_type: negotiation?.property_type || '' } } })}>
+            <button className={styles.btnInk} onClick={() => navigate('/analyser', { state: { negotiationId: negotiation?.id, workspaceId: workspace?.id, prefill: { asset_class: negotiation?.asset_class || 'retail' } } })}>
               + Add version
             </button>
           </div>
