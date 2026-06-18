@@ -43,6 +43,7 @@ export default function Analyser() {
   const fallbackTimerRef = useRef(null)
   const jobSubscriptionRef = useRef(null)
   const negIdRef = useRef(null)
+  const wsIdRef  = useRef(null)
   const completedRef = useRef(false)
 
   useEffect(() => {
@@ -142,6 +143,7 @@ export default function Analyser() {
 
     completedRef.current = false
     negIdRef.current = null
+    wsIdRef.current  = null
     setLoading(true); setError(''); setReport(null); setLeaseData(null)
     startLoadingCycle()
 
@@ -170,7 +172,7 @@ export default function Analyser() {
             user_id: user.id,
             name: 'New workspace',
           }).select().single()
-          if (wsData) wsId = wsData.id
+          if (wsData) { wsId = wsData.id; wsIdRef.current = wsData.id }
         }
 
         const { data: negData } = await supabase.from('negotiations').insert({
@@ -241,54 +243,50 @@ export default function Analyser() {
 
     } catch (e) {
       stopLoadingCycle()
+      // Clean up any workspace/negotiation created during this attempt if it failed
+      // before the job was saved — prevents ghost "New workspace" entries
+      if (negIdRef.current && !negotiationId) {
+        supabase.from('negotiations').delete().eq('id', negIdRef.current)
+        if (wsIdRef.current) supabase.from('workspaces').delete().eq('id', wsIdRef.current)
+        negIdRef.current = null
+        wsIdRef.current  = null
+      }
       setError(e.message || 'Something went wrong. Please try again.')
       setLoading(false)
     }
   }
 
   const handleCreateNegotiation = async () => {
-    if (!propertyName.trim()) return
-    // Find the most recently created negotiation for this user
-    const { data: negs } = await supabase
-      .from('negotiations')
-      .select('id, workspace_id')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+    if (!propertyName.trim() || !negIdRef.current) return
+
+    const negId = negIdRef.current
+
+    await supabase.from('negotiations')
+      .update({ property_name: propertyName.trim() })
+      .eq('id', negId)
+
+    if (wsIdRef.current) {
+      await supabase.from('workspaces')
+        .update({ name: propertyName.trim() })
+        .eq('id', wsIdRef.current)
+        .eq('name', 'New workspace')
+    }
+
+    const { data: docs } = await supabase
+      .from('documents')
+      .select('id, reports(id)')
+      .eq('negotiation_id', negId)
+      .order('uploaded_at', { ascending: false })
       .limit(1)
 
-    if (negs?.[0]) {
-      const neg = negs[0]
-      // Rename the negotiation
-      await supabase.from('negotiations')
-        .update({ property_name: propertyName.trim() })
-        .eq('id', neg.id)
-
-      // Also rename the auto-created workspace to match
-      if (neg.workspace_id) {
-        await supabase.from('workspaces')
-          .update({ name: propertyName.trim() })
-          .eq('id', neg.workspace_id)
-          .eq('name', 'New workspace') // only rename if still default
-      }
-
-      // Navigate to the report page for the latest document
-      const { data: docs } = await supabase
-        .from('documents')
-        .select('id')
-        .eq('negotiation_id', neg.id)
-        .order('uploaded_at', { ascending: false })
-        .limit(1)
-
-      setShowPropertyPrompt(false)
-      if (docs?.[0]) {
-        navigate(`/report/${docs[0].id}`)
-      } else if (neg.workspace_id) {
-        navigate(`/workspace/${neg.workspace_id}`)
-      } else {
-        navigate('/dashboard')
-      }
+    setShowPropertyPrompt(false)
+    const reportId = docs?.[0]?.reports?.[0]?.id
+    if (reportId) {
+      navigate(`/report/${reportId}`)
+    } else if (wsIdRef.current) {
+      navigate(`/workspace/${wsIdRef.current}`)
     } else {
-      setShowPropertyPrompt(false)
+      navigate('/dashboard')
     }
   }
 
