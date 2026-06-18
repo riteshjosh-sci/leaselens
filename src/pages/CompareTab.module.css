@@ -268,9 +268,10 @@
 .chNote {
   font-size: 11px; font-weight: 700; letter-spacing: .1em;
   text-transform: uppercase; color: var(--muted);
-  padding-left: 16px;
+  padding-left: 16px; margin-left: 14px;
 }
 .ccNote {
+  margin-left: 14px;
   padding: 13px 14px 13px 16px;
   background: var(--paper); border: 1px solid var(--hair-lt); border-radius: 10px;
   font-size: 12.5px; line-height: 1.55; color: var(--ink-soft);
