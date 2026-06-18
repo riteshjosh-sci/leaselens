@@ -131,10 +131,13 @@ export default function CompareTab({ negId, docs }) {
         change = bR < aR ? 'imp' : bR > aR ? 'risk' : 'same'
         delete clauseMapA[matchKey]
       }
+      const leftText  = clauseA ? (clauseA.quote || clauseA.risk || '') : ''
+      const rightText = clauseB.quote || clauseB.risk || ''
       rows.push({
         change,
-        left:  clauseA ? { nm: clauseA.name, text: clauseA.quote || clauseA.risk || '', tag: null } : null,
-        right: { nm: clauseB.name, text: clauseB.quote || clauseB.risk || '', tag: !clauseA ? 'new' : null },
+        textChanged: clauseA ? leftText.trim() !== rightText.trim() : false,
+        left:  clauseA ? { nm: clauseA.name, text: leftText, tag: null } : null,
+        right: { nm: clauseB.name, text: rightText, tag: !clauseA ? 'new' : null },
         note: clauseB.risk || '',
       })
     })
@@ -142,6 +145,7 @@ export default function CompareTab({ negId, docs }) {
     Object.values(clauseMapA).forEach(clauseA => {
       rows.push({
         change: 'imp',
+        textChanged: false,
         left:  { nm: clauseA.name, text: clauseA.risk || clauseA.quote || '', tag: 'removed' },
         right: null,
         note: 'This clause was removed in the revised version.',
@@ -327,6 +331,7 @@ export default function CompareTab({ negId, docs }) {
               <span className={styles.chT}>v{rightDoc?.version_number} — Revised</span>
               <span className={styles.chCt}>{rightDoc?.reports?.[0]?.report_json?.clauses?.length || 0} clauses</span>
             </div>
+            <div className={styles.chNote}>Changes</div>
           </div>
 
           <div className={styles.crows}>
@@ -374,14 +379,20 @@ export default function CompareTab({ negId, docs }) {
                     <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Removed in revised</div>
                   )}
 
-                  {row.change === 'same' ? (
+                  {row.change === 'same' && !row.textChanged ? (
                     <div className={`${styles.ccNote} ${styles.ccNoteSame}`}>
                       <span className={styles.noteLead}>Unchanged</span>
                     </div>
                   ) : row.note ? (
-                    <div className={`${styles.ccNote} ${row.change === 'imp' ? styles.ccNoteImp : styles.ccNoteRsk}`}>
+                    <div className={`${styles.ccNote} ${
+                      row.change === 'imp' ? styles.ccNoteImp :
+                      row.change === 'risk' ? styles.ccNoteRsk :
+                      styles.ccNoteMod
+                    }`}>
                       <span className={styles.noteLead}>
-                        {row.change === 'imp' ? '✓ What changed' : '⚠ What changed'}
+                        {row.change === 'imp' ? '✓ What changed' :
+                         row.change === 'risk' ? '⚠ What changed' :
+                         '~ Modified'}
                       </span>
                       {row.note}
                     </div>

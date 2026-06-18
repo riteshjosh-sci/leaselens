@@ -165,7 +165,7 @@
 }
 
 .compareHead {
-  display: grid; grid-template-columns: 1fr 56px 1fr;
+  display: grid; grid-template-columns: 1fr 56px 1fr 220px;
   align-items: center; padding: 16px 4px 14px;
   border-bottom: 1px solid var(--hair-lt); margin-bottom: 16px;
 }
@@ -179,7 +179,7 @@
 
 .crows { display: flex; flex-direction: column; gap: 13px; }
 
-.crow { display: grid; grid-template-columns: 1fr 56px 1fr; align-items: stretch; }
+.crow { display: grid; grid-template-columns: 1fr 56px 1fr 220px; align-items: stretch; gap: 0; }
 .crowOpen {}
 
 .ccard {
@@ -264,19 +264,28 @@
 .connWatch .connDot  { background: #C2922B; }
 .connWatch .connLine { background: rgba(194,146,43,.5); }
 
-/* expandable note */
+/* 4th-column note */
+.chNote {
+  font-size: 11px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted);
+  padding-left: 16px;
+}
 .ccNote {
-  grid-column: 1 / -1; padding: 13px 16px;
+  padding: 13px 14px 13px 16px;
   background: var(--paper); border: 1px solid var(--hair-lt); border-radius: 10px;
-  font-size: 13px; line-height: 1.55; color: var(--ink-soft); margin-top: -2px;
+  font-size: 12.5px; line-height: 1.55; color: var(--ink-soft);
 }
 .noteLead {
-  display: inline-flex; align-items: center; gap: 7px; font-weight: 700;
-  font-size: 11px; letter-spacing: .05em; text-transform: uppercase; margin-right: 9px;
+  display: block; font-weight: 700;
+  font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 6px;
 }
+.ccNoteImp  { background: rgba(94,140,106,.08);  border-color: rgba(94,140,106,.22); }
+.ccNoteRsk  { background: rgba(192,73,47,.07);   border-color: rgba(192,73,47,.22); }
+.ccNoteMod  { background: var(--paper-2);         border-color: var(--hair); }
 .ccNoteImp .noteLead  { color: #3f6b4e; }
 .ccNoteRsk .noteLead  { color: #993621; }
-.ccNoteSame .noteLead { color: var(--muted); }
+.ccNoteSame .noteLead { color: var(--faint); }
+.ccNoteMod .noteLead  { color: var(--muted); }
 
 .emptyFilter { padding: 32px; text-align: center; color: var(--muted); font-size: 14px; }
 
@@ -339,19 +348,22 @@
   .fmeta { font-size: 11px; }
   .ficon { width: 30px; height: 38px; font-size: 7.5px; }
 
-  /* Clause column headers */
+  /* Clause column headers — collapse to 3-col, hide note column */
   .compareHead { grid-template-columns: 1fr 40px 1fr; padding: 12px 4px 10px; }
   .chT  { font-size: 13px; }
   .chCt { font-size: 10.5px; padding: 3px 8px; }
-  .chMid {}
+  .chNote { display: none; }
+
+  /* Clause rows — collapse to 3-col, note spans below */
+  .crow   { grid-template-columns: 1fr 40px 1fr; }
+  .ccNote { grid-column: 1 / -1; margin-top: 2px; }
+  .connDot { width: 11px; height: 11px; }
 
   /* Clause cards */
   .ccard { padding: 12px 13px; gap: 10px; }
   .no    { width: 20px; height: 20px; font-size: 10.5px; border-radius: 5px; }
   .nm    { font-size: 13px; }
   .ccTt p { font-size: 12.5px; }
-  .conn  { grid-column: unset; }
-  .connDot { width: 11px; height: 11px; }
 
   /* Summary strip wraps */
   .summaryStrip { flex-wrap: wrap; }
