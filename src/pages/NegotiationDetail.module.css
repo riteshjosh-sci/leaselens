@@ -374,11 +374,11 @@
 /* Focus-mode grid */
 .reviewGrid {
   display: grid; grid-template-columns: 30fr 70fr;
-  gap: 28px; align-items: stretch; margin-top: 22px;
+  gap: 28px; align-items: start; margin-top: 22px;
 }
 
-/* Queue (left rail) */
-.queue { display: flex; flex-direction: column; overflow: hidden; }
+/* Queue (left rail) — sticky, height capped to viewport so clause list scrolls internally */
+.queue { position: sticky; top: 88px; height: calc(100vh - 120px); display: flex; flex-direction: column; overflow: hidden; }
 .queueHead {
   display: flex; align-items: center; justify-content: space-between;
   padding: 4px 8px 10px; font-size: 10px; font-weight: 700;
