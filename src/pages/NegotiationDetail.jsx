@@ -53,7 +53,7 @@ export default function NegotiationDetail() {
       .select(`
         id, property_name, asset_class, created_at, status, lifecycle, workspace_id,
         documents (
-          id, filename, version_number, uploaded_at, overall_risk, file_path,
+          id, filename, version_number, doc_type, uploaded_at, overall_risk, file_path,
           reports ( id, report_json, created_at )
         )
       `)
@@ -82,13 +82,14 @@ export default function NegotiationDetail() {
     navigate(`${location.pathname}#${key}`, { replace: true })
   }
 
-  const handleAddVersion = () => {
+  const handleAddVersion = (docType = null) => {
     navigate('/analyser', {
       state: {
         negotiationId: negId,
         workspaceId: ws?.id,
         prefill: {
           asset_class: neg?.asset_class || 'retail',
+          doc_type: docType || 'hoa',
         },
       }
     })

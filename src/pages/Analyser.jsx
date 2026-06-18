@@ -24,7 +24,8 @@ export default function Analyser() {
 
   const [profile, setProfile] = useState(null)
   const [leaseData, setLeaseData] = useState(null)
-  const [docType, setDocType]   = useState('hoa')  // 'hoa' | 'lease' — replaces finalised toggle
+  const [docType, setDocType]   = useState(prefill.doc_type || 'hoa')
+  const [includeCommercials, setIncludeCommercials] = useState(false)
   const [assetClass, setAssetClass] = useState(prefill.asset_class || 'retail')
   const [propertyType, setPropertyType] = useState(prefill.property_type || '')
   const [file, setFile] = useState(null)
@@ -202,7 +203,9 @@ export default function Analyser() {
         status: 'pending',
         asset_class: assetClass,
         property_type: propertyType || null,
-        finalised: docType === 'lease', // lease = terms agreed, HOA = still negotiating
+        finalised: docType === 'lease',
+        doc_type: docType,
+        include_commercials: docType === 'hoa' ? true : includeCommercials,
       }).select().single()
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
@@ -335,6 +338,13 @@ export default function Analyser() {
                       className={`${styles.toggleBtn} ${docType === 'lease' ? styles.toggleActive : ''}`}
                       onClick={() => setDocType('lease')}>Lease</button>
                   </div>
+                  {docType === 'lease' && (
+                    <label className={styles.checkRow}>
+                      <input type="checkbox" checked={includeCommercials}
+                        onChange={e => setIncludeCommercials(e.target.checked)} />
+                      <span>Also review commercial terms</span>
+                    </label>
+                  )}
                 </div>
                 <div className={styles.metaField}>
                   <label className={styles.metaLabel}>Asset class</label>

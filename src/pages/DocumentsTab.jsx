@@ -14,34 +14,39 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
     setDocs(prev => prev.filter(d => d.id !== docId))
   }
 
-  const formatDate = d => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+  const formatDate = d => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
   const stripTimestamp = f => f?.replace(/^\d+_/, '') || ''
   const riskPillCls = { HIGH: styles.pillHigh, MEDIUM: styles.pillMed, LOW: styles.pillLow }
 
-  return (
-    <div className={dStyles.wrap}>
-      <div className={dStyles.head}>
-        <div>
-          <div className={dStyles.title}>Documents</div>
-          <div className={dStyles.sub}>Every version uploaded for this negotiation. The current version is what LeaseLens reviews.</div>
-        </div>
-        <button className="btn-ink btn-sm" onClick={onAddVersion}>+ Add document</button>
+  // Split by type — existing docs without doc_type fall into HOA column
+  const hoaDocs   = [...docs].filter(d => !d.doc_type || d.doc_type === 'hoa').sort((a, b) => b.version_number - a.version_number)
+  const leaseDocs = [...docs].filter(d => d.doc_type === 'lease').sort((a, b) => b.version_number - a.version_number)
+
+  const DocList = ({ list, type }) => (
+    <div className={dStyles.col}>
+      <div className={dStyles.colHead}>
+        <div className={dStyles.colTitle}>{type === 'hoa' ? 'Heads of Agreement' : 'Lease'}</div>
+        <button className="btn-outline btn-sm" onClick={() => onAddVersion(type)}>
+          + Add {type === 'hoa' ? 'HOA' : 'Lease'}
+        </button>
       </div>
 
-      {docs.length === 0 ? (
-        <div className={dStyles.empty}>
-          <p>No documents yet.</p>
-          <button className="btn-ink btn-sm" style={{ marginTop: 16 }} onClick={onAddVersion}>
-            Analyse document →
+      {list.length === 0 ? (
+        <div className={dStyles.colEmpty}>
+          <p>No {type === 'hoa' ? 'HOA' : 'lease'} documents yet.</p>
+          <button className={dStyles.colEmptyCta} onClick={() => onAddVersion(type)}>
+            Upload {type === 'hoa' ? 'HOA' : 'Lease'} →
           </button>
         </div>
       ) : (
         <div className={dStyles.docList}>
-          {docs.map((doc, i) => (
+          {list.map((doc, i) => (
             <div key={doc.id} className={dStyles.docRow}>
               <div className={dStyles.fic}>{doc.filename?.split('.').pop()?.toUpperCase() || 'DOC'}</div>
               <div className={dStyles.dm}>
-                <div className={dStyles.docRole}>v{doc.version_number} {i === 0 ? '· current' : '· superseded'}</div>
+                <div className={dStyles.docRole}>
+                  V{doc.version_number} · {i === 0 ? 'current' : 'superseded'}
+                </div>
                 <div className={dStyles.docFn}>{stripTimestamp(doc.filename)}</div>
                 <div className={dStyles.docMeta}>{formatDate(doc.uploaded_at)}</div>
               </div>
@@ -65,6 +70,22 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
           ))}
         </div>
       )}
+    </div>
+  )
+
+  return (
+    <div className={dStyles.wrap}>
+      <div className={dStyles.head}>
+        <div>
+          <div className={dStyles.title}>Documents</div>
+          <div className={dStyles.sub}>HOA and Lease documents for this negotiation, tracked separately.</div>
+        </div>
+      </div>
+
+      <div className={dStyles.columns}>
+        <DocList list={hoaDocs}   type="hoa" />
+        <DocList list={leaseDocs} type="lease" />
+      </div>
     </div>
   )
 }
