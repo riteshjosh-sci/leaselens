@@ -294,6 +294,42 @@ export default function ReportView() {
           {/* SUMMARY */}
           <div className={styles.reportSummary}>{data.summary}</div>
 
+          {/* HOA CONFIRMATION */}
+          {data.hoa_confirmation?.length > 0 && (
+            <div className={styles.hoaConfirm}>
+              <div className={styles.hoaConfirmHead}>
+                <div className={styles.hoaConfirmKicker}>HOA Confirmation</div>
+                <div className={styles.hoaConfirmSub}>Checking that terms agreed in the Heads of Agreement are carried through in this Lease</div>
+              </div>
+              <div className={styles.hoaTable}>
+                <div className={styles.hoaTableHead}>
+                  <div>Term / Clause</div>
+                  <div>HOA</div>
+                  <div>Lease</div>
+                  <div>Status</div>
+                </div>
+                {data.hoa_confirmation.map((row, i) => (
+                  <div key={i} className={styles.hoaRow}>
+                    <div className={styles.hoaTerm}>{row.term}</div>
+                    <div className={styles.hoaVal}>{row.hoa_value || '—'}</div>
+                    <div className={styles.hoaVal}>{row.lease_value || '—'}</div>
+                    <div className={styles.hoaStatusCell}>
+                      <span className={`${styles.hoaStatusPill} ${
+                        row.status === 'confirmed' ? styles.hoaStatusConfirmed :
+                        row.status === 'changed'   ? styles.hoaStatusChanged :
+                                                     styles.hoaStatusMissing
+                      }`}>
+                        {row.status === 'confirmed' ? '✓ Confirmed' :
+                         row.status === 'changed'   ? '⚠ Changed'  : '✕ Missing'}
+                      </span>
+                      {row.note && <div className={styles.hoaNote}>{row.note}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* CLAUSE LIST */}
           <div className={styles.briefingHead}>
             <h2 className={styles.briefingTitle}>

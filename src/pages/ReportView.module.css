@@ -294,6 +294,72 @@
   word-break: break-word;
 }
 
+/* ── HOA CONFIRMATION ── */
+.hoaConfirm {
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-left: 3px solid #5E8C6A;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  width: 100%;
+  box-sizing: border-box;
+}
+.hoaConfirmHead { margin-bottom: 14px; }
+.hoaConfirmKicker {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: #3f6b4e; margin-bottom: 4px;
+}
+.hoaConfirmSub { font-size: 13px; color: var(--muted); }
+
+.hoaTable {
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.hoaTableHead {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1fr 1.4fr;
+  padding: 9px 14px;
+  background: var(--paper-2);
+  font-size: 10.5px; font-weight: 700; letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+  gap: 12px;
+}
+.hoaRow {
+  display: grid;
+  grid-template-columns: 1.8fr 1fr 1fr 1.4fr;
+  padding: 11px 14px;
+  border-top: 1px solid var(--hair-lt);
+  align-items: start;
+  gap: 12px;
+  transition: background 0.12s;
+}
+.hoaRow:hover { background: var(--paper); }
+.hoaTerm { font-size: 13.5px; font-weight: 600; color: var(--ink); }
+.hoaVal { font-size: 13px; color: var(--ink-soft); line-height: 1.45; }
+.hoaStatusCell { display: flex; flex-direction: column; gap: 5px; }
+.hoaStatusPill {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.05em;
+  padding: 3px 10px; border-radius: 100px;
+  display: inline-block; width: fit-content;
+}
+.hoaStatusConfirmed { background: rgba(94,140,106,0.12); color: #3f6b4e; }
+.hoaStatusChanged   { background: rgba(194,146,43,0.14); color: #8a6312; }
+.hoaStatusMissing   { background: var(--risk-h-bg); color: var(--accent-deep); }
+.hoaNote { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+@media (max-width: 680px) {
+  .hoaTableHead { display: none; }
+  .hoaRow { grid-template-columns: 1fr 1fr; row-gap: 6px; }
+  .hoaTerm { grid-column: 1 / -1; }
+  .hoaStatusCell { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  .hoaRow { grid-template-columns: 1fr; }
+  .hoaVal { font-size: 12px; }
+}
+
 /* ── SCORE LABEL VARIANTS ── */
 .scoreLblHIGH   { background: var(--risk-h-bg); color: var(--accent-deep); }
 .scoreLblMEDIUM { background: var(--risk-m-bg); color: #8a6312; }
