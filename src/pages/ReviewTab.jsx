@@ -437,11 +437,17 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
             <ChevLeft /> Previous
           </button>
           <span className={styles.fcNavPos}>Clause {idx + 1} of {allClauses.length}</span>
-          <button className={`${styles.navBtn} ${styles.navBtnNext}`}
-            disabled={idx === allClauses.length - 1}
-            onClick={() => setActiveId(allClauses[idx + 1].clauseKey)}>
-            Next clause <ChevRight />
-          </button>
+          {idx === allClauses.length - 1 && decided === allClauses.length
+            ? <button className={`${styles.navBtn} ${styles.navBtnNext} ${styles.navBtnSummary}`}
+                onClick={() => setSubTab('summary')}>
+                View summary <ChevRight />
+              </button>
+            : <button className={`${styles.navBtn} ${styles.navBtnNext}`}
+                disabled={idx === allClauses.length - 1}
+                onClick={() => setActiveId(allClauses[idx + 1].clauseKey)}>
+                Next clause <ChevRight />
+              </button>
+          }
         </div>
       </div>
     )
