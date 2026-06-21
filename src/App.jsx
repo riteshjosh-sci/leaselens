@@ -23,6 +23,7 @@ import { lazy, Suspense } from 'react'
 const Privacy             = lazy(() => import('./pages/Privacy'))
 const Terms               = lazy(() => import('./pages/Terms'))
 const WorkspaceSettings   = lazy(() => import('./pages/WorkspaceSettings'))
+const Profile             = lazy(() => import('./pages/Profile'))
 const SharedReport        = lazy(() => import('./pages/SharedReport'))
 const WorkspacePage       = lazy(() => import('./pages/WorkspacePage'))
 const NegotiationDetail   = lazy(() => import('./pages/NegotiationDetail'))
@@ -47,6 +48,7 @@ export default function App() {
 
             {/* ── User protected routes ── */}
             <Route path="/dashboard"              element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/profile"                element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/report/:id"             element={<ProtectedRoute><ReportView /></ProtectedRoute>} />
             <Route path="/compare/:negotiationId" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
             <Route path="/workspace/:id"          element={<ProtectedRoute><WorkspacePage /></ProtectedRoute>} />

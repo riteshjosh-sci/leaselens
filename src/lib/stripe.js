@@ -41,6 +41,20 @@ export async function createCheckoutSession({ plan, userId, userEmail }) {
   return data.url
 }
 
+export async function openBillingPortal({ customerId }) {
+  const res = await fetch('/api/stripe-portal', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      customerId,
+      returnUrl: `${window.location.origin}/profile`,
+    }),
+  })
+  const data = await res.json()
+  if (data.error) throw new Error(data.error)
+  return data.url
+}
+
 // Feature gating helpers
 export const canAnalyse = (profile) => {
   if (!profile) return false

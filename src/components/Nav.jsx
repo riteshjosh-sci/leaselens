@@ -10,6 +10,7 @@ export default function Nav() {
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
   const [profile, setProfile] = useState(null)
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -55,7 +56,7 @@ export default function Nav() {
 
           {/* Logo */}
           <div className={styles.left}>
-            <Link to={user ? '/dashboard' : '/'} className={styles.logo}>
+            <Link to="/" className={styles.logo}>
               <svg className={styles.mark} width="24" height="24" viewBox="0 0 40 40" fill="none">
                 <path d="M5 13 V7 a2 2 0 0 1 2-2 h6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
                 <path d="M27 5 h6 a2 2 0 0 1 2 2 v6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
@@ -91,8 +92,25 @@ export default function Nav() {
               <span className={styles.credits}>
                 <b>{getPlanLabel()}</b>
               </span>
-              <div className={styles.avatar} onClick={handleSignOut} title="Sign out">
-                {getInitials()}
+              <div className={styles.avatarWrap}>
+                <div
+                  className={styles.avatar}
+                  onClick={() => setAvatarMenuOpen(o => !o)}
+                  title="Account"
+                >
+                  {getInitials()}
+                </div>
+                {avatarMenuOpen && (
+                  <>
+                    <div className={styles.avatarMenuBackdrop} onClick={() => setAvatarMenuOpen(false)} />
+                    <div className={styles.avatarMenu}>
+                      <button onClick={() => { setAvatarMenuOpen(false); navigate('/profile') }}>Profile</button>
+                      <button onClick={() => { setAvatarMenuOpen(false); navigate('/dashboard') }}>Dashboard</button>
+                      <div className={styles.avatarMenuDivider} />
+                      <button onClick={handleSignOut}>Sign out</button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           ) : (
@@ -121,6 +139,7 @@ export default function Nav() {
             {user ? (
               <>
                 <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+                <Link to="/profile" onClick={() => setMenuOpen(false)}>Profile</Link>
                 <div className={styles.mobileDivider} />
                 <button onClick={handleSignOut}>Sign out</button>
               </>
