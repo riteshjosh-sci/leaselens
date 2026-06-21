@@ -193,31 +193,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* BILLING */}
-            <div className={styles.section}>
-              <div className={styles.sectionTitle}>Plan &amp; billing</div>
-              <div className={styles.planRow}>
-                <div>
-                  <div className={styles.planLabel}>
-                    {planLabel}
-                    {profile.founding_member && <span className={styles.foundingBadge}>★ Founding member</span>}
-                  </div>
-                  <div className={styles.planDetail}>{planDetail}</div>
-                </div>
-                {profile.stripe_customer_id ? (
-                  <button className="btn-ghost" onClick={handleManageBilling} disabled={portalLoading}>
-                    {portalLoading ? 'Opening…' : 'Manage billing'}
-                  </button>
-                ) : (
-                  <button className="btn-primary" onClick={() => navigate('/pricing')}>Upgrade plan</button>
-                )}
-              </div>
-              {billingError && <div className={styles.error}>{billingError}</div>}
-              {profile.stripe_customer_id && (
-                <div className={styles.sectionSub}>Update your card, view invoices, or cancel your subscription via the Stripe billing portal.</div>
-              )}
-            </div>
-
             {/* DANGER ZONE */}
             <div className={`${styles.section} ${styles.dangerSection}`}>
               <div className={styles.sectionTitle}>Danger zone</div>
@@ -245,6 +220,27 @@ export default function Profile() {
               <div className={styles.sideName}>{fullName || user?.email}</div>
               <div className={styles.sideEmail}>{user?.email}</div>
               <button className={styles.signOutBtn} onClick={handleSignOut}>Sign out</button>
+            </div>
+
+            {/* BILLING */}
+            <div className={styles.sideCard} style={{ alignItems: 'stretch', textAlign: 'left' }}>
+              <div className={styles.sideSectionTitle}>Plan &amp; billing</div>
+              <div className={styles.planLabel}>
+                {planLabel}
+                {profile.founding_member && <span className={styles.foundingBadge}>★ Founding member</span>}
+              </div>
+              <div className={styles.planDetail}>{planDetail}</div>
+              {profile.stripe_customer_id ? (
+                <button className="btn-ghost" onClick={handleManageBilling} disabled={portalLoading} style={{ marginTop: 14 }}>
+                  {portalLoading ? 'Opening…' : 'Manage billing'}
+                </button>
+              ) : (
+                <button className="btn-primary" onClick={() => navigate('/pricing')} style={{ marginTop: 14 }}>Upgrade plan</button>
+              )}
+              {billingError && <div className={styles.error} style={{ marginTop: 10 }}>{billingError}</div>}
+              {profile.stripe_customer_id && (
+                <div className={styles.sectionSub} style={{ marginTop: 10 }}>Update your card, view invoices, or cancel your subscription via the Stripe billing portal.</div>
+              )}
             </div>
           </div>
         </div>
