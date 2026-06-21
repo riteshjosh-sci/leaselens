@@ -32,6 +32,11 @@ export default function Profile() {
   const [portalLoading, setPortalLoading] = useState(false)
   const [billingError, setBillingError]   = useState('')
 
+  // delete account
+  const [deleteConfirm, setDeleteConfirm] = useState(false)
+  const [deleting, setDeleting]           = useState(false)
+  const [deleteError, setDeleteError]     = useState('')
+
   useEffect(() => { if (!user) { navigate('/login'); return }; fetchProfile() }, [user])
 
   const fetchProfile = async () => {
@@ -83,6 +88,25 @@ export default function Profile() {
   const handleSignOut = async () => {
     await signOut()
     navigate('/')
+  }
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true); setDeleteError('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const res = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token}` },
+      })
+      const data = await res.json()
+      if (!res.ok || data.error) throw new Error(data.error || 'Failed to delete account')
+      await signOut()
+      navigate('/')
+    } catch (e) {
+      setDeleteError(e.message || 'Something went wrong. Please try again.')
+      setDeleting(false)
+      setDeleteConfirm(false)
+    }
   }
 
   const getInitials = () => {
@@ -174,7 +198,10 @@ export default function Profile() {
               <div className={styles.sectionTitle}>Plan &amp; billing</div>
               <div className={styles.planRow}>
                 <div>
-                  <div className={styles.planLabel}>{planLabel}</div>
+                  <div className={styles.planLabel}>
+                    {planLabel}
+                    {profile.founding_member && <span className={styles.foundingBadge}>★ Founding member</span>}
+                  </div>
                   <div className={styles.planDetail}>{planDetail}</div>
                 </div>
                 {profile.stripe_customer_id ? (
@@ -191,6 +218,24 @@ export default function Profile() {
               )}
             </div>
 
+            {/* DANGER ZONE */}
+            <div className={`${styles.section} ${styles.dangerSection}`}>
+              <div className={styles.sectionTitle}>Danger zone</div>
+              <div className={styles.dangerRow}>
+                <div>
+                  <div className={styles.dangerLabel}>Delete account</div>
+                  <div className={styles.dangerSub}>
+                    Cancels your subscription and disables your login. Your workspaces, negotiations,
+                    and reports are kept — contact support if you'd like them removed too.
+                  </div>
+                </div>
+                <button className={styles.deleteBtn} onClick={() => setDeleteConfirm(true)}>
+                  Delete account
+                </button>
+              </div>
+              {deleteError && <div className={styles.error} style={{ marginTop: 14 }}>{deleteError}</div>}
+            </div>
+
           </div>
 
           {/* SIDEBAR */}
@@ -205,6 +250,31 @@ export default function Profile() {
         </div>
       </div>
       <Footer />
+
+      {/* DELETE CONFIRMATION MODAL */}
+      {deleteConfirm && (
+        <div className={styles.overlay} onClick={() => !deleting && setDeleteConfirm(false)}>
+          <div className={styles.modal} onClick={e => e.stopPropagation()}>
+            <div className={styles.modalIcon}>⚠</div>
+            <h2 className={styles.modalTitle}>Delete your account?</h2>
+            <p className={styles.modalBody}>
+              This cancels your active subscription and disables your login immediately.
+              Your workspaces, negotiations, and reports are kept — contact support if you need them removed.
+            </p>
+            <p className={styles.modalBody} style={{ marginTop: 8 }}>
+              <strong>You will be signed out and unable to log back in.</strong>
+            </p>
+            <div className={styles.modalActions}>
+              <button className="btn-ghost" onClick={() => setDeleteConfirm(false)} disabled={deleting}>
+                Cancel
+              </button>
+              <button className={styles.deleteConfirmBtn} onClick={handleDeleteAccount} disabled={deleting}>
+                {deleting ? 'Deleting…' : 'Yes, delete my account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   )
 }
