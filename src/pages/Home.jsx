@@ -32,10 +32,6 @@ export default function Home() {
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    if (user) { navigate('/dashboard'); return }
-  }, [user])
-
-  useEffect(() => {
     // Reveal on scroll
     observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add(styles.in); observerRef.current.unobserve(e.target) } })
