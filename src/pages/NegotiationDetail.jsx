@@ -142,7 +142,7 @@ export default function NegotiationDetail() {
             <span className={`${styles.statusChip} ${status.cls}`}>
               <span className={styles.statusD} />{status.label}
             </span>
-            <button className="btn-outline btn-sm" onClick={handleAddVersion}>
+            <button className="btn-outline btn-sm" onClick={() => handleAddVersion()}>
               + Add version
             </button>
           </div>
