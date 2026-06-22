@@ -220,7 +220,7 @@ export default function ReportView() {
       {/* BREADCRUMB */}
       <div className={styles.crumb}>
         <button onClick={() => navigate('/dashboard')}>Dashboard</button>
-        {negotiation?.workspace_id && <><span>›</span><button onClick={() => navigate(`/workspace/${negotiation.workspace_id}`)}>Workspace</button></>}
+        {workspace?.id && <><span>›</span><button onClick={() => navigate(`/workspace/${workspace.id}`)}>Workspace</button></>}
         {negotiation && <><span>›</span><button onClick={() => navigate(`/negotiation/${negotiation.id}`)}>{negotiation.property_name || 'Negotiation'}</button></>}
         <span>›</span>
         <span>{stripTimestamp(document?.filename)}</span>
@@ -252,6 +252,11 @@ export default function ReportView() {
             </div>
           </div>
           <div className={styles.docActions}>
+            {negotiation?.id && (
+              <button className={styles.btnOutline} onClick={() => navigate(`/negotiation/${negotiation.id}#review`)}>
+                Review clauses
+              </button>
+            )}
             {allVersions.length >= 2 && (
               <button className={styles.btnOutline} onClick={() => navigate(`/negotiation/${negotiation?.id}#compare`)}>
                 Compare versions
