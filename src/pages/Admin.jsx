@@ -460,6 +460,8 @@ export default function Admin() {
                     <th>User</th>
                     <th>Plan</th>
                     <th className={styles.hideMobile}>Scans</th>
+                    <th className={styles.hideMobile}>Docs</th>
+                    <th className={styles.hideMobile}>Reports</th>
                     <th>Status</th>
                     <th className={styles.hideMobile}>Joined</th>
                     <th className={styles.hideMobile}>Change plan</th>
@@ -486,6 +488,8 @@ export default function Admin() {
                           : u.plan === 'adviser' ? 'Unlimited'
                           : `${u.free_scans_used || 0}/1`}
                       </td>
+                      <td className={styles.hideMobile}>{documents.filter(d => d.user_id === u.id).length}</td>
+                      <td className={styles.hideMobile}>{reports.filter(r => r.user_id === u.id).length}</td>
                       <td>
                         <span className={u.suspended ? styles.tagSuspended : styles.tagActive}>
                           {u.suspended ? 'Suspended' : 'Active'}
