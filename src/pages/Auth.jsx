@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import Nav from '../components/Nav'
 import styles from './Auth.module.css'
@@ -69,7 +69,9 @@ export function Login() {
     else navigate('/dashboard')
   }
 
-  // Login with Google — existing users only, no beta gate needed
+  // Google sign-in here can create a brand-new account just as easily as
+  // signing in an existing one -- ProtectedRoute enforces the beta gate
+  // for any account that lands on a protected page without it.
   const handleGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -126,9 +128,14 @@ export function Login() {
 
 // ── Signup ──
 export function Signup() {
+  const [searchParams]                = useSearchParams()
   const [betaCode, setBetaCode]       = useState('')
   const [betaValid, setBetaValid]     = useState(false)
-  const [betaError, setBetaError]     = useState('')
+  const [betaError, setBetaError]     = useState(
+    searchParams.get('error') === 'beta_required'
+      ? 'An access code is required to create an account. Please enter one below.'
+      : ''
+  )
   const [betaLoading, setBetaLoading] = useState(false)
   const [email, setEmail]             = useState('')
   const [password, setPassword]       = useState('')
@@ -158,11 +165,14 @@ export function Signup() {
     }
 
     await supabase.from('beta_codes').update({ used: true }).eq('id', data.id)
+    // Survives the Google OAuth redirect round-trip (same tab) so
+    // ProtectedRoute knows this account legitimately passed the gate.
+    sessionStorage.setItem('ll_beta_pending', 'true')
     setBetaValid(true)
     setBetaLoading(false)
   }
 
-  // Google OAuth — only reachable AFTER beta code validated
+  // Google OAuth — only reachable AFTER beta code validated above
   const handleGoogle = async () => {
     await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -184,12 +194,18 @@ export function Signup() {
     const e = validate()
     if (Object.keys(e).length) { setErrors(e); return }
     setLoading(true); setErrors({})
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email, password,
       options: { emailRedirectTo: `${window.location.origin}/dashboard` }
     })
-    if (error) { setErrors({ form: error.message }); setLoading(false) }
-    else setSuccess(true)
+    if (error) { setErrors({ form: error.message }); setLoading(false); return }
+    // Stamp the gate now, in this same validated session -- don't rely on
+    // sessionStorage surviving until email confirmation, which can happen
+    // in a different tab/browser entirely.
+    if (data?.user?.id) {
+      await supabase.from('profiles').upsert({ id: data.user.id, beta_validated: true }, { onConflict: 'id' })
+    }
+    setSuccess(true)
   }
 
   return (
