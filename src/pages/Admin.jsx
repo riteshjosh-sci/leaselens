@@ -121,6 +121,7 @@ export default function Admin() {
   const [betaCodes, setBetaCodes] = useState([])
   const [waitlist, setWaitlist] = useState([])
   const [workspaces, setWorkspaces] = useState([])
+  const [feedback, setFeedback] = useState([])
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState({})
   const [saving, setSaving] = useState(false)
@@ -140,12 +141,13 @@ export default function Admin() {
     const token = session?.access_token
     if (!token) { setLoading(false); return }
 
-    const [profiles, docs, reportsData, codes, waitlistData] = await Promise.all([
+    const [profiles, docs, reportsData, codes, waitlistData, feedbackData] = await Promise.all([
       adminFetch('profiles', token),
       adminFetch('documents', token),
       adminFetch('reports', token),
       adminFetch('beta_codes', token),
       adminFetch('waitlist', token),
+      adminFetch('feedback', token),
     ])
 
     const u = profiles || []
@@ -153,6 +155,7 @@ export default function Admin() {
     const r = reportsData || []
     const c = codes || []
     const w = waitlistData || []
+    const fb = feedbackData || []
 
     // Fetch workspaces directly (no sensitive data, just structure)
     const wsRaw = await adminFetch('workspaces', token)
@@ -190,12 +193,14 @@ export default function Admin() {
       betaTotal: c.length,
       waitlistCount: w.length,
       totalWorkspaces: ws.length,
+      openFeedbackCount: fb.filter(f => f.status !== 'resolved').length,
     })
     setUsers(u)
     setDocuments(d)
     setReports(r)
     setBetaCodes(c)
     setWaitlist(w)
+    setFeedback(fb)
     setWorkspaces(wsEnriched)
     setLoading(false)
   }
@@ -273,6 +278,20 @@ export default function Admin() {
     const { data: { session } } = await supabase.auth.getSession()
     await adminAction('deactivateBetaCode', { id }, session?.access_token)
     fetchAll()
+  }
+
+  const handleResolveFeedback = async (id, resolved) => {
+    const { data: { session } } = await supabase.auth.getSession()
+    const status = resolved ? 'open' : 'resolved'
+    await adminAction('updateFeedbackStatus', { id, status }, session?.access_token)
+    setFeedback(prev => prev.map(f => f.id === id ? { ...f, status } : f))
+  }
+
+  const handleDeleteFeedback = async (id) => {
+    if (!confirm('Delete this feedback item?')) return
+    const { data: { session } } = await supabase.auth.getSession()
+    await adminAction('deleteFeedback', { id }, session?.access_token)
+    setFeedback(prev => prev.filter(f => f.id !== id))
   }
 
   const filteredUsers = users.filter(u =>
@@ -695,6 +714,51 @@ export default function Admin() {
                     <tr key={w.id}>
                       <td className={styles.emailCell}>{w.email}</td>
                       <td>{formatDate(w.created_at)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── FEEDBACK ── */}
+        {tab === 'feedback' && (
+          <div className={styles.content}>
+            <div className={styles.pageHeader}>
+              <div>
+                <div className={styles.kicker}>Admin · Feedback</div>
+                <h1 className={styles.h1}>Feedback <span className={styles.count}>{feedback.length}</span></h1>
+              </div>
+            </div>
+            <div className={styles.tableWrap}>
+              <table className={styles.table}>
+                <thead>
+                  <tr><th>From</th><th className={styles.hideMobile}>Page</th><th>Message</th><th className={styles.hideMobile}>Sent</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                  {feedback.length === 0 ? (
+                    <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--ink-light)', padding: '24px 0' }}>No feedback submitted yet.</td></tr>
+                  ) : feedback.map(f => (
+                    <tr key={f.id} className={f.status === 'resolved' ? styles.suspendedRow : ''}>
+                      <td className={styles.emailCell}>{f.email}</td>
+                      <td className={styles.hideMobile} style={{ fontFamily: 'monospace', fontSize: 12 }}>{f.page_path}</td>
+                      <td style={{ maxWidth: 320, whiteSpace: 'pre-wrap' }}>{f.message}</td>
+                      <td className={styles.hideMobile}>{formatDate(f.created_at)}</td>
+                      <td>
+                        <span className={f.status === 'resolved' ? styles.tagSuspended : styles.tagActive}>
+                          {f.status === 'resolved' ? 'Resolved' : 'Open'}
+                        </span>
+                      </td>
+                      <td>
+                        <div className={styles.actionBtns}>
+                          <button className={f.status === 'resolved' ? styles.activateBtn : styles.suspendBtn}
+                            onClick={() => handleResolveFeedback(f.id, f.status === 'resolved')}>
+                            {f.status === 'resolved' ? 'Reopen' : 'Resolve'}
+                          </button>
+                          <button className={styles.deleteBtn} onClick={() => handleDeleteFeedback(f.id)}>Delete</button>
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

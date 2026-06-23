@@ -18,6 +18,7 @@ export default function AdminNav({ activeTab, setTab }) {
     { id: 'reports',     label: 'Reports',     icon: '◎' },
     { id: 'beta',        label: 'Beta codes',  icon: '◆' },
     { id: 'waitlist',    label: 'Waitlist',    icon: '◇' },
+    { id: 'feedback',    label: 'Feedback',    icon: '◐' },
   ]
 
   const handleTab = (id) => {

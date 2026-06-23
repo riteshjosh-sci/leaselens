@@ -4,7 +4,30 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import Nav from '../components/Nav'
 import Footer from '../components/Footer'
+import Tour from '../components/Tour'
 import styles from './Dashboard.module.css'
+
+const TOUR_STEPS = [
+  {
+    title: 'Welcome to LeaseLens',
+    body: "Here's a 30-second tour of how to get the most out of it.",
+  },
+  {
+    target: 'analyse-btn',
+    title: 'Analyse a document',
+    body: 'Upload a Heads of Agreement or Lease and get a full clause-by-clause risk analysis in under 2 minutes.',
+  },
+  {
+    target: 'new-property-btn',
+    title: 'Properties keep things organised',
+    body: 'Each property gets its own workspace — every HOA, lease version, and review note lives together in one place.',
+  },
+  {
+    target: 'sort-tabs',
+    title: 'Sort your list',
+    body: 'Switch between sorting your properties by property name or by tenant name.',
+  },
+]
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -193,6 +216,7 @@ export default function Dashboard() {
   return (
     <>
       <Nav />
+      <Tour steps={TOUR_STEPS} storageKey="ll_dashboard_tour_seen" />
       <div className={styles.page}>
 
         {/* HEAD */}
@@ -204,17 +228,17 @@ export default function Dashboard() {
             </div>
           </div>
           <div className={styles.headActions}>
-            <button className="btn-outline btn-sm" onClick={() => setWsModal(true)}>
+            <button className="btn-outline btn-sm" data-tour="new-property-btn" onClick={() => setWsModal(true)}>
               + New property
             </button>
-            <button className="btn-ink btn-sm" onClick={() => navigate('/analyser')}>
+            <button className="btn-ink btn-sm" data-tour="analyse-btn" onClick={() => navigate('/analyser')}>
               + Analyse document
             </button>
           </div>
         </div>
 
         {/* SORT TABS */}
-        <div className={styles.sortTabs}>
+        <div className={styles.sortTabs} data-tour="sort-tabs">
           <button
             className={`${styles.sortTab} ${sortPref === 'property' ? styles.sortTabActive : ''}`}
             onClick={() => handleSortPref('property')}

@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
+import FeedbackWidget from './components/FeedbackWidget'
 import './styles/globals.css'
 
 import Home from './pages/Home'
@@ -63,6 +64,7 @@ export default function App() {
             <Route path="*"                       element={<NotFound />} />
           </Routes>
         </Suspense>
+        <FeedbackWidget />
       </AuthProvider>
     </BrowserRouter>
   )

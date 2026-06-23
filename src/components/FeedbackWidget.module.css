@@ -1,0 +1,108 @@
+.fab {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 400;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 10px 30px -8px rgba(28,25,22,0.45);
+  transition: transform 0.15s, background 0.15s;
+}
+.fab:hover { background: #000; transform: translateY(-2px); }
+
+.panel {
+  position: fixed;
+  bottom: 84px;
+  right: 24px;
+  z-index: 400;
+  width: 300px;
+  background: var(--card);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 60px -20px rgba(28,25,22,0.4);
+  padding: 18px;
+}
+.panelHead {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--hair-lt);
+}
+.hint {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+  margin-bottom: 12px;
+}
+.textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 80px;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: var(--font);
+  font-size: 13.5px;
+  color: var(--ink);
+  background: var(--paper);
+  outline: none;
+  transition: border-color 0.15s;
+}
+.textarea:focus { border-color: var(--accent); }
+.pagePath {
+  font-size: 11px;
+  color: var(--faint);
+  margin-top: 8px;
+  font-family: monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.error {
+  margin-top: 10px;
+  background: var(--risk-h-bg);
+  border: 1px solid rgba(44,80,214,0.2);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-size: 12.5px;
+  color: var(--accent-deep);
+}
+.submitBtn {
+  width: 100%;
+  margin-top: 12px;
+  background: var(--ink);
+  color: var(--paper);
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: background 0.15s;
+}
+.submitBtn:hover:not(:disabled) { background: #000; }
+.submitBtn:disabled { opacity: 0.5; cursor: not-allowed; }
+.success {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--risk-l);
+  padding: 10px 0;
+}
+
+@media (max-width: 480px) {
+  .fab { bottom: 18px; right: 18px; }
+  .panel { bottom: 78px; right: 16px; left: 16px; width: auto; }
+}

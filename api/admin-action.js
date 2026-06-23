@@ -49,6 +49,16 @@ export default async function handler(req, res) {
         if (error) throw error
         return res.status(200).json({ success: true })
       }
+      case 'updateFeedbackStatus': {
+        const { error } = await supabase.from('feedback').update({ status: payload.status }).eq('id', payload.id)
+        if (error) throw error
+        return res.status(200).json({ success: true })
+      }
+      case 'deleteFeedback': {
+        const { error } = await supabase.from('feedback').delete().eq('id', payload.id)
+        if (error) throw error
+        return res.status(200).json({ success: true })
+      }
       default:
         return res.status(400).json({ error: 'Invalid action' })
     }
