@@ -31,6 +31,17 @@ export default async function handler(req, res) {
 
     const { data, error: qError } = await queries[resource]()
     if (qError) throw qError
+
+    if (resource === 'feedback' && data?.length) {
+      await Promise.all(data.map(async (row) => {
+        if (!row.screenshot_path) return
+        const { data: signed } = await supabase.storage
+          .from('feedback-screenshots')
+          .createSignedUrl(row.screenshot_path, 3600)
+        row.screenshot_url = signed?.signedUrl || null
+      }))
+    }
+
     return res.status(200).json(data)
   } catch (err) {
     return res.status(500).json({ error: err.message })

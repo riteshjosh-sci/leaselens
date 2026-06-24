@@ -734,16 +734,25 @@ export default function Admin() {
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead>
-                  <tr><th>From</th><th className={styles.hideMobile}>Page</th><th>Message</th><th className={styles.hideMobile}>Sent</th><th>Status</th><th>Actions</th></tr>
+                  <tr><th>From</th><th className={styles.hideMobile}>Page</th><th>Message</th><th>Screenshot</th><th className={styles.hideMobile}>Sent</th><th>Status</th><th>Actions</th></tr>
                 </thead>
                 <tbody>
                   {feedback.length === 0 ? (
-                    <tr><td colSpan={6} style={{ textAlign: 'center', color: 'var(--ink-light)', padding: '24px 0' }}>No feedback submitted yet.</td></tr>
+                    <tr><td colSpan={7} style={{ textAlign: 'center', color: 'var(--ink-light)', padding: '24px 0' }}>No feedback submitted yet.</td></tr>
                   ) : feedback.map(f => (
                     <tr key={f.id} className={f.status === 'resolved' ? styles.suspendedRow : ''}>
                       <td className={styles.emailCell}>{f.email}</td>
                       <td className={styles.hideMobile} style={{ fontFamily: 'monospace', fontSize: 12 }}>{f.page_path}</td>
                       <td style={{ maxWidth: 320, whiteSpace: 'pre-wrap' }}>{f.message}</td>
+                      <td>
+                        {f.screenshot_url ? (
+                          <a href={f.screenshot_url} target="_blank" rel="noopener noreferrer">
+                            <img src={f.screenshot_url} alt="Feedback screenshot" style={{ width: 60, borderRadius: 4, border: '1px solid var(--hair)', display: 'block' }} />
+                          </a>
+                        ) : (
+                          <span style={{ color: 'var(--ink-light)', fontSize: 12 }}>—</span>
+                        )}
+                      </td>
                       <td className={styles.hideMobile}>{formatDate(f.created_at)}</td>
                       <td>
                         <span className={f.status === 'resolved' ? styles.tagSuspended : styles.tagActive}>

@@ -55,6 +55,10 @@ export default async function handler(req, res) {
         return res.status(200).json({ success: true })
       }
       case 'deleteFeedback': {
+        const { data: row } = await supabase.from('feedback').select('screenshot_path').eq('id', payload.id).maybeSingle()
+        if (row?.screenshot_path) {
+          await supabase.storage.from('feedback-screenshots').remove([row.screenshot_path])
+        }
         const { error } = await supabase.from('feedback').delete().eq('id', payload.id)
         if (error) throw error
         return res.status(200).json({ success: true })

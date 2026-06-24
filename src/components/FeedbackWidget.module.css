@@ -70,6 +70,35 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+.screenshotHint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 10px;
+}
+.screenshotPreview {
+  margin-top: 10px;
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+}
+.screenshotPreview img {
+  display: block;
+  width: 100%;
+  border-bottom: 1px solid var(--hair-lt);
+}
+.removeShot {
+  display: block;
+  width: 100%;
+  background: var(--paper);
+  border: none;
+  padding: 6px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  font-family: var(--font);
+}
+.removeShot:hover { color: var(--ink); }
 .error {
   margin-top: 10px;
   background: var(--risk-h-bg);
