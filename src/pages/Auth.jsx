@@ -149,22 +149,28 @@ export function Signup() {
     if (!betaCode.trim()) return
     setBetaLoading(true); setBetaError('')
 
-    const { data, error } = await supabase
-      .from('beta_codes')
-      .select('id, used')
-      .eq('code', betaCode.trim().toUpperCase())
-      .single()
-
-    if (error || !data) {
-      setBetaError('Invalid access code. Please check and try again.')
-      setBetaLoading(false); return
-    }
-    if (data.used) {
-      setBetaError('This access code has already been used.')
+    let result
+    try {
+      const res = await fetch('/api/validate-beta-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: betaCode.trim() }),
+      })
+      result = await res.json()
+    } catch {
+      setBetaError('Could not validate code — please try again.')
       setBetaLoading(false); return
     }
 
-    await supabase.from('beta_codes').update({ used: true }).eq('id', data.id)
+    if (!result.valid) {
+      setBetaError(
+        result.reason === 'already_used'
+          ? 'This access code has already been used.'
+          : 'Invalid access code. Please check and try again.'
+      )
+      setBetaLoading(false); return
+    }
+
     // Survives the Google OAuth redirect round-trip (same tab) so
     // ProtectedRoute knows this account legitimately passed the gate.
     sessionStorage.setItem('ll_beta_pending', 'true')
