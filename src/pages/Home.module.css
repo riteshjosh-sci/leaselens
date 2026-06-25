@@ -147,6 +147,13 @@
 }
 @media (max-width:640px) {
   .wrap { padding:0 20px; }
+  .navInner { height:auto; flex-wrap:wrap; gap:10px; padding:14px 0; }
+  .logoImg { height:34px; }
+  .navCta { gap:10px; }
+  .navCta .btn { padding:10px 16px; font-size:13.5px; }
+  .signin { font-size:13.5px; }
+  .themeToggle { width:30px; height:30px; }
+  .logoImgSm { height:32px; }
   .hero { padding:60px 0 0; }
   .section { padding:60px 0; }
   .cardStack { gap:60px; }
