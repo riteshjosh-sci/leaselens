@@ -72,14 +72,7 @@ export default function Nav() {
                   </Link>
                 </li>
               </ul>
-            ) : (
-              <ul className={styles.links}>
-                <li><Link to="/#how-it-works">How it works</Link></li>
-                <li><Link to="/#what-you-get">What you get</Link></li>
-                <li><Link to="/pricing">Pricing</Link></li>
-                <li><Link to="/privacy">Privacy</Link></li>
-              </ul>
-            )}
+            ) : null}
           </div>
 
           {/* Right side */}
@@ -160,11 +153,6 @@ export default function Nav() {
               </>
             ) : (
               <>
-                <Link to="/#how-it-works" onClick={() => setMenuOpen(false)}>How it works</Link>
-                <Link to="/#what-you-get" onClick={() => setMenuOpen(false)}>What you get</Link>
-                <Link to="/pricing" onClick={() => setMenuOpen(false)}>Pricing</Link>
-                <Link to="/privacy" onClick={() => setMenuOpen(false)}>Privacy</Link>
-                <div className={styles.mobileDivider} />
                 <Link to="/login" onClick={() => setMenuOpen(false)}>Sign in</Link>
                 <Link to="/signup" className={styles.mobileCta} onClick={() => setMenuOpen(false)}>Get started →</Link>
               </>
