@@ -13,10 +13,10 @@
   background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--hair);
 }
-.navInner { display:flex; align-items:center; justify-content:space-between; height:92px; }
+.navInner { display:flex; align-items:center; justify-content:space-between; height:78px; }
 .navLogo { display:flex; align-items:center; gap:11px; color:var(--ink); }
-.logoImg { height:60px; width:auto; display:block; }
-.logoImgSm { height:44px; width:auto; display:block; }
+.logoImg { height:44px; width:auto; display:block; }
+.logoImgSm { height:36px; width:auto; display:block; }
 .navCta { display:flex; align-items:center; gap:18px; }
 .signin { background:none; border:none; font-size:15px; font-weight:600; color:var(--ink); cursor:pointer; font-family:var(--font); white-space:nowrap; padding:0; }
 .themeToggle {
