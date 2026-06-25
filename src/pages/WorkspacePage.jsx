@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import Nav from '../components/Nav'
-import Footer from '../components/Footer'
+import AppSidebar from '../components/AppSidebar'
 import styles from './WorkspacePage.module.css'
 
 export default function WorkspacePage() {
@@ -13,6 +12,7 @@ export default function WorkspacePage() {
 
   const [ws, setWs] = useState(null)
   const [negotiations, setNeg] = useState([])
+  const [keyDates, setKeyDates] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -43,7 +43,21 @@ export default function WorkspacePage() {
 
     if (wsRes.error || !wsRes.data) { navigate('/dashboard'); return }
     setWs(wsRes.data)
-    setNeg(negsRes.data || [])
+    const negs = negsRes.data || []
+    setNeg(negs)
+
+    // Key dates — pull lease_data for the most recently uploaded document
+    const allDocs = negs.flatMap(n => n.documents || [])
+    const latestDoc = allDocs.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))[0]
+    if (latestDoc) {
+      const { data: ld } = await supabase
+        .from('lease_data')
+        .select('commencement_date, expiry_date')
+        .eq('document_id', latestDoc.id)
+        .maybeSingle()
+      if (ld && (ld.commencement_date || ld.expiry_date)) setKeyDates(ld)
+    }
+
     setLoading(false)
   }
 
@@ -98,16 +112,18 @@ export default function WorkspacePage() {
   const totalDocs = negotiations.reduce((a, n) => a + (n.documents?.length || 0), 0)
   const wsStatus  = getWsStatus()
 
-  if (loading) return <><Nav /><div className={styles.loading}>Loading…</div></>
+  const formatKeyDate = d =>
+    new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
+
+  if (loading) return <AppSidebar><div className={styles.loading}>Loading…</div></AppSidebar>
 
   return (
-    <>
-      <Nav />
+    <AppSidebar>
       <div className={styles.page}>
 
         {/* BREADCRUMB */}
         <div className={styles.crumb}>
-          <button onClick={() => navigate('/dashboard')}>Dashboard</button>
+          <button onClick={() => navigate('/properties')}>Properties</button>
           <span>›</span>
           <span>{ws.name}</span>
         </div>
@@ -143,6 +159,24 @@ export default function WorkspacePage() {
             </button>
           </div>
         </div>
+
+        {/* KEY DATES */}
+        {keyDates && (
+          <div className={styles.keyDates}>
+            {keyDates.commencement_date && (
+              <div className={styles.keyDateItem}>
+                <span className={styles.keyDateLbl}>Commencement</span>
+                <span className={styles.keyDateVal}>{formatKeyDate(keyDates.commencement_date)}</span>
+              </div>
+            )}
+            {keyDates.expiry_date && (
+              <div className={styles.keyDateItem}>
+                <span className={styles.keyDateLbl}>Expiry</span>
+                <span className={styles.keyDateVal}>{formatKeyDate(keyDates.expiry_date)}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* NEGOTIATIONS */}
         <div className={styles.dsec}>
@@ -232,7 +266,6 @@ export default function WorkspacePage() {
         </div>
 
       </div>
-      <Footer />
-    </>
+    </AppSidebar>
   )
 }

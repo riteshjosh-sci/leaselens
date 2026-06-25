@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import Nav from '../components/Nav'
-import Footer from '../components/Footer'
+import AppSidebar from '../components/AppSidebar'
 import ReviewTab from './ReviewTab'
 import CompareTab from './CompareTab'
 import DocumentsTab from './DocumentsTab'
@@ -108,16 +107,15 @@ export default function NegotiationDetail() {
 
   const status = getStatusChip()
 
-  if (loading) return <><Nav /><div className={styles.loading}>Loading…</div></>
+  if (loading) return <AppSidebar><div className={styles.loading}>Loading…</div></AppSidebar>
 
   return (
-    <>
-      <Nav />
+    <AppSidebar>
       <div className={styles.page}>
 
         {/* BREADCRUMB */}
         <div className={styles.crumb}>
-          <button onClick={() => navigate('/dashboard')}>Dashboard</button>
+          <button onClick={() => navigate('/properties')}>Properties</button>
           <span>›</span>
           {ws && (
             <>
@@ -196,7 +194,6 @@ export default function NegotiationDetail() {
         )}
 
       </div>
-      <Footer />
-    </>
+    </AppSidebar>
   )
 }

@@ -1,6 +1,6 @@
 .loading { display:flex; align-items:center; justify-content:center; height:100vh; color:var(--muted); }
 
-.page { max-width:880px; margin:0 auto; padding:96px var(--gut) 80px; min-height:100vh; }
+.page { max-width:880px; margin:0 auto; padding:40px var(--gut) 80px; min-height:100vh; }
 
 .h1 { font-size:28px; font-weight:600; letter-spacing:-0.02em; color:var(--ink); margin-bottom:24px; }
 
@@ -110,14 +110,14 @@
 .signOutBtn:hover { border-color:var(--danger-deep); color:var(--danger-deep); }
 
 @media (max-width:768px) {
-  .page { padding:84px 20px 60px; }
+  .page { padding:24px 20px 60px; }
   .layout { grid-template-columns:1fr; }
   .sidebar { position:static; }
   .h1 { font-size:24px; }
 }
 
 @media (max-width:480px) {
-  .page { padding:84px 16px 60px; }
+  .page { padding:24px 16px 60px; }
   .h1 { font-size:22px; }
   .fields { gap:12px; }
 }

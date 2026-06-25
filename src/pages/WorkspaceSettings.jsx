@@ -2,8 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import Nav from '../components/Nav'
-import Footer from '../components/Footer'
+import AppSidebar from '../components/AppSidebar'
 import styles from './WorkspaceSettings.module.css'
 
 export default function WorkspaceSettings() {
@@ -156,15 +155,14 @@ export default function WorkspaceSettings() {
 
   const formatDate = d => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
 
-  if (loading) return <><Nav /><div className={styles.loading}>Loading…</div></>
+  if (loading) return <AppSidebar><div className={styles.loading}>Loading…</div></AppSidebar>
 
   return (
-    <>
-      <Nav />
+    <AppSidebar>
       <div className={styles.page}>
 
         <div className={styles.breadcrumb}>
-          <button onClick={() => navigate('/dashboard')}>← Dashboard</button>
+          <button onClick={() => navigate('/properties')}>← Properties</button>
           <span>/</span>
           <button onClick={() => navigate(`/workspace/${id}`)}>{ws.name}</button>
           <span>/</span>
@@ -302,7 +300,6 @@ export default function WorkspaceSettings() {
           </div>
         </div>
       </div>
-      <Footer />
 
       {/* DELETE CONFIRMATION MODAL */}
       {deleteConfirm && (
@@ -328,6 +325,6 @@ export default function WorkspaceSettings() {
           </div>
         </div>
       )}
-    </>
+    </AppSidebar>
   )
 }

@@ -1,6 +1,6 @@
 .loading { display:flex; align-items:center; justify-content:center; height:100vh; color:var(--muted); }
 
-.page { max-width:960px; margin:0 auto; padding:96px var(--gut) 80px; min-height:100vh; }
+.page { max-width:960px; margin:0 auto; padding:40px var(--gut) 80px; min-height:100vh; }
 
 /* BREADCRUMB */
 .breadcrumb { display:flex; align-items:center; gap:9px; font-size:13px; color:var(--muted); margin-bottom:22px; flex-wrap:wrap; }
@@ -62,14 +62,14 @@
 .analyseBtn:hover { background:#000; }
 
 @media (max-width:768px) {
-  .page { padding:84px 20px 60px; }
+  .page { padding:24px 20px 60px; }
   .layout { grid-template-columns:1fr; }
   .sidebar { position:static; }
   .h1 { font-size:24px; }
 }
 
 @media (max-width:480px) {
-  .page { padding:84px 16px 60px; }
+  .page { padding:24px 16px 60px; }
   .layout { grid-template-columns:1fr; }
   .sidebar { position:static; }
   .h1 { font-size:22px; }

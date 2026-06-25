@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import { PLANS, openBillingPortal } from '../lib/stripe'
-import Nav from '../components/Nav'
-import Footer from '../components/Footer'
+import AppSidebar from '../components/AppSidebar'
 import styles from './Profile.module.css'
 
 export default function Profile() {
@@ -131,13 +130,12 @@ export default function Profile() {
     return { label: plan, detail: '' }
   }
 
-  if (loading || !profile) return <><Nav /><div className={styles.loading}>Loading…</div></>
+  if (loading || !profile) return <AppSidebar><div className={styles.loading}>Loading…</div></AppSidebar>
 
   const { label: planLabel, detail: planDetail } = planInfo()
 
   return (
-    <>
-      <Nav />
+    <AppSidebar>
       <div className={styles.page}>
         <h1 className={styles.h1}>Your profile</h1>
 
@@ -245,7 +243,6 @@ export default function Profile() {
           </div>
         </div>
       </div>
-      <Footer />
 
       {/* DELETE CONFIRMATION MODAL */}
       {deleteConfirm && (
@@ -271,6 +268,6 @@ export default function Profile() {
           </div>
         </div>
       )}
-    </>
+    </AppSidebar>
   )
 }

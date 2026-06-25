@@ -2,351 +2,216 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import Nav from '../components/Nav'
-import Footer from '../components/Footer'
-import Tour from '../components/Tour'
+import AppSidebar from '../components/AppSidebar'
 import styles from './Dashboard.module.css'
 
-const TOUR_STEPS = [
-  {
-    title: 'Welcome to LeaseRoom',
-    body: "Here's a 30-second tour of how to get the most out of it.",
-  },
-  {
-    target: 'analyse-btn',
-    title: 'Analyse a document',
-    body: 'Upload a Heads of Agreement or Lease and get a full clause-by-clause risk analysis in under 2 minutes.',
-  },
-  {
-    target: 'new-property-btn',
-    title: 'Properties keep things organised',
-    body: 'Each property gets its own workspace — every HOA, lease version, and review note lives together in one place.',
-  },
-  {
-    target: 'sort-tabs',
-    title: 'Sort your list',
-    body: 'Switch between sorting your properties by property name or by tenant name.',
-  },
-]
+const CRITICAL_WINDOW_DAYS = 30
 
 export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [workspaces, setWorkspaces] = useState([])
-  const [profile, setProfile]       = useState(null)
-  const [loading, setLoading]       = useState(true)
-  const [wsModal, setWsModal]       = useState(false)
-  const [wsName, setWsName]         = useState('')
-  const [wsClient, setWsClient]     = useState('')
-  const [wsSaving, setWsSaving]     = useState(false)
-  const [sortPref, setSortPref]     = useState('property') // 'property' | 'tenant'
+  const [criticalCount, setCriticalCount] = useState(0)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => { if (!user) return; fetchAll() }, [user])
 
   const fetchAll = async () => {
-    const [wsRes, profileRes] = await Promise.all([
-      supabase
-        .from('workspaces')
-        .select(`
-          id, name, client_name, logo_path, created_at,
-          negotiations (
-            id, status, lifecycle, tenant_name, premises_address,
-            documents (
-              id, filename, uploaded_at, overall_risk
-            )
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('is_deleted', false)
-        .order('created_at', { ascending: false }),
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
-    ])
-    setWorkspaces(wsRes.data || [])
-    const p = profileRes.data
-    setProfile(p)
-    if (p?.sort_preference) setSortPref(p.sort_preference)
-    setLoading(false)
-  }
-
-  const handleSortPref = async (pref) => {
-    setSortPref(pref)
-    await supabase.from('profiles').update({ sort_preference: pref }).eq('id', user.id)
-  }
-
-  const handleCreateWorkspace = async () => {
-    if (!wsName.trim()) return
-    setWsSaving(true)
-    const { data, error } = await supabase
+    const { data: wsData } = await supabase
       .from('workspaces')
-      .insert({
-        user_id: user.id,
-        name: wsName.trim(),
-        client_name: wsClient.trim() || null,
+      .select(`
+        id, name, client_name, created_at,
+        negotiations (
+          id, status, lifecycle, asset_class, property_name, created_at,
+          documents ( id, filename, uploaded_at )
+        )
+      `)
+      .eq('user_id', user.id)
+      .eq('is_deleted', false)
+      .order('created_at', { ascending: false })
+
+    const ws = wsData || []
+    setWorkspaces(ws)
+
+    // Critical dates: query lease_data for the most recent document of each negotiation
+    const allDocIds = ws.flatMap(w => (w.negotiations || []).flatMap(n => (n.documents || []).map(d => d.id)))
+    if (allDocIds.length) {
+      const { data: leaseRows } = await supabase
+        .from('lease_data')
+        .select('document_id, expiry_date')
+        .in('document_id', allDocIds)
+      const now = new Date()
+      const cutoff = new Date(now.getTime() + CRITICAL_WINDOW_DAYS * 86400000)
+      const upcoming = (leaseRows || []).filter(r => {
+        if (!r.expiry_date) return false
+        const d = new Date(r.expiry_date)
+        return d >= now && d <= cutoff
       })
-      .select()
-      .single()
-    if (!error && data) {
-      setWorkspaces(prev => [{ ...data, negotiations: [] }, ...prev])
-      navigate(`/workspace/${data.id}`)
+      setCriticalCount(upcoming.length)
     }
-    setWsName(''); setWsClient(''); setWsModal(false); setWsSaving(false)
+
+    setLoading(false)
   }
 
   const formatDate = d =>
     new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
 
-  const getStatusChip = (ws) => {
-    const negs = ws.negotiations || []
-    if (negs.length === 0) return { label: 'No documents', cls: '' }
-    const lifecycles = negs.map(n => n.lifecycle)
-    if (negs.every(n => n.lifecycle === 'agreed'))       return { label: 'Finalised', cls: styles.statusDone }
-    if (lifecycles.includes('awaiting'))                  return { label: 'Awaiting landlord', cls: styles.statusWait }
-    if (lifecycles.includes('sent'))                      return { label: 'Sent to agent', cls: styles.statusWait }
-    if (lifecycles.includes('counter_prepared'))          return { label: 'Counter prepared', cls: '' }
-    return { label: 'Reviewing', cls: '' }
-  }
+  const cleanName = (n) =>
+    (n.property_name || 'Unnamed negotiation').replace(/^\d+_/, '').replace(/\.[^.]+$/, '').replace(/_/g, ' ')
 
-  const getDocSummary = (ws) => {
-    const allDocs = (ws.negotiations || []).flatMap(n => n.documents || [])
-    const hoaCount   = allDocs.filter(d => d.filename?.toLowerCase().includes('hoa')).length
-    const leaseCount = allDocs.filter(d => !d.filename?.toLowerCase().includes('hoa')).length
-    const parts = []
-    if (leaseCount > 0) parts.push(`${leaseCount} lease${leaseCount > 1 ? 's' : ''}`)
-    if (hoaCount > 0)   parts.push(`${hoaCount} HOA${hoaCount > 1 ? 's' : ''}`)
-    if (parts.length === 0 && allDocs.length > 0)
-      parts.push(`${allDocs.length} document${allDocs.length > 1 ? 's' : ''}`)
-    return { summary: parts.join(' · ') || 'No documents', total: allDocs.length }
-  }
+  const allNegs = workspaces.flatMap(w =>
+    (w.negotiations || []).map(n => ({ ...n, wsName: w.client_name || w.name }))
+  )
 
-  const getLatestDate = (ws) => {
-    const docs = (ws.negotiations || []).flatMap(n => n.documents || [])
-    if (!docs.length) return null
-    return docs.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))[0]?.uploaded_at
-  }
+  const totalDocs = allNegs.reduce((a, n) => a + (n.documents?.length || 0), 0)
+  const activeNegs = allNegs.filter(n => n.lifecycle !== 'agreed')
+  const activeProperties = workspaces.filter(w => (w.negotiations || []).some(n => n.lifecycle !== 'agreed') || (w.negotiations || []).length === 0)
 
-  const totalDocs = workspaces.reduce((a, w) =>
-    a + (w.negotiations || []).reduce((b, n) => b + (n.documents?.length || 0), 0), 0)
+  const needsAttention = allNegs
+    .filter(n => n.lifecycle === 'awaiting' || n.lifecycle === 'sent')
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 5)
 
-  const active = workspaces.filter(ws => {
-    const negs = ws.negotiations || []
-    if (negs.length === 0) return true
-    return negs.some(n => n.lifecycle !== 'agreed')
-  })
-  const finalised = workspaces.filter(ws => {
-    const negs = ws.negotiations || []
-    return negs.length > 0 && negs.every(n => n.lifecycle === 'agreed')
-  })
+  const recentNegs = [...allNegs]
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 6)
 
-  // Sort by property name or tenant name
-  const sortFn = (a, b) => {
-    if (sortPref === 'tenant') {
-      // Workspaces without client_name go to bottom
-      if (!a.client_name && !b.client_name) return a.name.localeCompare(b.name)
-      if (!a.client_name) return 1
-      if (!b.client_name) return -1
-      return a.client_name.toLowerCase().localeCompare(b.client_name.toLowerCase())
-    }
-    return a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-  }
+  const recentFinalised = allNegs
+    .filter(n => n.lifecycle === 'agreed')
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, 5)
 
-  const sortedActive    = [...active].sort(sortFn)
-  const sortedFinalised = [...finalised].sort(sortFn)
+  const assetMix = allNegs.reduce((acc, n) => {
+    const key = n.asset_class || 'Unclassified'
+    acc[key] = (acc[key] || 0) + 1
+    return acc
+  }, {})
 
-  if (loading) return <><Nav /><div className={styles.loading}>Loading…</div></>
+  const statusLabel = (lc) => ({
+    awaiting: 'Awaiting landlord',
+    sent: 'Sent to agent',
+    counter_prepared: 'Counter prepared',
+    agreed: 'Agreed',
+  }[lc] || 'In review')
 
-  const PropertyCard = ({ ws, fin = false }) => {
-    const status             = getStatusChip(ws)
-    const { summary, total } = getDocSummary(ws)
-    const latestDate         = getLatestDate(ws)
-
-    // Sanity-check extracted values — reject anything that looks like clause text
-    const CLAUSE_WORDS = ['takes a lease', 'landlord', 'herein', 'pursuant',
-      'thereof', 'together with', 'non-exclusive', 'the term']
-    const isClauseText = v => !v || v.length > 150
-      || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
-
-    const negs = ws.negotiations || []
-    const negWithData = negs.find(n => n.tenant_name || n.premises_address)
-    const extractedTenant  = !isClauseText(negWithData?.tenant_name)  ? negWithData.tenant_name  : null
-    const extractedAddress = !isClauseText(negWithData?.premises_address) ? negWithData.premises_address : null
-
-    const displayName    = extractedTenant  || ws.client_name || ws.name
-    const displayAddress = extractedAddress
-      || (extractedTenant  && ws.name)
-      || (ws.client_name   && ws.name)
-      || null
-
-    return (
-      <div
-        className={`${styles.wcard} ${fin ? styles.wcardFin : ''}`}
-        onClick={() => navigate(`/workspace/${ws.id}`)}
-      >
-        <div className={styles.wcTop}>
-          <div className={styles.wcBadge}>{(displayName)[0]?.toUpperCase()}</div>
-          <div className={styles.wcId}>
-            <div className={styles.wcName}>{displayName}</div>
-            {displayAddress && <div className={styles.wcTn}>{displayAddress}</div>}
-          </div>
-          <span className={`${styles.statusChip} ${status.cls}`}>
-            <span className={styles.d} />{status.label}
-          </span>
-        </div>
-
-        <div className={styles.wcSummary}>
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <path d="M4 1.5h5l3 3v10H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
-            <path d="M9 1.5v3h3" stroke="currentColor" strokeWidth="1.4"/>
-          </svg>
-          {summary}
-          {total > 0 && <span className={styles.docsN}>· {total} document{total !== 1 ? 's' : ''}</span>}
-        </div>
-
-        <div className={styles.wcFoot}>
-          <span className={styles.wcUp}>
-            {latestDate
-              ? `${fin ? 'Signed' : 'Updated'} ${formatDate(latestDate)}`
-              : 'No activity'}
-          </span>
-          <span className={styles.wcOpen}>Open →</span>
-        </div>
-      </div>
-    )
-  }
+  if (loading) return <AppSidebar><div className={styles.loading}>Loading…</div></AppSidebar>
 
   return (
-    <>
-      <Nav />
-      <Tour steps={TOUR_STEPS} storageKey="ll_dashboard_tour_seen" />
+    <AppSidebar>
       <div className={styles.page}>
+        <h1 className={styles.h1}>Welcome back</h1>
+        <div className={styles.summaryLine}>
+          {activeProperties.length} properties · {activeNegs.length} active negotiations · {totalDocs} documents analysed
+        </div>
 
-        {/* HEAD */}
-        <div className={styles.head}>
-          <div>
-            <h1 className={styles.h1}>Negotiations</h1>
-            <div className={styles.summaryLine}>
-              {active.length} in negotiation · {finalised.length} finalised · {totalDocs} document{totalDocs !== 1 ? 's' : ''} analysed
-            </div>
+        {/* STATS */}
+        <div className={styles.statsGrid}>
+          <div className={styles.statTile}>
+            <div className={styles.statVal}>{activeProperties.length}</div>
+            <div className={styles.statLbl}>Properties active</div>
           </div>
-          <div className={styles.headActions}>
-            <button className="btn-outline btn-sm" data-tour="new-property-btn" onClick={() => setWsModal(true)}>
-              + New property
-            </button>
-            <button className="btn-ink btn-sm" data-tour="analyse-btn" onClick={() => navigate('/analyser')}>
-              + Analyse document
-            </button>
+          <div className={styles.statTile}>
+            <div className={styles.statVal}>{activeNegs.length}</div>
+            <div className={styles.statLbl}>Active negotiations</div>
+          </div>
+          <div className={styles.statTile}>
+            <div className={styles.statVal}>{totalDocs}</div>
+            <div className={styles.statLbl}>Documents analysed</div>
+          </div>
+          <div className={styles.statTile}>
+            <div className={styles.statVal}>{criticalCount}</div>
+            <div className={styles.statLbl}>Critical dates ≤30d</div>
           </div>
         </div>
 
-        {/* SORT TABS */}
-        <div className={styles.sortTabs} data-tour="sort-tabs">
-          <button
-            className={`${styles.sortTab} ${sortPref === 'property' ? styles.sortTabActive : ''}`}
-            onClick={() => handleSortPref('property')}
-          >
-            By property
-          </button>
-          <button
-            className={`${styles.sortTab} ${sortPref === 'tenant' ? styles.sortTabActive : ''}`}
-            onClick={() => handleSortPref('tenant')}
-          >
-            By tenant
-          </button>
+        <div className={styles.twoCol}>
+          {/* NEEDS ATTENTION */}
+          <div className={styles.panel}>
+            <div className={styles.panelHead}>Needs your attention</div>
+            {needsAttention.length === 0 ? (
+              <div className={styles.empty}>Nothing waiting on you right now.</div>
+            ) : (
+              <div className={styles.list}>
+                {needsAttention.map(n => (
+                  <div key={n.id} className={styles.row} onClick={() => navigate(`/negotiation/${n.id}`)}>
+                    <div className={styles.rowMain}>
+                      <div className={styles.rowName}>{cleanName(n)}</div>
+                      <div className={styles.rowSub}>{n.wsName}</div>
+                    </div>
+                    <span className={`${styles.chip} ${styles.chipWait}`}>{statusLabel(n.lifecycle)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* ASSET MIX */}
+          <div className={styles.panel}>
+            <div className={styles.panelHead}>Asset mix</div>
+            {Object.keys(assetMix).length === 0 ? (
+              <div className={styles.empty}>No negotiations yet.</div>
+            ) : (
+              <div className={styles.list}>
+                {Object.entries(assetMix).map(([cls, count]) => (
+                  <div key={cls} className={styles.mixRow}>
+                    <span className={styles.mixLbl}>{cls}</span>
+                    <span className={styles.mixVal}>{count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* ACTIVE */}
+        {/* RECENT NEGOTIATIONS */}
         <div className={styles.dsec}>
           <div className={styles.sh}>
-            <span className={styles.shLbl}>Active</span>
-            <span className={styles.shCnt}>{active.length} in negotiation</span>
+            <span className={styles.shLbl}>Negotiations</span>
+            <span className={styles.shCnt}>{allNegs.length} total</span>
             <span className={styles.shLn} />
+            <button className={styles.viewAll} onClick={() => navigate('/negotiations')}>View all →</button>
           </div>
-          <div className={styles.wsGrid}>
-            {sortedActive.map(ws => <PropertyCard key={ws.id} ws={ws} />)}
-            <div
-              className={`${styles.wcard} ${styles.wcardNew}`}
-              onClick={() => setWsModal(true)}
-            >
-              <div className={styles.plus}>+</div>
-              <div className={styles.nt}>New property</div>
-              <div className={styles.ns}>Start a workspace for a new tenancy</div>
+          {recentNegs.length === 0 ? (
+            <div className={styles.empty}>No negotiations yet. <button className={styles.linkBtn} onClick={() => navigate('/analyser')}>Analyse a document →</button></div>
+          ) : (
+            <div className={styles.list}>
+              {recentNegs.map(n => (
+                <div key={n.id} className={styles.row} onClick={() => navigate(`/negotiation/${n.id}`)}>
+                  <div className={styles.rowMain}>
+                    <div className={styles.rowName}>{cleanName(n)}</div>
+                    <div className={styles.rowSub}>{n.wsName}</div>
+                  </div>
+                  <span className={`${styles.chip} ${n.lifecycle === 'agreed' ? styles.chipDone : styles.chipWait}`}>{statusLabel(n.lifecycle)}</span>
+                  <span className={styles.rowDate}>{formatDate(n.created_at)}</span>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
         </div>
 
         {/* FINALISED */}
-        {sortedFinalised.length > 0 && (
+        {recentFinalised.length > 0 && (
           <div className={styles.dsec}>
             <div className={styles.sh}>
               <span className={styles.shLbl}>Finalised</span>
-              <span className={styles.shCnt}>{sortedFinalised.length} signed</span>
+              <span className={styles.shCnt}>{recentFinalised.length} shown</span>
               <span className={styles.shLn} />
             </div>
-            <div className={styles.wsGrid}>
-              {sortedFinalised.map(ws => <PropertyCard key={ws.id} ws={ws} fin />)}
+            <div className={styles.list}>
+              {recentFinalised.map(n => (
+                <div key={n.id} className={styles.row} onClick={() => navigate(`/negotiation/${n.id}`)}>
+                  <div className={styles.rowMain}>
+                    <div className={styles.rowName}>{cleanName(n)}</div>
+                    <div className={styles.rowSub}>{n.wsName}</div>
+                  </div>
+                  <span className={`${styles.chip} ${styles.chipDone}`}>Agreed</span>
+                  <span className={styles.rowDate}>{formatDate(n.created_at)}</span>
+                </div>
+              ))}
             </div>
           </div>
         )}
-
-        {/* UPGRADE BAR */}
-        {(profile?.plan === 'free' || profile?.plan === 'one_off') && (
-          <div className={styles.upgradeBar}>
-            <div>
-              <strong>Upgrade to Professional</strong>
-              <span> — unlimited scans, branded PDFs, client workspaces and more.</span>
-            </div>
-            <button className="btn-primary btn-sm" onClick={() => navigate('/pricing')}>
-              View plans →
-            </button>
-          </div>
-        )}
-
       </div>
-
-      {/* CREATE WORKSPACE MODAL */}
-      {wsModal && (
-        <div className={styles.overlay} onClick={() => setWsModal(false)}>
-          <div className={styles.modal} onClick={e => e.stopPropagation()}>
-            <div className={styles.modalTitle}>New property</div>
-            <div className={styles.fields}>
-              <div className={styles.field}>
-                <label>Property name *</label>
-                <input
-                  className="input"
-                  placeholder="e.g. Bondi Florist"
-                  value={wsName}
-                  onChange={e => setWsName(e.target.value)}
-                  autoFocus
-                  onKeyDown={e => e.key === 'Enter' && handleCreateWorkspace()}
-                />
-              </div>
-              <div className={styles.field}>
-                <label>
-                  Tenant / client name{' '}
-                  <span style={{ fontWeight: 400, color: 'var(--muted)' }}>(optional)</span>
-                </label>
-                <input
-                  className="input"
-                  placeholder="e.g. Sydney Flowers Pty Ltd"
-                  value={wsClient}
-                  onChange={e => setWsClient(e.target.value)}
-                />
-              </div>
-            </div>
-            <div className={styles.modalActions}>
-              <button className="btn-ghost" onClick={() => setWsModal(false)}>Cancel</button>
-              <button
-                className="btn-primary"
-                onClick={handleCreateWorkspace}
-                disabled={wsSaving || !wsName.trim()}
-              >
-                {wsSaving ? 'Creating…' : 'Create property'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <Footer />
-    </>
+    </AppSidebar>
   )
 }

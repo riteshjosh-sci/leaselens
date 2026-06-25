@@ -1,6 +1,6 @@
 .loading { display:flex; align-items:center; justify-content:center; height:100vh; color:var(--muted); }
 
-.page { max-width:var(--maxw); margin:0 auto; padding:96px var(--gut) 80px; min-height:100vh; }
+.page { max-width:var(--maxw); margin:0 auto; padding:40px var(--gut) 80px; min-height:100vh; }
 
 /* BREADCRUMB */
 .crumb { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--muted); margin-bottom:18px; flex-wrap:nowrap; overflow:hidden; }
@@ -204,7 +204,7 @@
   .fact { flex:1 1 120px; }
 }
 @media (max-width:768px) {
-  .page { padding:84px 20px 60px; }
+  .page { padding:24px 20px 60px; }
   .wsHead { flex-direction:column; gap:16px; }
   .wsId { gap:12px; }
   .wsName { font-size:24px; }
@@ -225,7 +225,7 @@
   .bn { font-size:20px; }
 }
 @media (max-width:480px) {
-  .page { padding:80px 16px 60px; }
+  .page { padding:20px 16px 60px; }
   .wsName { font-size:18px; }
   .lifecycle { display:none; }
   .negControls { opacity:1; }
