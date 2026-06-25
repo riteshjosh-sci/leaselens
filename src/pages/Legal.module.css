@@ -19,12 +19,12 @@
 .kicker::before { content: ""; width: 26px; height: 2px; background: var(--accent); }
 
 .h1 {
-  font-family: var(--font);
-  font-size: 44px;
+  font-family: var(--font-serif);
+  font-size: 42px;
   font-weight: 600;
   color: var(--ink);
-  letter-spacing: -0.03em;
-  line-height: 1.06;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
   margin-bottom: 12px;
 }
 
@@ -48,7 +48,7 @@
 
 .highlight {
   background: var(--accent-soft);
-  border: 1px solid rgba(44,80,214,0.15);
+  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
   border-left: 3px solid var(--accent);
   border-radius: var(--radius-sm);
   padding: 14px 18px;
@@ -59,12 +59,24 @@
   font-weight: 500;
 }
 
+.contactBlock {
+  background: var(--paper-2);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-sm);
+  padding: 16px 18px;
+  font-size: 14.5px;
+  color: var(--ink-soft);
+  line-height: 1.7;
+  margin: 16px 0 24px;
+}
+.contactBlock strong { color: var(--ink); }
+
 .page h2 {
-  font-family: var(--font);
+  font-family: var(--font-serif);
   font-size: 22px;
   font-weight: 600;
   color: var(--ink);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   margin: 36px 0 12px;
   padding-top: 24px;
   border-top: 1px solid var(--hair-lt);
