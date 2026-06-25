@@ -37,6 +37,8 @@ export default function Analyser() {
   const [report, setReport] = useState(null)
   const [propertyName, setPropertyName] = useState('')
   const [showPropertyPrompt, setShowPropertyPrompt] = useState(false)
+  const [matchPrompt, setMatchPrompt] = useState(null)
+  const [matchLoading, setMatchLoading] = useState(false)
   const fileInputRef = useRef()
   const stageIntervalRef = useRef(null)
   const pollIntervalRef = useRef(null)
@@ -113,7 +115,7 @@ export default function Analyser() {
         // Came from existing negotiation — go to compare tab so user can see what changed
         setTimeout(() => navigate(`/negotiation/${negotiationId}#compare`), 1500)
       } else if (negIdRef.current && !negotiationId) {
-        setShowPropertyPrompt(true)
+        checkForExistingMatch(jobData.report_json)
       }
     } else if (jobData.status === 'failed') {
       completedRef.current = true
@@ -254,6 +256,78 @@ export default function Analyser() {
       setError(e.message || 'Something went wrong. Please try again.')
       setLoading(false)
     }
+  }
+
+  // Check whether the just-analysed document's tenant + address match an
+  // existing negotiation, so the user can fold it in rather than ending up
+  // with two separate folders for the same deal.
+  const checkForExistingMatch = async (reportJson) => {
+    const tenant  = (reportJson?.tenant_name || '').trim().toLowerCase()
+    const address = (reportJson?.premises_address || '').trim().toLowerCase()
+
+    if (!tenant || !address || !user) { setShowPropertyPrompt(true); return }
+
+    const { data: candidates } = await supabase
+      .from('negotiations')
+      .select('id, property_name, tenant_name, premises_address, workspace_id')
+      .eq('user_id', user.id)
+      .eq('is_deleted', false)
+      .neq('id', negIdRef.current)
+
+    const match = candidates?.find(c =>
+      (c.tenant_name || '').trim().toLowerCase() === tenant &&
+      (c.premises_address || '').trim().toLowerCase() === address
+    )
+
+    if (match) setMatchPrompt(match)
+    else setShowPropertyPrompt(true)
+  }
+
+  const handleMergeIntoExisting = async () => {
+    if (!matchPrompt || !negIdRef.current) return
+    setMatchLoading(true)
+    const throwawayNegId = negIdRef.current
+    const throwawayWsId  = wsIdRef.current
+    const targetNegId    = matchPrompt.id
+
+    const { data: doc } = await supabase
+      .from('documents')
+      .select('id, doc_type')
+      .eq('negotiation_id', throwawayNegId)
+      .order('uploaded_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    let reportId = null
+    if (doc) {
+      const { count } = await supabase
+        .from('documents')
+        .select('id', { count: 'exact', head: true })
+        .eq('negotiation_id', targetNegId)
+        .eq('doc_type', doc.doc_type)
+
+      await supabase.from('documents')
+        .update({ negotiation_id: targetNegId, version_number: (count || 0) + 1 })
+        .eq('id', doc.id)
+
+      const { data: reportRow } = await supabase
+        .from('reports').select('id').eq('document_id', doc.id).maybeSingle()
+      reportId = reportRow?.id || null
+    }
+
+    await supabase.from('negotiations').delete().eq('id', throwawayNegId)
+    if (throwawayWsId) await supabase.from('workspaces').delete().eq('id', throwawayWsId)
+
+    setMatchLoading(false)
+    setMatchPrompt(null)
+
+    if (reportId) navigate(`/report/${reportId}`)
+    else navigate(`/negotiation/${targetNegId}`)
+  }
+
+  const handleKeepSeparate = () => {
+    setMatchPrompt(null)
+    setShowPropertyPrompt(true)
   }
 
   const handleCreateNegotiation = async () => {
@@ -508,6 +582,25 @@ export default function Analyser() {
             }}>
               <span style={{ fontSize: 18 }}>✓</span>
               Analysis complete — scroll down to view your report.
+            </div>
+          )}
+
+          {/* EXISTING NEGOTIATION MATCH PROMPT */}
+          {matchPrompt && report && (
+            <div className={styles.propertyPrompt}>
+              <h3>Looks like an existing negotiation</h3>
+              <p>
+                This document's tenant and address match <strong>{matchPrompt.property_name || 'an existing negotiation'}</strong>
+                {matchPrompt.tenant_name ? ` (${matchPrompt.tenant_name}` : ''}
+                {matchPrompt.premises_address ? `, ${matchPrompt.premises_address})` : matchPrompt.tenant_name ? ')' : ''}.
+                Add this version to it, or keep it as a separate negotiation?
+              </p>
+              <div className={styles.propertyRow}>
+                <button className="btn-primary" onClick={handleMergeIntoExisting} disabled={matchLoading}>
+                  {matchLoading ? 'Adding…' : `Add to ${matchPrompt.property_name || 'existing'}`}
+                </button>
+                <button className="btn-outline" onClick={handleKeepSeparate} disabled={matchLoading}>Keep separate</button>
+              </div>
             </div>
           )}
 
