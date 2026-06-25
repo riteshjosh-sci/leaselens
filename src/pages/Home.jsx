@@ -5,16 +5,7 @@ import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import styles from './Home.module.css'
 import { useSEO } from '../hooks/useSEO'
-
-const ViewfinderMark = ({ size = 30, color = 'currentColor' }) => (
-  <svg width={size} height={size} viewBox="0 0 40 40" fill="none" style={{ color }}>
-    <path d="M5 13 V7 a2 2 0 0 1 2-2 h6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-    <path d="M27 5 h6 a2 2 0 0 1 2 2 v6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-    <path d="M35 27 v6 a2 2 0 0 1 -2 2 h-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-    <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-    <circle cx="20" cy="20" r="5.4" fill="currentColor"/>
-  </svg>
-)
+import leaseroomLogo from '../assets/leaseroom-logo.png'
 
 const STAGES = [
   { n: '01', tab: 'Upload Lease', eyebrow: 'STAGE 01 · UPLOAD LEASE', h: 'Upload Lease',
@@ -91,8 +82,7 @@ export default function Home() {
       <header className={styles.nav}>
         <div className={`${styles.wrap} ${styles.navInner}`}>
           <Link to="/" className={styles.navLogo}>
-            <ViewfinderMark size={28} />
-            <span className={styles.wordmark}>Lease<span className={styles.lens}>Room</span></span>
+            <img src={leaseroomLogo} alt="LeaseRoom" className={styles.logoImg} />
           </Link>
           <div className={styles.navCta}>
             <button className={styles.themeToggle} onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
@@ -227,13 +217,15 @@ export default function Home() {
       </section>
 
       {/* FINAL CTA */}
-      <section className={`${styles.section} ${styles.sectionDark} ${styles.final}`}>
+      <section className={`${styles.section} ${styles.final}`}>
         <div className={styles.wrap}>
+          <div className={`${styles.finalCard} ${styles.reveal}`}>
           <h2 className={styles.bandH2}>See every risk before you sign.</h2>
           <p>Upload your first lease or heads of agreement and see every clause flagged in minutes. No card required.</p>
           <div className={styles.finalActions}>
             <button className={`${styles.btn} ${styles.btnFinalPrimary}`} onClick={handleCTA}>Analyse a lease →</button>
             <button className={`${styles.btn} ${styles.btnFinalGhost}`}>Book a demo</button>
+          </div>
           </div>
         </div>
       </section>
@@ -243,8 +235,7 @@ export default function Home() {
         <div className={`${styles.wrap} ${styles.footerTop}`}>
           <div className={styles.footerBrand}>
             <Link to="/" className={styles.footerLogo}>
-              <ViewfinderMark size={24} />
-              <span className={styles.wordmark} style={{ fontSize: 18 }}>Lease<span className={styles.lens}>Room</span></span>
+              <img src={leaseroomLogo} alt="LeaseRoom" className={styles.logoImgSm} />
             </Link>
             <p className={styles.brandBlurb}>Clause-by-clause retail lease &amp; HOA analysis, built for Australian tenants and their advisors.</p>
           </div>
