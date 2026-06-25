@@ -379,7 +379,7 @@ export default function Analyser() {
         <div className={styles.main}>
           <button className={styles.back} onClick={() => navigate(-1)}>← Back</button>
           <h1 className={styles.h1}>Know what you're signing <em>before you sign.</em></h1>
-          <p className={styles.sub}>Drag and drop your document below, or paste the text. LeaseLens analyses the terms and provides a clear outline of risk, impact and suggested response.</p>
+          <p className={styles.sub}>Drag and drop your document below, or paste the text. LeaseRoom analyses the terms and provides a clear outline of risk, impact and suggested response.</p>
 
           <div className={styles.card}>
             <div
@@ -451,7 +451,7 @@ export default function Analyser() {
             )}
 
             <p className={styles.disclaimer}>
-              By analysing a document you agree that LeaseLens may use anonymised clause data from your submission to improve future analysis. No personally identifying information is retained.
+              By analysing a document you agree that LeaseRoom may use anonymised clause data from your submission to improve future analysis. No personally identifying information is retained.
             </p>
 
             {error && error !== 'LEGACY_DOC' && <div className={styles.error}>{error}</div>}
@@ -568,7 +568,7 @@ export default function Analyser() {
           {report && (
             <div style={{
               background: 'var(--risk-l-bg)',
-              border: '1px solid #b8d8c4',
+              border: '1px solid var(--st-agreed-border)',
               borderLeft: '3px solid var(--risk-l)',
               borderRadius: 2,
               padding: '12px 20px',
@@ -708,7 +708,7 @@ export default function Analyser() {
                 ✓ Report saved to your account. <a href="/dashboard">View all documents →</a>
               </div>
               <div className={styles.legalDisclaimer}>
-                DISCLAIMER: LeaseLens is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.
+                DISCLAIMER: LeaseRoom is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.
               </div>
             </div>
           )}
