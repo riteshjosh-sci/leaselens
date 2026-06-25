@@ -13,10 +13,10 @@
   background: color-mix(in srgb, var(--paper) 88%, transparent); backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--hair);
 }
-.navInner { display:flex; align-items:center; justify-content:space-between; height:74px; }
+.navInner { display:flex; align-items:center; justify-content:space-between; height:92px; }
 .navLogo { display:flex; align-items:center; gap:11px; color:var(--ink); }
-.logoImg { height:34px; width:auto; display:block; }
-.logoImgSm { height:26px; width:auto; display:block; }
+.logoImg { height:60px; width:auto; display:block; }
+.logoImgSm { height:44px; width:auto; display:block; }
 .navCta { display:flex; align-items:center; gap:18px; }
 .signin { background:none; border:none; font-size:15px; font-weight:600; color:var(--ink); cursor:pointer; font-family:var(--font); white-space:nowrap; padding:0; }
 .themeToggle {
@@ -40,7 +40,7 @@
 .eyebrowLt { color:var(--band-accent); }
 
 /* ── HERO ── */
-.hero { padding:90px 0 70px; text-align:center; }
+.hero { padding:88px 0 0; text-align:center; }
 .heroInner { max-width:840px; margin:0 auto; display:flex; flex-direction:column; align-items:center; }
 .heroH1 { font-family:var(--font-serif); font-weight:600; font-size:clamp(32px,4vw,44px); line-height:1.18; margin-top:22px; letter-spacing:-0.01em; max-width:680px; }
 .heroSub { margin-top:22px; font-size:17px; line-height:1.6; color:var(--ink-soft); max-width:560px; }
@@ -111,14 +111,16 @@
 .waitlistCard h2 { font-family:var(--font-serif); font-weight:600; font-size:clamp(26px,3vw,32px); margin-top:14px; letter-spacing:-0.01em; }
 .waitlistCard > p { margin:14px auto 28px; max-width:460px; font-size:15.5px; color:var(--ink-soft); line-height:1.55; }
 .waitlistCard .eyebrow { justify-content:center; }
-.waitlistForm { display:flex; gap:10px; justify-content:center; max-width:460px; margin:0 auto; flex-wrap:wrap; }
-.waitlistForm .input { flex:1; min-width:220px; }
+.waitlistForm { display:flex; gap:10px; justify-content:center; max-width:520px; margin:0 auto; flex-wrap:nowrap; }
+.waitlistForm .input { flex:1; min-width:0; }
+.waitlistForm .btn { flex-shrink:0; }
 .waitlistDone { display:inline-flex; align-items:center; gap:11px; background:var(--card); border:1px solid var(--hair); border-radius:11px; padding:14px 22px; font-size:14.5px; color:var(--ink); }
 .waitlistCheck { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--risk-l); color:#fff; font-size:13px; flex-shrink:0; }
 .waitlistError { margin-top:14px; font-size:13.5px; color:var(--danger); }
 
 /* Final CTA */
 .final { text-align:center; }
+.cardStack { display:flex; flex-direction:column; gap:88px; }
 .finalCard { background:var(--band-bg); color:var(--band-ink); border-radius:20px; padding:64px 48px; }
 .finalCard p { margin:18px auto 0; max-width:480px; font-size:16.5px; color:var(--band-ink-2); }
 .finalActions { margin-top:34px; display:flex; gap:16px; justify-content:center; flex-wrap:wrap; }
@@ -145,10 +147,13 @@
 }
 @media (max-width:640px) {
   .wrap { padding:0 20px; }
-  .hero { padding:60px 0 56px; }
-  .section { padding:64px 0; }
+  .hero { padding:60px 0 0; }
+  .section { padding:60px 0; }
+  .cardStack { gap:60px; }
   .sectionHead h2 { white-space:normal; }
   .finalActions { flex-direction:column; align-items:center; }
+  .waitlistForm { flex-wrap:wrap; }
+  .waitlistForm .input { min-width:200px; }
   .stageTabs { flex-wrap:wrap; }
   .stageTab { flex:1 1 30%; }
   .waitlistCard { padding:32px 22px; max-width:100%; }

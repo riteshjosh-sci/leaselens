@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import styles from './Nav.module.css'
+import leaseroomLogoLight from '../assets/leaseroom-logo-light.png'
 
 export default function Nav() {
   const { user } = useAuth()
@@ -59,14 +60,7 @@ export default function Nav() {
           {/* Logo */}
           <div className={styles.left}>
             <Link to="/" className={styles.logo}>
-              <svg className={styles.mark} width="24" height="24" viewBox="0 0 40 40" fill="none">
-                <path d="M5 13 V7 a2 2 0 0 1 2-2 h6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-                <path d="M27 5 h6 a2 2 0 0 1 2 2 v6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-                <path d="M35 27 v6 a2 2 0 0 1 -2 2 h-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-                <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
-                <circle cx="20" cy="20" r="5.4" fill="currentColor"/>
-              </svg>
-              <span className={styles.wordmark}>Lease<span className={styles.lens}>Room</span></span>
+              <img src={leaseroomLogoLight} alt="LeaseRoom" className={styles.logoImg} />
             </Link>
 
             {/* Desktop nav links — different for logged in vs out */}

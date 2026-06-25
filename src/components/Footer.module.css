@@ -14,8 +14,7 @@
 }
 .brand { display:flex; flex-direction:column; gap:8px; }
 .logo { display:flex; align-items:center; gap:9px; }
-.wordmark { font-size:17px; font-weight:700; color:var(--paper); letter-spacing:-0.02em; }
-.lens { color:var(--accent-lt); }
+.logoImg { height:36px; width:auto; display:block; }
 .blurb { font-size:13px; color:rgba(243,240,232,0.45); }
 .links { display:flex; gap:24px; list-style:none; }
 .links a { font-size:13px; color:rgba(243,240,232,0.55); transition:color 0.15s; }

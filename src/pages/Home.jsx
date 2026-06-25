@@ -5,7 +5,8 @@ import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import styles from './Home.module.css'
 import { useSEO } from '../hooks/useSEO'
-import leaseroomLogo from '../assets/leaseroom-logo.png'
+import leaseroomLogoDark from '../assets/leaseroom-logo-dark.png'
+import leaseroomLogoLight from '../assets/leaseroom-logo-light.png'
 
 const STAGES = [
   { n: '01', tab: 'Upload Lease', eyebrow: 'STAGE 01 · UPLOAD LEASE', h: 'Upload Lease',
@@ -36,6 +37,7 @@ const COVERAGE_POINTS = [
 export default function Home() {
   const { user } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const logoSrc = theme === 'dark' ? leaseroomLogoLight : leaseroomLogoDark
   const navigate = useNavigate()
   const observerRef = useRef(null)
   const [activeStage, setActiveStage] = useState(0)
@@ -82,7 +84,7 @@ export default function Home() {
       <header className={styles.nav}>
         <div className={`${styles.wrap} ${styles.navInner}`}>
           <Link to="/" className={styles.navLogo}>
-            <img src={leaseroomLogo} alt="LeaseRoom" className={styles.logoImg} />
+            <img src={logoSrc} alt="LeaseRoom" className={styles.logoImg} />
           </Link>
           <div className={styles.navCta}>
             <button className={styles.themeToggle} onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
@@ -187,9 +189,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* WAITLIST */}
-      <section id="waitlist" className={styles.section}>
-        <div className={styles.wrap}>
+      {/* WAITLIST + FINAL CTA */}
+      <section id="waitlist" className={`${styles.section} ${styles.final}`}>
+        <div className={`${styles.wrap} ${styles.cardStack}`}>
           <div className={`${styles.waitlistCard} ${styles.reveal}`}>
             <span className={styles.eyebrow}>Early access</span>
             <h2>Join the LeaseRoom waitlist.</h2>
@@ -208,24 +210,19 @@ export default function Home() {
                   value={waitlistEmail}
                   onChange={e => setWaitlistEmail(e.target.value)}
                 />
-                <button type="submit" className={`${styles.btn} ${styles.btnInk}`}>Join waitlist →</button>
+                <button type="submit" className={`${styles.btn} ${styles.btnInk}`}>Request Early Access →</button>
               </form>
             )}
             {waitlistError && <p className={styles.waitlistError}>{waitlistError}</p>}
           </div>
-        </div>
-      </section>
 
-      {/* FINAL CTA */}
-      <section className={`${styles.section} ${styles.final}`}>
-        <div className={styles.wrap}>
           <div className={`${styles.finalCard} ${styles.reveal}`}>
-          <h2 className={styles.bandH2}>See every risk before you sign.</h2>
-          <p>Upload your first lease or heads of agreement and see every clause flagged in minutes. No card required.</p>
-          <div className={styles.finalActions}>
-            <button className={`${styles.btn} ${styles.btnFinalPrimary}`} onClick={handleCTA}>Analyse a lease →</button>
-            <button className={`${styles.btn} ${styles.btnFinalGhost}`}>Book a demo</button>
-          </div>
+            <h2 className={styles.bandH2}>See every risk before you sign.</h2>
+            <p>Upload your first lease or heads of agreement and see every clause flagged in minutes. No card required.</p>
+            <div className={styles.finalActions}>
+              <button className={`${styles.btn} ${styles.btnFinalPrimary}`} onClick={handleCTA}>Analyse a lease →</button>
+              <button className={`${styles.btn} ${styles.btnFinalGhost}`}>Book a demo</button>
+            </div>
           </div>
         </div>
       </section>
@@ -235,7 +232,7 @@ export default function Home() {
         <div className={`${styles.wrap} ${styles.footerTop}`}>
           <div className={styles.footerBrand}>
             <Link to="/" className={styles.footerLogo}>
-              <img src={leaseroomLogo} alt="LeaseRoom" className={styles.logoImgSm} />
+              <img src={logoSrc} alt="LeaseRoom" className={styles.logoImgSm} />
             </Link>
             <p className={styles.brandBlurb}>Clause-by-clause retail lease &amp; HOA analysis, built for Australian tenants and their advisors.</p>
           </div>

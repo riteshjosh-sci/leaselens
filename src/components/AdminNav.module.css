@@ -21,15 +21,7 @@
   margin-bottom: 6px;
 }
 
-.logo {
-  font-family: var(--font);
-  font-size: 19px;
-  font-weight: 700;
-  color: var(--paper);
-  letter-spacing: -0.022em;
-  line-height: 1;
-}
-.logo em { font-style: normal; color: var(--accent-lt); }
+.logoImg { height: 40px; width: auto; display: block; }
 
 .adminTag {
   font-size: 10px;
@@ -138,6 +130,7 @@
   justify-content: space-between;
   border-bottom: 1px solid rgba(255,255,255,0.08);
 }
+.logoImgMobile { height: 32px; width: auto; display: block; }
 
 .hamburger {
   background: none;

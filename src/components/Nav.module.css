@@ -27,9 +27,7 @@
 
 /* Logo */
 .logo { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
-.mark { color: var(--paper); }
-.wordmark { font-family: var(--font); font-weight: 700; font-size: 19px; letter-spacing: -0.022em; color: var(--paper); }
-.lens { color: var(--accent-lt); }
+.logoImg { height: 38px; width: auto; display: block; }
 
 /* Nav links */
 .links {
