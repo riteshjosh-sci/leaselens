@@ -9,7 +9,7 @@ import styles from './Dashboard.module.css'
 
 const TOUR_STEPS = [
   {
-    title: 'Welcome to LeaseLens',
+    title: 'Welcome to LeaseRoom',
     body: "Here's a 30-second tour of how to get the most out of it.",
   },
   {

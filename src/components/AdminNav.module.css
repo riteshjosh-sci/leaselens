@@ -1,7 +1,7 @@
 .sidebar {
   width: 220px;
   min-height: 100vh;
-  background: var(--ink);
+  background: var(--brand);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -108,13 +108,30 @@
 }
 .siteLink:hover { color: rgba(255,255,255,0.7); }
 
+.themeToggle {
+  width: 100%;
+  padding: 8px 12px;
+  background: none;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: var(--radius-sm);
+  color: rgba(255,255,255,0.5);
+  font-size: 12px;
+  font-family: var(--font);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 8px;
+  transition: all 0.15s;
+}
+.themeToggle:hover { border-color: rgba(255,255,255,0.4); color: white; }
+
 /* Mobile */
 .mobileHeader {
   display: none;
   position: fixed;
   top: 0; left: 0; right: 0;
   height: 56px;
-  background: var(--ink);
+  background: var(--brand);
   z-index: 200;
   padding: 0 20px;
   align-items: center;

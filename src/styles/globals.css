@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&family=Source+Serif+4:wght@400;500;600;700&display=swap');
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -15,33 +15,38 @@ html {
 /* ── TOKENS ── */
 :root {
   /* Foundation */
-  --paper:      #F7F7F8;
-  --paper-2:    #EDEDEF;
+  --paper:      #F8F9FB;
+  --paper-2:    #F1F3F6;
   --card:       #FFFFFF;
-  --ink:        #1C1916;
-  --ink-soft:   #4B463E;
-  --ink-light:  #8C8579;
-  --ink-mid:    #4B463E;
-  --muted:      #8C8579;
-  --faint:      #B6AF9F;
+  --ink:        #0E1830;
+  --ink-soft:   #56627A;
+  --ink-light:  #8A93A4;
+  --ink-mid:    #56627A;
+  --muted:      #8A93A4;
+  --faint:      #A6AEBC;
   --white:      #FFFFFF;
-  --rule:       rgba(28,25,22,0.12);
-  --rule-soft:  rgba(28,25,22,0.07);
-  --hair:       rgba(28,25,22,0.12);
-  --hair-lt:    rgba(28,25,22,0.07);
+  --rule:       rgba(14,24,48,0.12);
+  --rule-soft:  rgba(14,24,48,0.07);
+  --hair:       rgba(14,24,48,0.12);
+  --hair-lt:    rgba(14,24,48,0.07);
 
-  /* Accent-Counsel Cobalt */
-  --accent:      #2C50D6;
-  --accent-mid:  #2C50D6;
-  --accent-deep: #1E3AA8;
-  --accent-soft: rgba(44,80,214,0.10);
-  --accent-lt:   #90A6F0;
+  /* Brand navy — fixed dark chrome (nav bars, dark sidebars) that should
+     stay navy in both themes, unlike --ink which inverts with the page */
+  --brand:       #0E1830;
+  --brand-lt:    #1B2C4D;
 
-  /* Gold (kept for compatibility) */
+  /* Accent (LeaseRoom navy) */
+  --accent:      #1E3A66;
+  --accent-mid:  #1E3A66;
+  --accent-deep: #142A4D;
+  --accent-soft: rgba(30,58,102,0.10);
+  --accent-lt:   #7FA0D6;
+
+  /* Gold (functional status color, hue unchanged by rebrand) */
   --gold:        #C2922B;
   --gold-light:  rgba(194,146,43,0.14);
 
-  /* Risk */
+  /* Risk (functional, hue unchanged by rebrand) */
   --risk-h:     #2C50D6;
   --risk-h-bg:  rgba(44,80,214,0.10);
   --risk-m:     #C2922B;
@@ -49,14 +54,24 @@ html {
   --risk-l:     #5E8C6A;
   --risk-l-bg:  rgba(94,140,106,0.14);
 
-  /* Status tokens */
+  /* Status tokens (functional, hue unchanged by rebrand) */
   --st-raise:   #2C50D6;
   --st-sent:    #C2922B;
   --st-agreed:  #5E8C6A;
   --st-std:     #8C8579;
 
+  /* Dark "trust band" sections (marketing pages) */
+  --band-bg:      #0E1830;
+  --band-ink:     #FFFFFF;
+  --band-ink-2:   #B5BCC8;
+  --band-accent:  #7FA0D6;
+  --band-border:  #2A3A57;
+  --band-muted:   #8A93A4;
+
   /* Typography */
-  --font:       'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font:        'IBM Plex Sans', system-ui, -apple-system, sans-serif;
+  --font-serif:  'Source Serif 4', Georgia, serif;
+  --font-mono:   'IBM Plex Mono', ui-monospace, monospace;
 
   /* Layout */
   --radius:     14px;
@@ -65,12 +80,60 @@ html {
   --gut:        32px;
 }
 
+:root[data-theme="dark"] {
+  --brand:      #15233E;
+  --brand-lt:   #233857;
+  --paper:      #0B1220;
+  --paper-2:    #0F1A2D;
+  --card:       #121E34;
+  --ink:        #EDF1F8;
+  --ink-soft:   #AEB9CC;
+  --ink-light:  #8492A8;
+  --ink-mid:    #AEB9CC;
+  --muted:      #8492A8;
+  --faint:      #66728A;
+  --white:      #16243C;
+  --rule:       rgba(255,255,255,0.10);
+  --rule-soft:  rgba(255,255,255,0.06);
+  --hair:       rgba(255,255,255,0.12);
+  --hair-lt:    rgba(255,255,255,0.07);
+
+  --accent:      #86A2E0;
+  --accent-mid:  #86A2E0;
+  --accent-deep: #5E84C9;
+  --accent-soft: rgba(134,162,224,0.14);
+  --accent-lt:   #AEC2EE;
+
+  --gold:        #D4A646;
+  --gold-light:  rgba(212,166,70,0.18);
+
+  --risk-h:     #6B8FE8;
+  --risk-h-bg:  rgba(107,143,232,0.16);
+  --risk-m:     #D4A646;
+  --risk-m-bg:  rgba(212,166,70,0.18);
+  --risk-l:     #74A883;
+  --risk-l-bg:  rgba(116,168,131,0.18);
+
+  --st-raise:   #6B8FE8;
+  --st-sent:    #D4A646;
+  --st-agreed:  #74A883;
+  --st-std:     #8492A8;
+
+  --band-bg:      #15233E;
+  --band-ink:     #FFFFFF;
+  --band-ink-2:   #B7C0D0;
+  --band-accent:  #8FAAE0;
+  --band-border:  #2C3C5A;
+  --band-muted:   #8492A8;
+}
+
 body {
   font-family: var(--font);
   background: var(--paper);
   color: var(--ink);
   font-size: 16px;
   line-height: 1.6;
+  transition: background 0.2s ease, color 0.2s ease;
 }
 
 ::selection { background: var(--accent); color: #fff; }
@@ -103,7 +166,7 @@ a { color: inherit; text-decoration: none; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--accent);
+  background: var(--accent-deep);
   color: #fff;
   padding: 12px 22px;
   font-size: 13.5px;
@@ -116,7 +179,7 @@ a { color: inherit; text-decoration: none; }
   transition: background 0.15s;
   white-space: nowrap;
 }
-.btn-primary:hover { background: var(--accent-deep); }
+.btn-primary:hover { background: var(--ink); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-ink {

@@ -85,7 +85,7 @@ export function Login() {
       <div className={styles.page}>
         <div className={styles.card}>
           <div className={styles.kicker}>Welcome back</div>
-          <h1 className={styles.h1}>Sign in to LeaseLens</h1>
+          <h1 className={styles.h1}>Sign in to LeaseRoom</h1>
 
           <button className={styles.googleBtn} onClick={handleGoogle}>
             <GoogleIcon />
@@ -226,7 +226,7 @@ export function Signup() {
               <div className={styles.kicker}>Beta access</div>
               <h1 className={styles.h1}>Enter your access code</h1>
               <p className={styles.confirmText}>
-                LeaseLens is currently in beta. Enter your access code to create an account.
+                LeaseRoom is currently in beta. Enter your access code to create an account.
               </p>
               <form onSubmit={handleBetaCode} className={styles.form} noValidate>
                 <div className={styles.field}>

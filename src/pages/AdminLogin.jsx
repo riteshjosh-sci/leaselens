@@ -34,7 +34,7 @@ export default function AdminLogin() {
   return (
     <div className={styles.page}>
       <div className={styles.card}>
-        <div className={styles.brand}>Lease<em>Lens</em></div>
+        <div className={styles.brand}>Lease<em>Room</em></div>
         <div className={styles.tag}>Admin access</div>
 
         <form onSubmit={handleLogin} className={styles.form} noValidate>
@@ -45,7 +45,7 @@ export default function AdminLogin() {
               type="email"
               value={email}
               onChange={e => { setEmail(e.target.value); setError('') }}
-              placeholder="admin@leaselens.au"
+              placeholder="admin@leaseroom.com.au"
               autoFocus
             />
           </div>

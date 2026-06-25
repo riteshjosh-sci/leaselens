@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
 import styles from './Nav.module.css'
 
 export default function Nav() {
   const { user } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const location = useLocation()
   const [menuOpen, setMenuOpen] = useState(false)
@@ -64,7 +66,7 @@ export default function Nav() {
                 <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
                 <circle cx="20" cy="20" r="5.4" fill="currentColor"/>
               </svg>
-              <span className={styles.wordmark}>Lease<span className={styles.lens}>Lens</span></span>
+              <span className={styles.wordmark}>Lease<span className={styles.lens}>Room</span></span>
             </Link>
 
             {/* Desktop nav links — different for logged in vs out */}
@@ -89,6 +91,14 @@ export default function Nav() {
           {/* Right side */}
           {user ? (
             <div className={styles.right}>
+              <button
+                className={styles.themeToggle}
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                title="Toggle theme"
+              >
+                {theme === 'dark' ? '☀' : '☾'}
+              </button>
               <span className={styles.credits}>
                 <b>{getPlanLabel()}</b>
               </span>
@@ -115,6 +125,14 @@ export default function Nav() {
             </div>
           ) : (
             <div className={styles.cta}>
+              <button
+                className={styles.themeToggle}
+                onClick={toggleTheme}
+                aria-label="Toggle theme"
+                title="Toggle theme"
+              >
+                {theme === 'dark' ? '☀' : '☾'}
+              </button>
               <Link to="/login" className={styles.signIn}>Sign in</Link>
               <Link to="/signup" className="btn-primary btn-sm">Get started</Link>
             </div>
@@ -136,6 +154,9 @@ export default function Nav() {
         {/* Mobile menu */}
         {menuOpen && (
           <div className={styles.mobileMenu}>
+            <button onClick={toggleTheme} className={styles.mobileThemeToggle}>
+              {theme === 'dark' ? '☀ Light mode' : '☾ Dark mode'}
+            </button>
             {user ? (
               <>
                 <Link to="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>

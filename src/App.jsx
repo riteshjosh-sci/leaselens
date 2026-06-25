@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext'
+import { ThemeProvider } from './context/ThemeContext'
 import ProtectedRoute from './components/ProtectedRoute'
 import AdminRoute from './components/AdminRoute'
 import FeedbackWidget from './components/FeedbackWidget'
@@ -32,40 +33,42 @@ const NegotiationDetail   = lazy(() => import('./pages/NegotiationDetail'))
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <Suspense fallback={null}>
-          <Routes>
-            {/* ── Public routes ── */}
-            <Route path="/"                       element={<Home />} />
-            <Route path="/login"                  element={<Login />} />
-            <Route path="/signup"                 element={<Signup />} />
-            <Route path="/reset-password"         element={<ResetPassword />} />
-            <Route path="/update-password"        element={<UpdatePassword />} />
-            <Route path="/analyser"               element={<Analyser />} />
-            <Route path="/pricing"                element={<Pricing />} />
-            <Route path="/privacy"                element={<Privacy />} />
-            <Route path="/terms"                  element={<Terms />} />
-            <Route path="/shared/:token"          element={<SharedReport />} />
+      <ThemeProvider>
+        <AuthProvider>
+          <Suspense fallback={null}>
+            <Routes>
+              {/* ── Public routes ── */}
+              <Route path="/"                       element={<Home />} />
+              <Route path="/login"                  element={<Login />} />
+              <Route path="/signup"                 element={<Signup />} />
+              <Route path="/reset-password"         element={<ResetPassword />} />
+              <Route path="/update-password"        element={<UpdatePassword />} />
+              <Route path="/analyser"               element={<Analyser />} />
+              <Route path="/pricing"                element={<Pricing />} />
+              <Route path="/privacy"                element={<Privacy />} />
+              <Route path="/terms"                  element={<Terms />} />
+              <Route path="/shared/:token"          element={<SharedReport />} />
 
-            {/* ── User protected routes ── */}
-            <Route path="/dashboard"              element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/profile"                element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/report/:id"             element={<ProtectedRoute><ReportView /></ProtectedRoute>} />
-            <Route path="/compare/:negotiationId" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
-            <Route path="/workspace/:id"          element={<ProtectedRoute><WorkspacePage /></ProtectedRoute>} />
-            <Route path="/workspace/:id/settings" element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
-            <Route path="/negotiation/:id"        element={<ProtectedRoute><NegotiationDetail /></ProtectedRoute>} />
+              {/* ── User protected routes ── */}
+              <Route path="/dashboard"              element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/profile"                element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/report/:id"             element={<ProtectedRoute><ReportView /></ProtectedRoute>} />
+              <Route path="/compare/:negotiationId" element={<ProtectedRoute><Compare /></ProtectedRoute>} />
+              <Route path="/workspace/:id"          element={<ProtectedRoute><WorkspacePage /></ProtectedRoute>} />
+              <Route path="/workspace/:id/settings" element={<ProtectedRoute><WorkspaceSettings /></ProtectedRoute>} />
+              <Route path="/negotiation/:id"        element={<ProtectedRoute><NegotiationDetail /></ProtectedRoute>} />
 
-            {/* ── Admin routes — completely isolated ── */}
-            <Route path="/admin/login"            element={<AdminLogin />} />
-            <Route path="/admin"                  element={<AdminRoute><Admin /></AdminRoute>} />
-            <Route path="/admin/report/:documentId" element={<AdminRoute><AdminReportView /></AdminRoute>} />
+              {/* ── Admin routes — completely isolated ── */}
+              <Route path="/admin/login"            element={<AdminLogin />} />
+              <Route path="/admin"                  element={<AdminRoute><Admin /></AdminRoute>} />
+              <Route path="/admin/report/:documentId" element={<AdminRoute><AdminReportView /></AdminRoute>} />
 
-            <Route path="*"                       element={<NotFound />} />
-          </Routes>
-        </Suspense>
-        <FeedbackWidget />
-      </AuthProvider>
+              <Route path="*"                       element={<NotFound />} />
+            </Routes>
+          </Suspense>
+          <FeedbackWidget />
+        </AuthProvider>
+      </ThemeProvider>
     </BrowserRouter>
   )
 }

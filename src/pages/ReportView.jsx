@@ -127,7 +127,7 @@ export default function ReportView() {
     const data = report.report_json
     const win = window.open('', '_blank')
     win.document.write(`<!DOCTYPE html><html><head>
-      <title>LeaseLens Report — ${document?.filename || 'Report'}</title>
+      <title>LeaseRoom Report — ${document?.filename || 'Report'}</title>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -163,7 +163,7 @@ export default function ReportView() {
         .footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid rgba(28,25,22,0.1); font-size: 11px; color: #8C8579; display: flex; justify-content: space-between; }
       </style></head><body>
       <div class="header">
-        <div class="brand">Lease<em>Lens</em></div>
+        <div class="brand">Lease<em>Room</em></div>
         <div class="meta">${negotiation?.property_name || 'Document analysis'} · v${document?.version_number} · ${formatDate(document?.uploaded_at)}</div>
       </div>
       <span class="risk-badge risk-${data.overall_risk}">● ${data.overall_risk} RISK</span>
@@ -189,8 +189,8 @@ export default function ReportView() {
           </div>
         </div>`).join('')}
       <div class="next-steps"><h2>Recommended next steps</h2><ol style="padding-left:18px;margin-top:12px">${(data.next_steps || []).map(s => `<li>${s}</li>`).join('')}</ol></div>
-      <div class="disclaimer">DISCLAIMER: LeaseLens is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.</div>
-      <div class="footer"><span>${workspace?.client_name ? `${workspace.client_name} · ` : ''}LeaseLens · leaselens.au</span><span>Generated ${formatDate(new Date())}</span></div>
+      <div class="disclaimer">DISCLAIMER: LeaseRoom is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.</div>
+      <div class="footer"><span>${workspace?.client_name ? `${workspace.client_name} · ` : ''}LeaseRoom · leaseroom.com.au</span><span>Generated ${formatDate(new Date())}</span></div>
     </body></html>`)
     win.document.close()
     setTimeout(() => win.print(), 500)
@@ -412,7 +412,7 @@ export default function ReportView() {
           </div>
 
           <div className={styles.disclaimer}>
-            DISCLAIMER: LeaseLens is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.
+            DISCLAIMER: LeaseRoom is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.
           </div>
         </div>
 
@@ -491,7 +491,7 @@ export default function ReportView() {
             </div>
           )}
 
-          <p className={styles.sDisclaimer}>LeaseLens provides informational analysis to support negotiation and does not constitute legal advice.</p>
+          <p className={styles.sDisclaimer}>LeaseRoom provides informational analysis to support negotiation and does not constitute legal advice.</p>
         </div>
       </div>
     </div>

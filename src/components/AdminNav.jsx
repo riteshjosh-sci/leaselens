@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
 import styles from './AdminNav.module.css'
 
 export default function AdminNav({ activeTab, setTab }) {
   const { signOut } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
 
@@ -30,10 +32,15 @@ export default function AdminNav({ activeTab, setTab }) {
     <>
       {/* Mobile header bar */}
       <div className={styles.mobileHeader}>
-        <div className={styles.logo}>Lease<em>Lens</em></div>
-        <button className={styles.hamburger} onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? '✕' : '☰'}
-        </button>
+        <div className={styles.logo}>Lease<em>Room</em></div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button className={styles.hamburger} onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme" style={{ fontSize: 16 }}>
+            {theme === 'dark' ? '☀' : '☾'}
+          </button>
+          <button className={styles.hamburger} onClick={() => setMobileOpen(!mobileOpen)}>
+            {mobileOpen ? '✕' : '☰'}
+          </button>
+        </div>
       </div>
 
       {/* Overlay */}
@@ -50,7 +57,7 @@ export default function AdminNav({ activeTab, setTab }) {
               <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
               <circle cx="20" cy="20" r="5.4" fill="currentColor"/>
             </svg>
-            <div className={styles.logo}>Lease<em>Lens</em></div>
+            <div className={styles.logo}>Lease<em>Room</em></div>
           </div>
           <div className={styles.adminTag}>Admin panel</div>
         </div>
@@ -67,6 +74,9 @@ export default function AdminNav({ activeTab, setTab }) {
           ))}
         </nav>
         <div className={styles.bottom}>
+          <button className={styles.themeToggle} onClick={toggleTheme}>
+            {theme === 'dark' ? '☀ Light mode' : '☾ Dark mode'}
+          </button>
           <button className={styles.siteLink} onClick={() => navigate('/')}>← Back to site</button>
           <button className={styles.signOut} onClick={handleSignOut}>Sign out</button>
         </div>

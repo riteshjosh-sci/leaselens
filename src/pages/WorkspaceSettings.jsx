@@ -258,7 +258,7 @@ export default function WorkspaceSettings() {
                   <div className={styles.dangerLabel}>Delete workspace</div>
                   <div className={styles.dangerSub}>
                     Removes this workspace and all its negotiations from your dashboard.
-                    Anonymised clause data is retained to improve LeaseLens — no personally identifying information is kept.
+                    Anonymised clause data is retained to improve LeaseRoom — no personally identifying information is kept.
                   </div>
                 </div>
                 <button className={styles.deleteBtn} onClick={() => setDeleteConfirm(true)}>
@@ -312,7 +312,7 @@ export default function WorkspaceSettings() {
             <h2 className={styles.modalTitle}>Delete "{ws.name}"?</h2>
             <p className={styles.modalBody}>
               This will remove the workspace and all its negotiations from your dashboard.
-              Anonymised clause data is kept to improve LeaseLens analysis — no personally identifying information is retained.
+              Anonymised clause data is kept to improve LeaseRoom analysis — no personally identifying information is retained.
             </p>
             <p className={styles.modalBody} style={{ marginTop: 8 }}>
               <strong>This cannot be undone.</strong>

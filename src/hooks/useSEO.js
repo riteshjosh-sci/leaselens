@@ -3,11 +3,11 @@
 
 import { useEffect } from 'react'
 
-const SITE_NAME = 'LeaseLens'
-const DEFAULT_DESCRIPTION = 'LeaseLens analyses your retail lease or heads of agreement clause by clause — flagging risks, explaining obligations, and suggesting counter positions. Built for Australian retail tenants.'
+const SITE_NAME = 'LeaseRoom'
+const DEFAULT_DESCRIPTION = 'LeaseRoom analyses your retail lease or heads of agreement clause by clause — flagging risks, explaining obligations, and suggesting counter positions. Built for Australian retail tenants.'
 const DEFAULT_KEYWORDS = 'retail lease Australia, lease analyser Australia, HOA review tool, heads of agreement analysis Australia, retail lease risk assessment Australia, commercial lease analysis Australia, tenant lease advice Australia, lease and HOA clause checker Australia, retail tenants Australia, business owner lease review, tenant representatives, tenant advisory'
-const OG_IMAGE = 'https://leaselens.au/og-image.png' // update when domain confirmed
-const SITE_URL = 'https://leaselens.au' // update when domain confirmed
+const OG_IMAGE = 'https://leaseroom.com.au/og-image.png'
+const SITE_URL = 'https://leaseroom.com.au'
 
 export function useSEO({
   title,

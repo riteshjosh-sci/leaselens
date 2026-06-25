@@ -486,7 +486,7 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
             </div>
             {counteringClauses.length ? (
               <>
-                <p className={styles.briefSintro}>The wording below is what LeaseLens will package up for the agent. Each entry is either the AI suggestion or your edited version.</p>
+                <p className={styles.briefSintro}>The wording below is what LeaseRoom will package up for the agent. Each entry is either the AI suggestion or your edited version.</p>
                 {counteringClauses.map((c, i) => {
                   const edited = isEdited(c)
                   return (
@@ -504,7 +504,7 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
                         <div className={styles.ciText}>"{getCounterText(c)}"</div>
                         <span className={`${styles.editTag} ${styles.ciTag} ${edited ? styles.editTagEdited : styles.editTagSuggested}`}>
                           <span className={styles.editTagDot} />
-                          {edited ? 'Your wording' : 'LeaseLens suggested wording'}
+                          {edited ? 'Your wording' : 'LeaseRoom suggested wording'}
                         </span>
                       </div>
                     </div>
@@ -580,7 +580,7 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
             {copied ? '✓ Copied to clipboard' : 'Copy email to clipboard'}
           </button>
         </div>
-        <p className={styles.disclaimer}>LeaseLens provides informational analysis and does not constitute legal advice.</p>
+        <p className={styles.disclaimer}>LeaseRoom provides informational analysis and does not constitute legal advice.</p>
       </div>
     </div>
   )

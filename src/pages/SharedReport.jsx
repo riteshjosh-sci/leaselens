@@ -137,7 +137,7 @@ export default function SharedReport() {
         <div className={styles.headerLeft}>
           {logoUrl
             ? <img src={logoUrl} alt="Logo" className={styles.logo} />
-            : <div className={styles.brandFallback}>Lease<em>Lens</em></div>
+            : <div className={styles.brandFallback}>Lease<em>Room</em></div>
           }
           {workspace && (
             <div className={styles.wsInfo}>
@@ -216,11 +216,11 @@ export default function SharedReport() {
             </div>
 
             <div className={styles.disclaimer}>
-              DISCLAIMER: LeaseLens is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.
+              DISCLAIMER: LeaseRoom is an AI-powered analysis tool. It is not legal advice. Always consult a qualified solicitor before signing any retail lease or heads of agreement.
             </div>
 
             <div className={styles.footer}>
-              <span>LeaseLens · leaselens.au</span>
+              <span>LeaseRoom · leaseroom.com.au</span>
               <span>Generated {formatDate(activeReport.created_at)}</span>
             </div>
           </div>

@@ -322,7 +322,7 @@ export default function Admin() {
           <div className={styles.content}>
             <div className={styles.pageHeader}>
               <div>
-                <div className={styles.kicker}>Admin · LeaseLens</div>
+                <div className={styles.kicker}>Admin · LeaseRoom</div>
                 <h1 className={styles.h1}>Overview</h1>
               </div>
               <div className={styles.liveTag}>● Live</div>

@@ -14,7 +14,7 @@ export default function Footer() {
               <path d="M13 35 H7 a2 2 0 0 1 -2 -2 v-6" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"/>
               <circle cx="20" cy="20" r="5.4" fill="currentColor"/>
             </svg>
-            <span className={styles.wordmark}>Lease<span className={styles.lens}>Lens</span></span>
+            <span className={styles.wordmark}>Lease<span className={styles.lens}>Room</span></span>
           </div>
           <p className={styles.blurb}>Built for Australian retail tenants.</p>
         </div>
@@ -24,7 +24,7 @@ export default function Footer() {
           <li><Link to="/terms">Terms</Link></li>
           <li><Link to="/contact">Contact</Link></li>
         </ul>
-        <div className={styles.copy}>© 2026 LeaseLens · Built for Australian retail tenants</div>
+        <div className={styles.copy}>© 2026 LeaseRoom · Built for Australian retail tenants</div>
       </div>
     </footer>
   )
