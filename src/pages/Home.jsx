@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useTheme } from '../context/ThemeContext'
+import { supabase } from '../lib/supabase'
 import Footer from '../components/Footer'
 import styles from './Home.module.css'
 import { useSEO } from '../hooks/useSEO'
@@ -21,11 +23,29 @@ const CheckIcon = () => (
   </svg>
 )
 
+const STAGES = [
+  { n: '01', tab: 'Upload', eyebrow: 'STAGE 01 · UPLOAD', h: 'Upload your document',
+    p: 'Drop in a retail lease, heads of agreement, or renewal offer — PDF or Word, from any Australian state. Nothing to install, no account required to start.' },
+  { n: '02', tab: 'Analyse', eyebrow: 'STAGE 02 · ANALYSE', h: 'We read it like a negotiator',
+    p: 'LeaseRoom reviews every clause against retail tenancy legislation and the outcomes of thousands of real leases — separating what\'s standard from what\'s aggressive, and what\'s quietly negotiable.' },
+  { n: '03', tab: 'Review', eyebrow: 'STAGE 03 · REVIEW', h: 'Review the recommendations',
+    p: 'Each flagged clause comes with a plain-English explanation and a considered counter-position, ready to take straight into the conversation.' },
+  { n: '04', tab: 'Compare', eyebrow: 'STAGE 04 · COMPARE', h: 'Compare versions as they land',
+    p: 'Upload the landlord\'s revised draft and see exactly what was resolved, what\'s unchanged, and what\'s new — side by side with the original.' },
+  { n: '05', tab: 'Share', eyebrow: 'STAGE 05 · DOWNLOAD & SHARE', h: 'Download & share the report',
+    p: 'Export a client-ready PDF, or share a live link — built for sending straight to a client, a colleague, or the agent on the other side of the table.' },
+]
+
 export default function Home() {
   const { user } = useAuth()
+  const { theme, toggleTheme } = useTheme()
   const navigate = useNavigate()
   const observerRef = useRef(null)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [activeStage, setActiveStage] = useState(0)
+  const [waitlistEmail, setWaitlistEmail] = useState('')
+  const [waitlistSubmitted, setWaitlistSubmitted] = useState(false)
+  const [waitlistError, setWaitlistError] = useState('')
 
   useSEO({ title: 'Retail Lease & HOA Analysis for Australian Tenants', path: '/' })
 
@@ -49,6 +69,23 @@ export default function Home() {
   const handleSignIn = () => navigate('/login')
   const handleDashboard = () => navigate('/dashboard')
 
+  const handleWaitlistSubmit = async (e) => {
+    e.preventDefault()
+    setWaitlistError('')
+    if (!waitlistEmail.trim() || waitlistEmail.indexOf('@') < 1) {
+      setWaitlistError('Enter a valid email address.')
+      return
+    }
+    const { error } = await supabase.from('waitlist').insert({ email: waitlistEmail.trim() })
+    if (error && !error.message?.includes('duplicate')) {
+      setWaitlistError('Could not join the waitlist — please try again.')
+      return
+    }
+    setWaitlistSubmitted(true)
+  }
+
+  const stage = STAGES[activeStage]
+
   return (
     <div className={styles.page}>
 
@@ -57,7 +94,7 @@ export default function Home() {
         <div className={`${styles.wrap} ${styles.navInner}`}>
           <Link to="/" className={styles.navLogo}>
             <ViewfinderMark size={30} />
-            <span className={styles.wordmark}>Lease<span className={styles.lens}>Lens</span></span>
+            <span className={styles.wordmark}>Lease<span className={styles.lens}>Room</span></span>
           </Link>
           <nav className={styles.navLinks}>
             <a href="#how">How it works</a>
@@ -67,15 +104,18 @@ export default function Home() {
             <a href="#trust">Privacy</a>
           </nav>
           <div className={styles.navCta}>
+            <button className={styles.themeToggle} onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
+              {theme === 'dark' ? '☀' : '☾'}
+            </button>
             {user ? (
               <>
                 <button className={styles.signin} onClick={handleDashboard}>Dashboard</button>
-                <button className={`${styles.btn} ${styles.btnInk}`} onClick={handleCTA}>Scan my document</button>
+                <button className={`${styles.btn} ${styles.btnInk}`} onClick={handleCTA}>Analyse a lease</button>
               </>
             ) : (
               <>
                 <button className={styles.signin} onClick={handleSignIn}>Sign in</button>
-                <button className={`${styles.btn} ${styles.btnInk}`} onClick={handleCTA}>Scan my document</button>
+                <button className={`${styles.btn} ${styles.btnInk}`} onClick={handleCTA}>Analyse a lease</button>
               </>
             )}
           </div>
@@ -89,6 +129,9 @@ export default function Home() {
           </button>
         </div>
         {menuOpen && <div className={styles.mobileMenu}>
+          <button className={styles.themeToggleMobile} onClick={toggleTheme}>
+            {theme === 'dark' ? '☀ Light mode' : '☾ Dark mode'}
+          </button>
           <a href="#how" onClick={() => setMenuOpen(false)}>How it works</a>
           <a href="#report" onClick={() => setMenuOpen(false)}>What you get</a>
           <a href="#who" onClick={() => setMenuOpen(false)}>Who it's for</a>
@@ -97,7 +140,7 @@ export default function Home() {
           {user
             ? <button className={`${styles.btn} ${styles.btnInk}`} onClick={() => { handleDashboard(); setMenuOpen(false) }}>Dashboard</button>
             : <><button className={styles.signinMobile} onClick={() => { handleSignIn(); setMenuOpen(false) }}>Sign in</button>
-               <button className={`${styles.btn} ${styles.btnInk}`} onClick={() => { handleCTA(); setMenuOpen(false) }}>Scan my document</button></>
+               <button className={`${styles.btn} ${styles.btnInk}`} onClick={() => { handleCTA(); setMenuOpen(false) }}>Analyse a lease</button></>
           }
         </div>}
       </header>
@@ -106,15 +149,11 @@ export default function Home() {
       <section className={styles.hero}>
         <div className={`${styles.wrap} ${styles.heroGrid}`}>
           <div className={styles.heroCopy}>
-            <span className={styles.eyebrow}>Lease intelligence</span>
-            <h1 className={styles.heroH1}>
-              <span className={styles.ln}>Read every clause</span>
-              <span className={styles.ln}>the way your</span>
-              <span className={`${styles.ln} ${styles.accent}`}>lawyer would.</span>
-            </h1>
-            <p className={styles.heroSub}>LeaseLens reads your retail lease or heads of agreement like an experienced negotiator — flagging what matters, explaining what it means, and showing you exactly how to respond.</p>
+            <span className={styles.eyebrow}>AU · Retail lease &amp; HOA intelligence</span>
+            <h1 className={styles.heroH1}>Never sign a retail lease you don't fully understand.</h1>
+            <p className={styles.heroSub}>LeaseRoom reads your retail lease or heads of agreement like an experienced negotiator — flagging what matters, explaining what it means, and showing you exactly how to respond.</p>
             <div className={styles.heroActions}>
-              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleCTA}>Scan my document →</button>
+              <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleCTA}>Analyse a lease →</button>
               <a className={`${styles.btn} ${styles.btnGhost}`} href="#how"><span className={styles.ul}>See how it works</span></a>
             </div>
             <div className={styles.heroTrust}>
@@ -150,7 +189,7 @@ export default function Home() {
                   { label: 'Permitted use', tag: 'Standard — proceed', level: 'low' },
                 ].map((r, i) => (
                   <div key={i} className={styles.risk}>
-                    <span className={styles.riskBar} style={{ background: r.level === 'high' ? 'var(--accent)' : r.level === 'med' ? 'var(--risk-m)' : 'var(--risk-l)' }} />
+                    <span className={styles.riskBar} style={{ background: r.level === 'high' ? 'var(--risk-h)' : r.level === 'med' ? 'var(--risk-m)' : 'var(--risk-l)' }} />
                     <span className={styles.riskLbl}>{r.label}</span>
                     <span className={styles.riskTag}>{r.tag}</span>
                   </div>
@@ -165,26 +204,37 @@ export default function Home() {
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
+      {/* HOW IT WORKS — tabbed stages */}
       <section id="how" className={styles.section}>
         <div className={styles.wrap}>
-          <div className={`${styles.sectionHead} ${styles.reveal}`}>
+          <div className={`${styles.sectionHead} ${styles.reveal} ${styles.sectionHeadCenter}`}>
             <span className={styles.eyebrow}>How it works</span>
-            <h2>Three steps between an unread lease and a confident position.</h2>
+            <h2>Your lease, from upload to download.</h2>
+            <p className={styles.sectionLead}>Five stages, one continuous flow. Click any stage to see what happens and what you get.</p>
           </div>
-          <div className={styles.steps}>
-            {[
-              { n: '01', h: 'Upload your document', p: 'Drop in a retail lease, heads of agreement, or renewal offer — PDF or Word, from any Australian state. Nothing to install, no account required to start.' },
-              { n: '02', h: 'We read it like a negotiator', p: 'LeaseLens reviews every clause against retail tenancy legislation and the outcomes of thousands of real leases — separating what\'s standard from what\'s aggressive, and what\'s quietly negotiable.' },
-              { n: '03', h: 'Negotiate from knowledge', p: 'You get the exact clauses, the risk in plain English, and a considered counter-position for each — ready to take straight into the conversation.' },
-            ].map((s, i) => (
-              <div key={i} className={`${styles.step} ${styles.reveal}`}>
-                <span className={styles.stepNum}>{s.n}</span>
-                <div className={styles.stepRule} />
-                <h3>{s.h}</h3>
-                <p>{s.p}</p>
-              </div>
+
+          <div className={`${styles.stageTabs} ${styles.reveal}`}>
+            {STAGES.map((s, i) => (
+              <button
+                key={s.n}
+                className={`${styles.stageTab} ${activeStage === i ? styles.stageTabActive : ''}`}
+                onClick={() => setActiveStage(i)}
+              >
+                <span className={styles.stageTabNum}>{s.n}</span>
+                <span>{s.tab}</span>
+              </button>
             ))}
+          </div>
+          <div className={`${styles.stagePanel} ${styles.reveal}`}>
+            <div className={styles.stageShot}>
+              <div className={styles.stageShotFrame} />
+              <span>{stage.tab} screen</span>
+            </div>
+            <div className={styles.stageCopy}>
+              <span className={styles.stageEyebrow}>{stage.eyebrow}</span>
+              <h3>{stage.h}</h3>
+              <p>{stage.p}</p>
+            </div>
           </div>
         </div>
       </section>
@@ -246,7 +296,7 @@ export default function Home() {
               {
                 role: 'Retailers & business owners',
                 h: 'Sign the biggest contract your business holds — with your eyes open.',
-                lead: 'You don\'t need a legal background. LeaseLens translates the lease into plain language and tells you what to push back on, so you walk in informed instead of hopeful.',
+                lead: 'You don\'t need a legal background. LeaseRoom translates the lease into plain language and tells you what to push back on, so you walk in informed instead of hopeful.',
                 items: ['Understand exactly what you\'re agreeing to before you sign', 'Know which terms are standard and which are worth a fight', 'Spend your solicitor\'s time on the issues that actually matter'],
               },
               {
@@ -269,18 +319,18 @@ export default function Home() {
         </div>
       </section>
 
-      {/* TRUST — dark */}
+      {/* TRUST — dark band */}
       <section id="trust" className={`${styles.section} ${styles.sectionDark}`}>
         <div className={styles.wrap}>
           <div className={`${styles.sectionHead} ${styles.reveal}`}>
             <span className={`${styles.eyebrow} ${styles.eyebrowLt}`}>Why you can trust it</span>
-            <h2 style={{ color: 'var(--paper)' }}>Confidential by default. Grounded in law.</h2>
+            <h2 className={styles.bandH2}>Confidential by default. Grounded in law.</h2>
           </div>
           <div className={styles.trustGrid}>
             {[
               { h: 'Your document stays yours', p: 'Encrypted in transit and at rest. We never sell your documents and never use them to train models. Delete any file permanently, any time, with one click.' },
               { h: 'Anchored in legislation', p: 'Every flag is cross-referenced to the Retail Leases Act that governs your state or territory — so each suggested position rests on the law, not opinion.' },
-              { h: 'Clear about its limits', p: 'LeaseLens makes you a sharper, better-prepared client. It doesn\'t pretend to be your solicitor — and it tells you plainly when an issue warrants formal legal advice.' },
+              { h: 'Clear about its limits', p: 'LeaseRoom makes you a sharper, better-prepared client. It doesn\'t pretend to be your solicitor — and it tells you plainly when an issue warrants formal legal advice.' },
             ].map((t, i) => (
               <div key={i} className={`${styles.trustItem} ${styles.reveal}`}>
                 <h3>{t.h}</h3>
@@ -305,19 +355,19 @@ export default function Home() {
                 tier: 'Single scan', amt: '$49', per: '/ document',
                 blurb: 'For the one lease in front of you, right now.',
                 items: ['Full clause-by-clause report', 'Suggested counters for every flag', 'Exportable PDF summary'],
-                cta: 'Scan one document', featured: false,
+                cta: 'Analyse a lease', featured: false,
               },
               {
-                tier: 'Professional', amt: '$149', per: '/ month',
+                tier: 'Professional', amt: '$99', per: '/ month',
                 blurb: 'For reps and advisors reviewing leases regularly.',
                 items: ['Unlimited document scans', 'Client-ready branded summaries', 'Clause comparison across versions', 'Priority analysis & support'],
-                cta: 'Start free trial', featured: true, badge: 'Most popular',
+                cta: 'See full pricing', featured: true, badge: 'Most popular',
               },
               {
-                tier: 'Firm', amt: 'Custom', per: '',
+                tier: 'Adviser', amt: '$299', per: '/ month',
                 blurb: 'For brokerages and advisory teams.',
-                items: ['Everything in Professional', 'Seats for the whole team', 'Shared clause library & playbooks'],
-                cta: 'Talk to us', featured: false,
+                items: ['Everything in Professional', 'Multiple client workspaces', 'Branded PDF reports'],
+                cta: 'See full pricing', featured: false,
               },
             ].map((p, i) => (
               <div key={i} className={`${styles.priceCard} ${p.featured ? styles.priceCardFeatured : ''} ${styles.reveal}`}>
@@ -332,7 +382,7 @@ export default function Home() {
                 </ul>
                 <button
                   className={`${styles.btn} ${p.featured ? styles.btnPrimary : styles.btnInk}`}
-                  onClick={handleCTA}>
+                  onClick={() => navigate('/pricing')}>
                   {p.cta}
                 </button>
               </div>
@@ -350,8 +400,8 @@ export default function Home() {
           </div>
           <div className={styles.faq}>
             {[
-              { q: 'Does this replace a lawyer?', a: 'No — and it won\'t pretend to. LeaseLens makes you a sharper, better-prepared client: you\'ll know exactly what to ask and what to push on. For binding legal advice, see a solicitor. For knowing where to spend their time, start here.' },
-              { q: 'What documents can I upload?', a: 'Retail and commercial leases, heads of agreement, renewal and variation offers, and disclosure statements — as PDF or Word. If it governs your tenancy, LeaseLens can read it.' },
+              { q: 'Does this replace a lawyer?', a: 'No — and it won\'t pretend to. LeaseRoom makes you a sharper, better-prepared client: you\'ll know exactly what to ask and what to push on. For binding legal advice, see a solicitor. For knowing where to spend their time, start here.' },
+              { q: 'What documents can I upload?', a: 'Retail and commercial leases, heads of agreement, renewal and variation offers, and disclosure statements — as PDF or Word. If it governs your tenancy, LeaseRoom can read it.' },
               { q: 'Which states does it cover?', a: 'Every Australian state and territory. Each analysis is matched to the retail tenancy legislation that governs the premises in your document.' },
               { q: 'Is my document kept private?', a: 'Yes. Files are encrypted in transit and at rest, never sold, and never used to train models. You can permanently delete any document at any time.' },
             ].map((qa, i) => (
@@ -373,14 +423,43 @@ export default function Home() {
         </div>
       </section>
 
+      {/* WAITLIST */}
+      <section id="waitlist" className={styles.section}>
+        <div className={styles.wrap}>
+          <div className={`${styles.waitlistCard} ${styles.reveal}`}>
+            <span className={styles.eyebrow}>Early access</span>
+            <h2>Join the LeaseRoom waitlist.</h2>
+            <p>Be first to know about new features and state coverage as they ship. No spam — just your invite and the occasional product update.</p>
+            {waitlistSubmitted ? (
+              <div className={styles.waitlistDone}>
+                <span className={styles.waitlistCheck}>✓</span>
+                <span>You're on the list — we'll be in touch at <strong>{waitlistEmail}</strong>.</span>
+              </div>
+            ) : (
+              <form onSubmit={handleWaitlistSubmit} className={styles.waitlistForm}>
+                <input
+                  type="email"
+                  className="input"
+                  placeholder="you@company.com"
+                  value={waitlistEmail}
+                  onChange={e => setWaitlistEmail(e.target.value)}
+                />
+                <button type="submit" className={`${styles.btn} ${styles.btnInk}`}>Join waitlist →</button>
+              </form>
+            )}
+            {waitlistError && <p className={styles.waitlistError}>{waitlistError}</p>}
+          </div>
+        </div>
+      </section>
+
       {/* FINAL CTA */}
       <section className={`${styles.section} ${styles.sectionDark} ${styles.final}`}>
         <div className={styles.wrap}>
           <span className={`${styles.eyebrow} ${styles.eyebrowLt} ${styles.eyebrowCenter}`}>Lease intelligence</span>
-          <h2 style={{ color: 'var(--paper)', marginTop: 20 }}>Know what you're signing<br />before you sign.</h2>
+          <h2 className={styles.bandH2} style={{ marginTop: 20 }}>Know what you're signing<br />before you sign.</h2>
           <p>Upload your lease and see the first flags in under a minute. No account needed to start.</p>
           <div className={styles.finalActions}>
-            <button className={`${styles.btn} ${styles.btnFinalPrimary}`} onClick={handleCTA}>Scan my document →</button>
+            <button className={`${styles.btn} ${styles.btnFinalPrimary}`} onClick={handleCTA}>Analyse a lease →</button>
             <button className={`${styles.btn} ${styles.btnFinalGhost}`}>Book a walkthrough</button>
           </div>
           <p className={styles.reassure}>Trusted by retailers and tenant representatives across Australia.</p>
@@ -394,7 +473,7 @@ export default function Home() {
             <div className={styles.footerBrand}>
               <Link to="/" className={styles.footerLogo}>
                 <ViewfinderMark size={28} />
-                <span className={styles.wordmark} style={{ fontSize: 21 }}>Lease<span className={styles.lens}>Lens</span></span>
+                <span className={styles.wordmark} style={{ fontSize: 21 }}>Lease<span className={styles.lens}>Room</span></span>
               </Link>
               <p className={styles.brandBlurb}>Lease intelligence for retailers and the professionals who negotiate on their behalf.</p>
             </div>
@@ -411,13 +490,13 @@ export default function Home() {
             </div>
             <div className={styles.footerCol}>
               <h4>Get started</h4>
-              <button onClick={handleCTA}>Scan a document</button>
+              <button onClick={handleCTA}>Analyse a lease</button>
               <button onClick={handleSignIn}>Sign in</button>
             </div>
           </div>
           <div className={styles.footerBottom}>
-            <span className={styles.legal}>© 2026 LeaseLens. All rights reserved.</span>
-            <span className={styles.disc}>LeaseLens provides informational analysis to support negotiation and does not constitute legal advice.</span>
+            <span className={styles.legal}>© 2026 LeaseRoom. All rights reserved.</span>
+            <span className={styles.disc}>LeaseRoom provides informational analysis to support negotiation and does not constitute legal advice.</span>
           </div>
         </div>
       </footer>
