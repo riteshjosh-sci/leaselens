@@ -80,9 +80,9 @@
   margin-left: auto;
 }
 .statusChip .d { width:7px; height:7px; border-radius:50%; background:var(--accent); }
-.statusWait { background:rgba(194,146,43,0.14); color:#8a6312; }
+.statusWait { background:rgba(194,146,43,0.14); color:var(--st-sent-tx); }
 .statusWait .d { background:var(--st-sent); }
-.statusDone { background:rgba(94,140,106,0.16); color:#3f6b4e; }
+.statusDone { background:rgba(94,140,106,0.16); color:var(--st-agreed-tx); }
 .statusDone .d { background:var(--st-agreed); }
 
 /* Document summary line */

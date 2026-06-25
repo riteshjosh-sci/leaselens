@@ -60,6 +60,46 @@ html {
   --st-agreed:  #5E8C6A;
   --st-std:     #8C8579;
 
+  /* Status "text on tint" colors — darker readable text sitting on the
+     st-sent-bg / st-agreed-bg tinted chip backgrounds */
+  --st-sent-tx:    #8a6312;
+  --st-agreed-tx:  #3f6b4e;
+  --st-agreed-tx-deep: #2a5238;
+  --st-agreed-border:  #b8d8c4;
+
+  /* Danger / destructive (delete actions, "worsened" comparison state) */
+  --danger:      #C0492F;
+  --danger-deep: #993621;
+  --danger-darker: #7a2a18;
+  --danger-bg:   rgba(192,73,47,0.12);
+
+  /* Comparison tab — "watch"/changed-but-neutral state color */
+  --cmp-watch:    #C25E1E;
+  --cmp-watch-bg: #F0F0F2;
+  --cmp-same:     #B6AF9F;
+
+  /* Founding-member plan badge */
+  --plan-founding-tx: #926c10;
+  --plan-founding-bg: #fdf3d8;
+
+  /* Admin plan badges (one-off blue/green plan tiers, distinct from risk hues) */
+  --plan-oneoff-bg:  #dbeafe;
+  --plan-oneoff-tx:  #1d4ed8;
+  --plan-annual-bg:  #f0fdf4;
+  --plan-annual-tx:  #166534;
+  --plan-suspend-border: #e8d5b0;
+
+  /* Misc one-offs */
+  --removed-note: #60a5fa;
+
+  /* ClauseCard legislation reference box (blue-grey informational tint) */
+  --leg-bg:     #f0f4f8;
+  --leg-border: #c0cdd8;
+  --leg-text:   #2a3d50;
+
+  /* ClauseCard gold quote-box border tint */
+  --quote-border: #e0d5c0;
+
   /* Dark "trust band" sections (marketing pages) */
   --band-bg:      #0E1830;
   --band-ink:     #FFFFFF;
@@ -118,6 +158,37 @@ html {
   --st-sent:    #D4A646;
   --st-agreed:  #74A883;
   --st-std:     #8492A8;
+
+  --st-sent-tx:    #E8C77A;
+  --st-agreed-tx:  #8FCBA0;
+  --st-agreed-tx-deep: #A8D9B7;
+  --st-agreed-border:  #2F5740;
+
+  --danger:      #E07A5F;
+  --danger-deep: #F0A08C;
+  --danger-darker: #F7C0B0;
+  --danger-bg:   rgba(224,122,95,0.16);
+
+  --cmp-watch:    #E0935F;
+  --cmp-watch-bg: #2A2420;
+  --cmp-same:     #8A8576;
+
+  --plan-founding-tx: #E8C77A;
+  --plan-founding-bg: #3A2F12;
+
+  --plan-oneoff-bg:  #1C2C44;
+  --plan-oneoff-tx:  #7FA6E8;
+  --plan-annual-bg:  #16301F;
+  --plan-annual-tx:  #6FCB8C;
+  --plan-suspend-border: #4A3D22;
+
+  --removed-note: #7FB4F5;
+
+  --leg-bg:     #16243C;
+  --leg-border: #2C3C50;
+  --leg-text:   #B8C4D4;
+
+  --quote-border: #4A4030;
 
   --band-bg:      #15233E;
   --band-ink:     #FFFFFF;

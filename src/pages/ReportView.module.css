@@ -29,8 +29,8 @@
 .sep { width:3px; height:3px; border-radius:50%; background:var(--faint); }
 .docRisk { font-weight:700; font-size:11px; letter-spacing:0.06em; }
 .docRiskHigh   { color:var(--accent-deep); }
-.docRiskMedium { color:#8a6312; }
-.docRiskLow    { color:#3f6b4e; }
+.docRiskMedium { color:var(--st-sent-tx); }
+.docRiskLow    { color:var(--st-agreed-tx); }
 .docActions { display:flex; align-items:center; gap:8px; flex-shrink:0; flex-wrap:wrap; }
 
 /* Buttons */
@@ -71,8 +71,8 @@
 /* Pills */
 .pill { flex-shrink:0; font-size:10.5px; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; padding:5px 11px; border-radius:100px; white-space:nowrap; }
 .pillHigh   { background:var(--risk-h-bg); color:var(--accent-deep); }
-.pillMedium { background:var(--risk-m-bg); color:#8a6312; }
-.pillLow    { background:var(--risk-l-bg); color:#3f6b4e; }
+.pillMedium { background:var(--risk-m-bg); color:var(--st-sent-tx); }
+.pillLow    { background:var(--risk-l-bg); color:var(--st-agreed-tx); }
 
 .chev { color:var(--muted); transition:transform 0.2s; flex-shrink:0; }
 .chevOpen { transform:rotate(180deg); color:var(--ink); }
@@ -119,8 +119,8 @@
 .scoreOf { font-size:14px; color:var(--muted); flex:1; }
 .scoreLbl { font-size:11px; font-weight:700; letter-spacing:0.06em; padding:5px 11px; border-radius:100px; text-transform:uppercase; }
 .scoreLblHigh   { background:var(--risk-h-bg); color:var(--accent-deep); }
-.scoreLblMedium { background:var(--risk-m-bg); color:#8a6312; }
-.scoreLblLow    { background:var(--risk-l-bg); color:#3f6b4e; }
+.scoreLblMedium { background:var(--risk-m-bg); color:var(--st-sent-tx); }
+.scoreLblLow    { background:var(--risk-l-bg); color:var(--st-agreed-tx); }
 
 .meter { display:flex; height:8px; border-radius:4px; overflow:hidden; gap:3px; margin-bottom:16px; }
 .meter span { border-radius:3px; }
@@ -150,15 +150,15 @@
 .vDate { font-size:11.5px; color:var(--muted); flex:1; }
 .vRisk { font-size:10px; font-weight:700; letter-spacing:0.06em; }
 .vRiskHigh   { color:var(--accent-deep); }
-.vRiskMedium { color:#8a6312; }
-.vRiskLow    { color:#3f6b4e; }
+.vRiskMedium { color:var(--st-sent-tx); }
+.vRiskLow    { color:var(--st-agreed-tx); }
 .compareBtn { width:100%; padding:10px; background:var(--ink); color:var(--paper); border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; font-family:var(--font); transition:background 0.15s; }
 .compareBtn:hover { background:var(--accent-deep); }
 
 .sDisclaimer { font-size:12px; color:var(--muted); line-height:1.5; padding:0 4px; }
 
 /* Analysis complete banner */
-.completeBanner { background:var(--risk-l-bg); border:1px solid #b8d8c4; border-left:3px solid var(--risk-l); border-radius:var(--radius-sm); padding:12px 20px; display:flex; align-items:center; gap:10px; margin-bottom:12px; font-size:14px; color:var(--risk-l); font-weight:500; }
+.completeBanner { background:var(--risk-l-bg); border:1px solid var(--st-agreed-border); border-left:3px solid var(--risk-l); border-radius:var(--radius-sm); padding:12px 20px; display:flex; align-items:center; gap:10px; margin-bottom:12px; font-size:14px; color:var(--risk-l); font-weight:500; }
 
 /* ── Tablet (≤ 1080px) ── */
 @media (max-width:1080px) {
@@ -298,7 +298,7 @@
 .hoaConfirm {
   background: var(--card);
   border: 1px solid var(--hair);
-  border-left: 3px solid #5E8C6A;
+  border-left: 3px solid var(--risk-l);
   border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   padding: 20px 24px;
   margin-bottom: 20px;
@@ -308,7 +308,7 @@
 .hoaConfirmHead { margin-bottom: 14px; }
 .hoaConfirmKicker {
   font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
-  text-transform: uppercase; color: #3f6b4e; margin-bottom: 4px;
+  text-transform: uppercase; color: var(--st-agreed-tx); margin-bottom: 4px;
 }
 .hoaConfirmSub { font-size: 13px; color: var(--muted); }
 
@@ -344,8 +344,8 @@
   padding: 3px 10px; border-radius: 100px;
   display: inline-block; width: fit-content;
 }
-.hoaStatusConfirmed { background: rgba(94,140,106,0.12); color: #3f6b4e; }
-.hoaStatusChanged   { background: rgba(194,146,43,0.14); color: #8a6312; }
+.hoaStatusConfirmed { background: rgba(94,140,106,0.12); color: var(--st-agreed-tx); }
+.hoaStatusChanged   { background: rgba(194,146,43,0.14); color: var(--st-sent-tx); }
 .hoaStatusMissing   { background: var(--risk-h-bg); color: var(--accent-deep); }
 .hoaNote { font-size: 12px; color: var(--muted); line-height: 1.5; }
 
@@ -362,13 +362,13 @@
 
 /* ── SCORE LABEL VARIANTS ── */
 .scoreLblHIGH   { background: var(--risk-h-bg); color: var(--accent-deep); }
-.scoreLblMEDIUM { background: var(--risk-m-bg); color: #8a6312; }
-.scoreLblLOW    { background: var(--risk-l-bg); color: #3f6b4e; }
+.scoreLblMEDIUM { background: var(--risk-m-bg); color: var(--st-sent-tx); }
+.scoreLblLOW    { background: var(--risk-l-bg); color: var(--st-agreed-tx); }
 
 /* ── DOC RISK VARIANTS ── */
 .docRiskHIGH   { color: var(--accent-deep); font-weight: 700; }
-.docRiskMEDIUM { color: #8a6312; font-weight: 700; }
-.docRiskLOW    { color: #3f6b4e; font-weight: 700; }
+.docRiskMEDIUM { color: var(--st-sent-tx); font-weight: 700; }
+.docRiskLOW    { color: var(--st-agreed-tx); font-weight: 700; }
 
 @media (max-width: 900px) {
   .commercialsGrid { grid-template-columns: repeat(3, 1fr); }

@@ -53,10 +53,10 @@
 .detailLabel { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
 .detailSection p { font-size: 14px; line-height: 1.75; color: var(--ink-soft); font-weight: 400; }
 
-.counterBox { background: var(--risk-l-bg); border: 1px solid #b8d8c4; border-radius: var(--radius-sm); padding: 12px 16px; }
+.counterBox { background: var(--risk-l-bg); border: 1px solid var(--st-agreed-border); border-radius: var(--radius-sm); padding: 12px 16px; }
 .counterBox p { font-size: 14px; line-height: 1.75; color: var(--risk-l); font-weight: 400; }
 
-.removedNote { font-size: 13px; color: #60a5fa; font-style: italic; }
+.removedNote { font-size: 13px; color: var(--removed-note); font-style: italic; }
 
 @media (max-width: 600px) {
   .selector { flex-direction: column; }
