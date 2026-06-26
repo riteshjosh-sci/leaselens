@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AppSidebar from '../components/AppSidebar'
+import leaseroomLogo from '../assets/leaseroom-logo-dark.png'
 import styles from './ReportView.module.css'
 
 export default function ReportView() {
@@ -125,46 +126,47 @@ export default function ReportView() {
   const handleDownloadPDF = async () => {
     if (!report) return
     const data = report.report_json
+    const logoSrc = window.location.origin + leaseroomLogo
     const win = window.open('', '_blank')
     win.document.write(`<!DOCTYPE html><html><head>
       <title>LeaseRoom Report — ${document?.filename || 'Report'}</title>
       <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
       <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'IBM Plex Sans', sans-serif; color: #1C1916; font-size: 13px; line-height: 1.6; padding: 48px; max-width: 800px; margin: 0 auto; }
-        .header { border-bottom: 2px solid #1C1916; padding-bottom: 20px; margin-bottom: 28px; }
-        .brand { font-size: 22px; font-weight: 700; color: #1C1916; margin-bottom: 6px; }
-        .brand em { font-style: normal; color: #2C50D6; }
-        .meta { font-size: 11px; color: #8C8579; }
-        .commercials { background: #F7F7F8; border: 1px solid rgba(28,25,22,0.1); border-radius: 8px; padding: 18px; margin-bottom: 24px; }
-        .commercials-title { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8C8579; margin-bottom: 14px; }
+        body { font-family: 'IBM Plex Sans', sans-serif; color: #0E1830; font-size: 13px; line-height: 1.6; padding: 48px; max-width: 800px; margin: 0 auto; }
+        .header { display: flex; align-items: center; justify-content: space-between; gap: 16px; border-bottom: 2px solid #0E1830; padding-bottom: 20px; margin-bottom: 28px; }
+        .logo { height: 28px; width: auto; display: block; }
+        .meta { font-size: 11px; color: #8A93A4; text-align: right; }
+        .commercials { background: #F7F7F8; border: 1px solid rgba(14,24,48,0.1); border-radius: 8px; padding: 18px; margin-bottom: 24px; }
+        .commercials-title { font-size: 10px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: #8A93A4; margin-bottom: 14px; }
         .commercials-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
-        .com-item .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #8C8579; margin-bottom: 3px; }
-        .com-item .val { font-size: 14px; font-weight: 600; color: #1C1916; }
-        .summary { background: #f0f5f2; border-left: 3px solid #2C50D6; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; line-height: 1.7; }
+        .com-item .lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #8A93A4; margin-bottom: 3px; }
+        .com-item .val { font-size: 14px; font-weight: 600; color: #0E1830; }
+        .summary { background: #F0F3F8; border-left: 3px solid #1E3A66; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; line-height: 1.7; }
         .risk-badge { display: inline-block; padding: 4px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; margin-bottom: 20px; }
-        .risk-HIGH { background: rgba(44,80,214,0.1); color: #1E3AA8; }
+        .risk-HIGH { background: rgba(44,80,214,0.1); color: #142A4D; }
         .risk-MEDIUM { background: rgba(194,146,43,0.14); color: #8a6312; }
         .risk-LOW { background: rgba(94,140,106,0.16); color: #3f6b4e; }
-        h2 { font-size: 18px; font-weight: 600; margin: 28px 0 14px; padding-bottom: 8px; border-bottom: 1px solid rgba(28,25,22,0.1); }
-        .clause { border: 1px solid rgba(28,25,22,0.1); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+        h2 { font-size: 18px; font-weight: 600; margin: 28px 0 14px; padding-bottom: 8px; border-bottom: 1px solid rgba(14,24,48,0.1); color: #0E1830; }
+        .clause { border: 1px solid rgba(14,24,48,0.1); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
         .clause-header { display: flex; align-items: center; gap: 10px; padding: 12px 16px; background: #F7F7F8; }
         .dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
         .dot-HIGH { background: #2C50D6; } .dot-MEDIUM { background: #C2922B; } .dot-LOW { background: #5E8C6A; }
-        .clause-name { font-weight: 600; font-size: 14px; flex: 1; }
+        .clause-name { font-weight: 600; font-size: 14px; flex: 1; color: #0E1830; }
         .clause-body { padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; }
-        .clause-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #8C8579; margin-bottom: 4px; }
-        .clause-quote { background: #F7F7F8; border-left: 3px solid #C2922B; padding: 10px 14px; font-size: 12px; color: #4B463E; font-style: italic; }
-        .clause-counter { background: rgba(44,80,214,0.06); border-left: 3px solid #2C50D6; padding: 10px 14px; font-size: 12px; color: #1E3AA8; }
-        .next-steps { background: #1C1916; color: white; padding: 22px; border-radius: 8px; margin-top: 28px; }
+        .clause-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #8A93A4; margin-bottom: 4px; }
+        .clause-quote { background: #F7F7F8; border-left: 3px solid #C2922B; padding: 10px 14px; font-size: 12px; color: #56627A; font-style: italic; }
+        .clause-counter { background: rgba(30,58,102,0.06); border-left: 3px solid #1E3A66; padding: 10px 14px; font-size: 12px; color: #142A4D; }
+        .next-steps { background: #0E1830; color: white; padding: 22px; border-radius: 8px; margin-top: 28px; }
         .next-steps h2 { color: white; border-color: rgba(255,255,255,0.1); }
         .next-steps li { color: rgba(255,255,255,0.8); margin-bottom: 8px; }
-        .disclaimer { margin-top: 28px; padding: 12px 16px; border: 1px solid rgba(28,25,22,0.1); border-radius: 6px; font-size: 11px; color: #8C8579; }
-        .footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid rgba(28,25,22,0.1); font-size: 11px; color: #8C8579; display: flex; justify-content: space-between; }
+        .disclaimer { margin-top: 28px; padding: 12px 16px; border: 1px solid rgba(14,24,48,0.1); border-radius: 6px; font-size: 11px; color: #8A93A4; }
+        .footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid rgba(14,24,48,0.1); font-size: 11px; color: #8A93A4; display: flex; justify-content: space-between; }
+        @media print { .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       </style></head><body>
       <div class="header">
-        <div class="brand">Lease<em>Room</em></div>
-        <div class="meta">${negotiation?.property_name || 'Document analysis'} · v${document?.version_number} · ${formatDate(document?.uploaded_at)}</div>
+        <img class="logo" src="${logoSrc}" alt="LeaseRoom" />
+        <div class="meta">${negotiation?.property_name || 'Document analysis'}<br/>v${document?.version_number} · ${formatDate(document?.uploaded_at)}</div>
       </div>
       <span class="risk-badge risk-${data.overall_risk}">● ${data.overall_risk} RISK</span>
       ${commercialRows.length > 0 ? `
