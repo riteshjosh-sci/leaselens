@@ -193,7 +193,8 @@ export default function Analyser() {
           await supabase.from('profiles').update({ free_scans_used: (profile.free_scans_used || 0) + 1 }).eq('id', user.id)
         } else if (profile.plan === 'one_off') {
           await supabase.from('profiles').update({ scan_credits: Math.max(0, (profile.scan_credits || 0) - 1) }).eq('id', user.id)
-        } else if (profile.plan === 'monthly' || profile.plan === 'annual') {
+        } else if (profile.plan === 'monthly' || profile.plan === 'annual' || profile.plan === 'adviser') {
+          // adviser has no enforced limit (see canAnalyse in lib/stripe.js) -- still tracked for display
           await supabase.from('profiles').update({ monthly_scans_used: (profile.monthly_scans_used || 0) + 1 }).eq('id', user.id)
         }
       }

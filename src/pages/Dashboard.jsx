@@ -109,7 +109,7 @@ export default function Dashboard() {
     if (plan === 'free')    return { val: `${profile?.free_scans_used || 0} / 1`, unit: 'scan used' }
     if (plan === 'one_off') return { val: `${profile?.scan_credits || 0}`, unit: 'credits left' }
     if (plan === 'monthly' || plan === 'annual') return { val: `${profile?.monthly_scans_used || 0} / 10`, unit: 'this month' }
-    if (plan === 'adviser') return { val: '∞', unit: 'unlimited' }
+    if (plan === 'adviser') return { val: `${profile?.monthly_scans_used || 0} / ∞`, unit: 'this month' }
     return { val: '—', unit: '' }
   }
 

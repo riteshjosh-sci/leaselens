@@ -54,7 +54,7 @@ export default function AppSidebar({ children }) {
     if (plan === 'free')    return { label: 'Free', detail: `${profile?.free_scans_used || 0} / 1 scan used` }
     if (plan === 'one_off') return { label: 'One-off', detail: `${profile?.scan_credits || 0} credit${profile?.scan_credits === 1 ? '' : 's'} remaining` }
     if (plan === 'monthly' || plan === 'annual') return { label: PLANS[plan]?.name || plan, detail: `${profile?.monthly_scans_used || 0} / 10 scans used this month` }
-    if (plan === 'adviser') return { label: 'Professional', detail: 'Unlimited scans' }
+    if (plan === 'adviser') return { label: 'Professional', detail: `${profile?.monthly_scans_used || 0} / ∞ scans this month` }
     return { label: plan, detail: '' }
   }
 
