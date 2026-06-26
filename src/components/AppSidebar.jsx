@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
+import { PLANS, openBillingPortal, isSubscribed } from '../lib/stripe'
 import styles from './AppSidebar.module.css'
 import leaseroomLogoDark from '../assets/leaseroom-logo-dark.png'
 import leaseroomLogoLight from '../assets/leaseroom-logo-light.png'
@@ -20,13 +21,14 @@ export default function AppSidebar({ children }) {
   const location = useLocation()
   const [profile, setProfile] = useState(null)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [portalLoading, setPortalLoading] = useState(false)
   const logoSrc = theme === 'dark' ? leaseroomLogoLight : leaseroomLogoDark
 
   useEffect(() => {
     if (!user) return
     supabase
       .from('profiles')
-      .select('full_name, plan')
+      .select('full_name, plan, free_scans_used, monthly_scans_used, scan_credits, founding_member, stripe_customer_id')
       .eq('id', user.id)
       .single()
       .then(({ data }) => setProfile(data))
@@ -35,6 +37,25 @@ export default function AppSidebar({ children }) {
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     navigate('/')
+  }
+
+  const handleManageBilling = async () => {
+    setPortalLoading(true)
+    try {
+      const url = await openBillingPortal({ customerId: profile.stripe_customer_id })
+      window.location.href = url
+    } catch {
+      setPortalLoading(false)
+    }
+  }
+
+  const planInfo = () => {
+    const plan = profile?.plan || 'free'
+    if (plan === 'free')    return { label: 'Free', detail: `${profile?.free_scans_used || 0} / 1 scan used` }
+    if (plan === 'one_off') return { label: 'One-off', detail: `${profile?.scan_credits || 0} credit${profile?.scan_credits === 1 ? '' : 's'} remaining` }
+    if (plan === 'monthly' || plan === 'annual') return { label: PLANS[plan]?.name || plan, detail: `${profile?.monthly_scans_used || 0} / 10 scans used this month` }
+    if (plan === 'adviser') return { label: 'Professional', detail: 'Unlimited scans' }
+    return { label: plan, detail: '' }
   }
 
   const getInitials = () => {
@@ -99,6 +120,23 @@ export default function AppSidebar({ children }) {
             </button>
           ))}
         </nav>
+
+        <div className={styles.planCard}>
+          <div className={styles.planCardHead}>
+            <span className={styles.planCardLabel}>{planInfo().label}</span>
+            {profile?.founding_member && <span className={styles.foundingBadge}>★ Founding</span>}
+          </div>
+          <div className={styles.planCardDetail}>{planInfo().detail}</div>
+          {isSubscribed(profile) ? (
+            <button className={styles.planCardLink} onClick={handleManageBilling} disabled={portalLoading}>
+              {portalLoading ? 'Opening…' : 'Manage billing →'}
+            </button>
+          ) : (
+            <button className={styles.planCardUpgrade} onClick={() => handleNavClick('/pricing')}>
+              Upgrade plan →
+            </button>
+          )}
+        </div>
 
         <button className={styles.siteLink} onClick={() => handleNavClick('/')}>
           View public site →

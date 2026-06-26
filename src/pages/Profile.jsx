@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import { PLANS, openBillingPortal } from '../lib/stripe'
 import AppSidebar from '../components/AppSidebar'
 import styles from './Profile.module.css'
 
@@ -26,10 +25,6 @@ export default function Profile() {
   const [passwordError, setPasswordError] = useState('')
   const [passwordSaved, setPasswordSaved] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
-
-  // billing
-  const [portalLoading, setPortalLoading] = useState(false)
-  const [billingError, setBillingError]   = useState('')
 
   // delete account
   const [deleteConfirm, setDeleteConfirm] = useState(false)
@@ -73,17 +68,6 @@ export default function Profile() {
     setTimeout(() => setPasswordSaved(false), 2500)
   }
 
-  const handleManageBilling = async () => {
-    setBillingError(''); setPortalLoading(true)
-    try {
-      const url = await openBillingPortal({ customerId: profile.stripe_customer_id })
-      window.location.href = url
-    } catch (e) {
-      setBillingError(e.message || 'Could not open billing portal.')
-      setPortalLoading(false)
-    }
-  }
-
   const handleSignOut = async () => {
     await signOut()
     navigate('/')
@@ -113,26 +97,7 @@ export default function Profile() {
     return user?.email?.[0]?.toUpperCase() || 'U'
   }
 
-  const planInfo = () => {
-    const plan = profile?.plan || 'free'
-    if (plan === 'free') {
-      return { label: 'Free', detail: `${profile?.free_scans_used || 0} / 1 scan used` }
-    }
-    if (plan === 'one_off') {
-      return { label: 'One-off', detail: `${profile?.scan_credits || 0} credit${profile?.scan_credits === 1 ? '' : 's'} remaining` }
-    }
-    if (plan === 'monthly' || plan === 'annual') {
-      return { label: PLANS[plan]?.name || plan, detail: `${profile?.monthly_scans_used || 0} / 10 scans used this month` }
-    }
-    if (plan === 'adviser') {
-      return { label: 'Professional', detail: 'Unlimited scans' }
-    }
-    return { label: plan, detail: '' }
-  }
-
   if (loading || !profile) return <AppSidebar><div className={styles.loading}>Loading…</div></AppSidebar>
-
-  const { label: planLabel, detail: planDetail } = planInfo()
 
   return (
     <AppSidebar>
@@ -218,27 +183,6 @@ export default function Profile() {
               <div className={styles.sideName}>{fullName || user?.email}</div>
               <div className={styles.sideEmail}>{user?.email}</div>
               <button className={styles.signOutBtn} onClick={handleSignOut}>Sign out</button>
-            </div>
-
-            {/* BILLING */}
-            <div className={styles.sideCard} style={{ alignItems: 'stretch', textAlign: 'left' }}>
-              <div className={styles.sideSectionTitle}>Plan &amp; billing</div>
-              <div className={styles.planLabel}>
-                {planLabel}
-                {profile.founding_member && <span className={styles.foundingBadge}>★ Founding member</span>}
-              </div>
-              <div className={styles.planDetail}>{planDetail}</div>
-              {profile.stripe_customer_id ? (
-                <button className="btn-ghost" onClick={handleManageBilling} disabled={portalLoading} style={{ marginTop: 14 }}>
-                  {portalLoading ? 'Opening…' : 'Manage billing'}
-                </button>
-              ) : (
-                <button className="btn-primary" onClick={() => navigate('/pricing')} style={{ marginTop: 14 }}>Upgrade plan</button>
-              )}
-              {billingError && <div className={styles.error} style={{ marginTop: 10 }}>{billingError}</div>}
-              {profile.stripe_customer_id && (
-                <div className={styles.sectionSub} style={{ marginTop: 10 }}>Update your card, view invoices, or cancel your subscription via the Stripe billing portal.</div>
-              )}
             </div>
           </div>
         </div>

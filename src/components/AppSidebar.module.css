@@ -10,6 +10,7 @@
   position: fixed;
   top: 0; left: 0; bottom: 0;
   z-index: 100;
+  overflow-y: auto;
 }
 
 .brand {
@@ -71,6 +72,38 @@
 .active { background: var(--paper-2) !important; color: var(--ink) !important; font-weight: 600; }
 
 .navIcon { font-size: 14px; opacity: 0.75; width: 16px; text-align: center; }
+
+.planCard {
+  margin: 4px 14px 10px;
+  padding: 12px 14px;
+  background: var(--paper-2);
+  border: 1px solid var(--hair);
+  border-radius: var(--radius-sm);
+}
+.planCardHead { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.planCardLabel { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.foundingBadge {
+  display: inline-flex; align-items: center;
+  font-size: 9.5px; font-weight: 700; letter-spacing: 0.02em;
+  color: var(--plan-founding-tx); background: var(--plan-founding-bg);
+  border-radius: 999px; padding: 2px 7px;
+}
+.planCardDetail { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+.planCardUpgrade {
+  display: block; width: 100%; margin-top: 9px;
+  background: var(--accent); color: #fff; border: none;
+  border-radius: var(--radius-sm); padding: 7px 0;
+  font-size: 12px; font-weight: 700; font-family: var(--font);
+  cursor: pointer; transition: background 0.15s;
+}
+.planCardUpgrade:hover { background: var(--accent-deep); }
+.planCardLink {
+  display: block; width: 100%; margin-top: 9px; text-align: left;
+  background: none; border: none; color: var(--accent);
+  font-size: 12px; font-weight: 600; font-family: var(--font);
+  cursor: pointer; padding: 0;
+}
+.planCardLink:hover { text-decoration: underline; }
 
 .siteLink {
   margin: 0 12px 12px;

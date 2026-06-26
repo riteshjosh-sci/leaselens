@@ -64,7 +64,7 @@ export default function Dashboard() {
         .eq('user_id', user.id)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false }),
-      supabase.from('profiles').select('full_name, sort_preference').eq('id', user.id).single(),
+      supabase.from('profiles').select('full_name, sort_preference, plan, free_scans_used, monthly_scans_used, scan_credits').eq('id', user.id).single(),
     ])
 
     const ws = wsRes.data || []
@@ -103,6 +103,15 @@ export default function Dashboard() {
     (n.property_name || 'Unnamed negotiation').replace(/^\d+_/, '').replace(/\.[^.]+$/, '').replace(/_/g, ' ')
 
   const firstName = profile?.full_name?.split(' ')[0] || null
+
+  const scanUsage = () => {
+    const plan = profile?.plan || 'free'
+    if (plan === 'free')    return { val: `${profile?.free_scans_used || 0} / 1`, unit: 'scan used' }
+    if (plan === 'one_off') return { val: `${profile?.scan_credits || 0}`, unit: 'credits left' }
+    if (plan === 'monthly' || plan === 'annual') return { val: `${profile?.monthly_scans_used || 0} / 10`, unit: 'this month' }
+    if (plan === 'adviser') return { val: '∞', unit: 'unlimited' }
+    return { val: '—', unit: '' }
+  }
 
   const getDocSummary = (n) => {
     const docs = n.documents || []
@@ -212,6 +221,13 @@ export default function Dashboard() {
               <HelpTip>Lease and HOA documents with a commencement or expiry date falling within the next 30 days.</HelpTip>
             </div>
             <div className={styles.statVal}>{criticalCount} <span>due soon</span></div>
+          </div>
+          <div className={styles.statCell}>
+            <div className={styles.statLbl}>Scans used</div>
+            <div className={styles.statVal}>{scanUsage().val} <span>{scanUsage().unit}</span></div>
+            {(!profile?.plan || profile.plan === 'free' || profile.plan === 'one_off') && (
+              <button className={styles.statUpgrade} onClick={() => navigate('/pricing')}>Upgrade →</button>
+            )}
           </div>
         </div>
 

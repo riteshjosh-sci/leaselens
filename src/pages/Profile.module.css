@@ -21,19 +21,6 @@
 .saveRow { display:flex; align-items:center; justify-content:flex-end; gap:12px; }
 .savedMsg { font-size:13px; color:var(--risk-l); font-weight:600; }
 
-/* BILLING */
-.planLabel { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:16px; font-weight:600; color:var(--ink); }
-.planDetail { font-size:13px; color:var(--muted); margin-top:2px; }
-.foundingBadge {
-  display:inline-flex; align-items:center;
-  font-size:11px; font-weight:700; letter-spacing:0.02em;
-  color:var(--plan-founding-tx);
-  background:var(--plan-founding-bg);
-  border:1px solid rgba(146,108,16,0.25);
-  border-radius:999px;
-  padding:3px 10px;
-}
-
 /* DANGER ZONE */
 .dangerSection { border-color: rgba(192,73,47,0.25); }
 .dangerRow { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; flex-wrap:wrap; }
