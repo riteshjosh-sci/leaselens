@@ -59,6 +59,7 @@ html {
   --st-sent:    #C2922B;
   --st-agreed:  #5E8C6A;
   --st-std:     #8C8579;
+  --st-counter: #7B5EC9;
 
   /* Status "text on tint" colors — darker readable text sitting on the
      st-sent-bg / st-agreed-bg tinted chip backgrounds */
@@ -66,6 +67,7 @@ html {
   --st-agreed-tx:  #3f6b4e;
   --st-agreed-tx-deep: #2a5238;
   --st-agreed-border:  #b8d8c4;
+  --st-counter-tx: #5d3fae;
 
   /* Danger / destructive (delete actions, "worsened" comparison state) */
   --danger:      #C0492F;
@@ -158,11 +160,13 @@ html {
   --st-sent:    #D4A646;
   --st-agreed:  #74A883;
   --st-std:     #8492A8;
+  --st-counter: #A990E0;
 
   --st-sent-tx:    #E8C77A;
   --st-agreed-tx:  #8FCBA0;
   --st-agreed-tx-deep: #A8D9B7;
   --st-agreed-border:  #2F5740;
+  --st-counter-tx: #C7B3EE;
 
   --danger:      #E07A5F;
   --danger-deep: #F0A08C;

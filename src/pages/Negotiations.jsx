@@ -50,7 +50,7 @@ export default function Negotiations() {
     if (lc === 'agreed') return { label: 'Agreed', cls: styles.chipDone }
     if (lc === 'awaiting') return { label: 'Awaiting landlord', cls: styles.chipWait }
     if (lc === 'sent') return { label: 'Sent to agent', cls: styles.chipWait }
-    if (lc === 'counter_prepared') return { label: 'Counter prepared', cls: styles.chipNeutral }
+    if (lc === 'counter_prepared') return { label: 'Counter prepared', cls: styles.chipCounter }
     return { label: 'In review', cls: styles.chipNeutral }
   }
 

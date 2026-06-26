@@ -101,7 +101,7 @@ export default function NegotiationDetail() {
     if (lc === 'agreed')            return { label: 'Agreed', cls: styles.statusDone }
     if (lc === 'awaiting')          return { label: 'Awaiting landlord', cls: styles.statusWait }
     if (lc === 'sent')              return { label: 'Sent to agent', cls: styles.statusWait }
-    if (lc === 'counter_prepared')  return { label: 'Counter prepared', cls: '' }
+    if (lc === 'counter_prepared')  return { label: 'Counter prepared', cls: styles.statusCounter }
     return { label: 'In review', cls: '' }
   }
 

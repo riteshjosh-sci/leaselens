@@ -27,10 +27,12 @@
 /* Workspace-level status chip in header */
 .statusChip { display:inline-flex; align-items:center; gap:7px; font-size:11.5px; font-weight:700; padding:6px 12px; border-radius:100px; background:var(--accent-soft); color:var(--accent-deep); white-space:nowrap; flex-shrink:0; }
 .statusChip .d { width:7px; height:7px; border-radius:50%; background:var(--accent); }
-.statusWait { background:rgba(194,146,43,0.14); color:var(--st-sent-tx); }
+.statusWait { background:color-mix(in srgb, var(--st-sent) 16%, transparent); color:var(--st-sent-tx); }
 .statusWait .d { background:var(--st-sent); }
-.statusDone { background:rgba(94,140,106,0.16); color:var(--st-agreed-tx); }
+.statusDone { background:color-mix(in srgb, var(--st-agreed) 16%, transparent); color:var(--st-agreed-tx); }
 .statusDone .d { background:var(--st-agreed); }
+.statusCounter { background:color-mix(in srgb, var(--st-counter) 16%, transparent); color:var(--st-counter-tx); }
+.statusCounter .d { background:var(--st-counter); }
 .statusMuted { background:var(--paper-2); color:var(--muted); }
 .statusMuted .d { background:var(--faint); }
 

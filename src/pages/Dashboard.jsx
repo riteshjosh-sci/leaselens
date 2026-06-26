@@ -143,7 +143,7 @@ export default function Dashboard() {
   const statusInfo = (lc) => ({
     awaiting: { label: 'Awaiting landlord', cls: styles.chipWait },
     sent: { label: 'Sent to agent', cls: styles.chipWait },
-    counter_prepared: { label: 'Counter prepared', cls: styles.chipNeutral },
+    counter_prepared: { label: 'Counter prepared', cls: styles.chipCounter },
     agreed: { label: 'Finalised', cls: styles.chipDone },
   }[lc] || { label: 'Reviewing', cls: styles.chipNeutral })
 

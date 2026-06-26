@@ -53,10 +53,12 @@
 
 .chip { display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; padding:4px 10px; border-radius:100px; white-space:nowrap; }
 .chipDot { width:6px; height:6px; border-radius:50%; }
-.chipWait { background:rgba(194,146,43,0.14); color:var(--st-sent-tx); }
+.chipWait { background:color-mix(in srgb, var(--st-sent) 16%, transparent); color:var(--st-sent-tx); }
 .chipWait .chipDot { background:var(--st-sent); }
-.chipDone { background:rgba(94,140,106,0.16); color:var(--st-agreed-tx); }
+.chipDone { background:color-mix(in srgb, var(--st-agreed) 16%, transparent); color:var(--st-agreed-tx); }
 .chipDone .chipDot { background:var(--st-agreed); }
+.chipCounter { background:color-mix(in srgb, var(--st-counter) 16%, transparent); color:var(--st-counter-tx); }
+.chipCounter .chipDot { background:var(--st-counter); }
 .chipNeutral { background:var(--accent-soft); color:var(--accent-deep); }
 .chipNeutral .chipDot { background:var(--accent); }
 

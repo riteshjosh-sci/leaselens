@@ -89,7 +89,7 @@ export default function WorkspacePage() {
     if (neg.lifecycle === 'agreed')          return { label: 'Agreed', cls: styles.statusDone }
     if (neg.lifecycle === 'awaiting')        return { label: 'Awaiting landlord', cls: styles.statusWait }
     if (neg.lifecycle === 'sent')            return { label: 'Sent to agent', cls: styles.statusWait }
-    if (neg.lifecycle === 'counter_prepared') return { label: 'Counter prepared', cls: '' }
+    if (neg.lifecycle === 'counter_prepared') return { label: 'Counter prepared', cls: styles.statusCounter }
     if (docs.length === 0)                   return { label: 'No documents', cls: styles.statusMuted }
     return { label: 'Reviewing', cls: '' }
   }
@@ -105,7 +105,7 @@ export default function WorkspacePage() {
     if (!negotiations.length) return { label: 'No documents', cls: '' }
     if (negotiations.every(n => n.lifecycle === 'agreed')) return { label: 'Finalised', cls: styles.statusDone }
     if (negotiations.some(n => n.lifecycle === 'awaiting')) return { label: 'Awaiting landlord', cls: styles.statusWait }
-    if (negotiations.some(n => n.lifecycle === 'counter_prepared')) return { label: 'Counter prepared', cls: '' }
+    if (negotiations.some(n => n.lifecycle === 'counter_prepared')) return { label: 'Counter prepared', cls: styles.statusCounter }
     return { label: 'In review', cls: '' }
   }
 

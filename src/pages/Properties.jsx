@@ -109,7 +109,7 @@ export default function Properties() {
     if (n.lifecycle === 'agreed')           return { label: 'Finalised', cls: styles.chipDone }
     if (n.lifecycle === 'awaiting')         return { label: 'Awaiting landlord', cls: styles.chipWait }
     if (n.lifecycle === 'sent')              return { label: 'Sent to agent', cls: styles.chipWait }
-    if (n.lifecycle === 'counter_prepared') return { label: 'Counter prepared', cls: styles.chipNeutral }
+    if (n.lifecycle === 'counter_prepared') return { label: 'Counter prepared', cls: styles.chipCounter }
     if (!(n.documents || []).length)        return { label: 'No documents', cls: styles.chipNeutral }
     return { label: 'Reviewing', cls: styles.chipNeutral }
   }

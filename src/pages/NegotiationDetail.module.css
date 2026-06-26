@@ -320,10 +320,12 @@
   color: var(--accent-deep);
 }
 
-.statusWait { background:rgba(194,146,43,0.14); color:var(--st-sent-tx); }
+.statusWait { background:color-mix(in srgb, var(--st-sent) 16%, transparent); color:var(--st-sent-tx); }
 .statusWait .statusD { background:var(--st-sent); }
-.statusDone { background:rgba(94,140,106,0.16); color:var(--st-agreed-tx); }
+.statusDone { background:color-mix(in srgb, var(--st-agreed) 16%, transparent); color:var(--st-agreed-tx); }
 .statusDone .statusD { background:var(--st-agreed); }
+.statusCounter { background:color-mix(in srgb, var(--st-counter) 16%, transparent); color:var(--st-counter-tx); }
+.statusCounter .statusD { background:var(--st-counter); }
 
 /* ══════════════════════════════════════════════════════
    REVIEW TAB REDESIGN
