@@ -201,31 +201,35 @@ export default function WorkspacePage() {
 
           <div className={styles.sideCol}>
             {/* KEY DATES */}
-            {keyDates && (
-              <div className={styles.panel}>
-                <div className={styles.panelHead}>
-                  <span className={styles.panelBar} />
-                  <span className={styles.panelTitle}>Key dates</span>
-                </div>
-                {keyDates.commencement_date && (
-                  <div className={styles.kdRow}>
-                    <div>
-                      <div className={styles.kdLbl}>Commencement</div>
-                      <div className={styles.kdDate}>{formatKeyDate(keyDates.commencement_date)}</div>
-                    </div>
-                  </div>
-                )}
-                {keyDates.expiry_date && (
-                  <div className={styles.kdRow}>
-                    <div>
-                      <div className={styles.kdLbl}>Lease expiry</div>
-                      <div className={styles.kdDate}>{formatKeyDate(keyDates.expiry_date)}</div>
-                    </div>
-                    <span className={styles.kdBadge}>{formatCountdown(keyDates.expiry_date)}</span>
-                  </div>
-                )}
+            <div className={styles.panel}>
+              <div className={styles.panelHead}>
+                <span className={styles.panelBar} />
+                <span className={styles.panelTitle}>Key dates</span>
               </div>
-            )}
+              {!keyDates?.commencement_date && !keyDates?.expiry_date ? (
+                <div className={styles.empty}>No dates extracted from this lease yet.</div>
+              ) : (
+                <>
+                  {keyDates.commencement_date && (
+                    <div className={styles.kdRow}>
+                      <div>
+                        <div className={styles.kdLbl}>Commencement</div>
+                        <div className={styles.kdDate}>{formatKeyDate(keyDates.commencement_date)}</div>
+                      </div>
+                    </div>
+                  )}
+                  {keyDates.expiry_date && (
+                    <div className={styles.kdRow}>
+                      <div>
+                        <div className={styles.kdLbl}>Lease expiry</div>
+                        <div className={styles.kdDate}>{formatKeyDate(keyDates.expiry_date)}</div>
+                      </div>
+                      <span className={styles.kdBadge}>{formatCountdown(keyDates.expiry_date)}</span>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
 
             {/* DOCUMENTS */}
             <div className={styles.panel}>
