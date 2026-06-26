@@ -19,8 +19,8 @@
 .wsName { font-size:32px; font-weight:600; letter-spacing:-0.025em; color:var(--ink); line-height:1.1; overflow-wrap:break-word; word-break:break-word; }
 .wsSub { font-size:14px; color:var(--muted); margin-top:4px; overflow-wrap:break-word; word-break:break-word; }
 .wsActions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-.statusChip { display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:700; padding:6px 14px; border-radius:100px; background:var(--accent-soft); color:var(--accent-deep); }
-.statusD { width:7px; height:7px; border-radius:50%; background:var(--accent); }
+.statusChip { display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; padding:6px 14px; border-radius:100px; background:var(--paper-2); border:1px solid var(--hair); color:var(--ink-soft); }
+.statusD { width:7px; height:7px; border-radius:50%; background:var(--st-review); }
 
 /* DEAL FACTS STRIP */
 .facts { display:flex; align-items:center; background:var(--card); border:1px solid var(--hair); border-radius:var(--radius); padding:0; margin-bottom:20px; overflow:hidden; }
@@ -320,11 +320,8 @@
   color: var(--accent-deep);
 }
 
-.statusWait { background:color-mix(in srgb, var(--st-sent) 16%, transparent); color:var(--st-sent-tx); }
 .statusWait .statusD { background:var(--st-sent); }
-.statusDone { background:color-mix(in srgb, var(--st-agreed) 16%, transparent); color:var(--st-agreed-tx); }
 .statusDone .statusD { background:var(--st-agreed); }
-.statusCounter { background:color-mix(in srgb, var(--st-counter) 16%, transparent); color:var(--st-counter-tx); }
 .statusCounter .statusD { background:var(--st-counter); }
 
 /* ══════════════════════════════════════════════════════

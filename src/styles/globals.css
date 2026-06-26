@@ -54,20 +54,23 @@ html {
   --risk-l:     #5E8C6A;
   --risk-l-bg:  rgba(94,140,106,0.14);
 
-  /* Status tokens (functional, hue unchanged by rebrand) */
+  /* Status dot colors — match design-handoff spec exactly (status itself
+     renders as a neutral grey chip; these are only the small dot inside it) */
   --st-raise:   #2C50D6;
-  --st-sent:    #C2922B;
-  --st-agreed:  #5E8C6A;
+  --st-review:  #3B57BE;
+  --st-sent:    #E0A93B;
+  --st-agreed:  #22A463;
   --st-std:     #8C8579;
-  --st-counter: #7B5EC9;
+  --st-counter: #5B4BDB;
 
   /* Status "text on tint" colors — darker readable text sitting on the
      st-sent-bg / st-agreed-bg tinted chip backgrounds */
-  --st-sent-tx:    #8a6312;
-  --st-agreed-tx:  #3f6b4e;
-  --st-agreed-tx-deep: #2a5238;
+  --st-review-tx:  #3B57BE;
+  --st-sent-tx:    #9A6B16;
+  --st-agreed-tx:  #1d7a4c;
+  --st-agreed-tx-deep: #155c39;
   --st-agreed-border:  #b8d8c4;
-  --st-counter-tx: #5d3fae;
+  --st-counter-tx: #4936b0;
 
   /* Danger / destructive (delete actions) */
   --danger:      #C0492F;
@@ -75,11 +78,12 @@ html {
   --danger-darker: #7a2a18;
   --danger-bg:   rgba(192,73,47,0.12);
 
-  /* Compare tab "landlord favourable" rose — distinct hue from --danger so a
-     clause that disfavours the tenant doesn't read as a destructive/error state */
-  --fav-bad:     #D6486B;
-  --fav-bad-deep: #B12F4F;
-  --fav-bad-bg:  rgba(214,72,107,0.10);
+  /* Compare tab "landlord favourable" — design-handoff spec's #E5484D,
+     distinct from --danger so a clause that disfavours the tenant doesn't
+     read as a destructive/error state */
+  --fav-bad:     #E5484D;
+  --fav-bad-deep: #B23237;
+  --fav-bad-bg:  rgba(229,72,77,0.10);
 
   /* Comparison tab — "watch"/changed-but-neutral state color */
   --cmp-watch:    #C25E1E;
@@ -163,11 +167,13 @@ html {
   --risk-l-bg:  rgba(116,168,131,0.18);
 
   --st-raise:   #6B8FE8;
-  --st-sent:    #D4A646;
-  --st-agreed:  #74A883;
+  --st-review:  #7C92E8;
+  --st-sent:    #E0B45B;
+  --st-agreed:  #4FC189;
   --st-std:     #8492A8;
-  --st-counter: #A990E0;
+  --st-counter: #9580E8;
 
+  --st-review-tx:  #9CADF0;
   --st-sent-tx:    #E8C77A;
   --st-agreed-tx:  #8FCBA0;
   --st-agreed-tx-deep: #A8D9B7;
@@ -179,9 +185,9 @@ html {
   --danger-darker: #F7C0B0;
   --danger-bg:   rgba(224,122,95,0.16);
 
-  --fav-bad:     #E87B96;
+  --fav-bad:     #EA6B70;
   --fav-bad-deep: #F0A0B5;
-  --fav-bad-bg:  rgba(232,123,150,0.16);
+  --fav-bad-bg:  rgba(234,107,112,0.16);
 
   --cmp-watch:    #E0935F;
   --cmp-watch-bg: #2A2420;

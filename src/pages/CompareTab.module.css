@@ -49,7 +49,7 @@
 .legend { display: flex; align-items: center; gap: 14px; margin-left: auto; flex-wrap: wrap; }
 .legendItem { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .legendDot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-.legendGood { background: var(--risk-l); }
+.legendGood { background: var(--st-agreed); }
 .legendBad  { background: var(--fav-bad); }
 .legendSame { background: var(--cmp-same); }
 
@@ -88,7 +88,7 @@
 .vtagOrig { background: rgba(28,25,22,.06); color: var(--ink-soft); }
 .vtagOrig .vd { background: var(--muted); }
 .vtagRev  { background: rgba(94,140,106,.12); color: var(--st-agreed-tx); }
-.vtagRev .vd  { background: var(--risk-l); }
+.vtagRev .vd  { background: var(--st-agreed); }
 .vd { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
 
 .drow { display: flex; align-items: center; gap: 13px; min-width: 0; }
@@ -144,7 +144,7 @@
 .pickerDate { font-size: 11.5px; color: var(--muted); margin-top: 1px; }
 .pickerHasReport {
   width: 8px; height: 8px; border-radius: 50%;
-  background: var(--risk-l); flex-shrink: 0;
+  background: var(--st-agreed); flex-shrink: 0;
 }
 
 .noReport {
@@ -193,15 +193,15 @@
 }
 
 /* tints — revised column */
-.ccardImp   { background: color-mix(in srgb, var(--risk-l) 12%, transparent); border-color: color-mix(in srgb, var(--risk-l) 28%, transparent); }
-.ccardImp .sdot  { background: var(--risk-l); }
+.ccardImp   { background: color-mix(in srgb, var(--st-agreed) 12%, transparent); border-color: color-mix(in srgb, var(--st-agreed) 28%, transparent); }
+.ccardImp .sdot  { background: var(--st-agreed); }
 .ccardRsk   { background: var(--fav-bad-bg); border-color: color-mix(in srgb, var(--fav-bad) 30%, transparent); }
 .ccardRsk .sdot  { background: var(--fav-bad); }
 .ccardWatch { background: color-mix(in srgb, var(--gold) 13%, transparent); border-color: color-mix(in srgb, var(--gold) 30%, transparent); }
 .ccardWatch .sdot{ background: var(--gold); }
 
 /* corner dot — previous column */
-.dotImp   .sdot { background: var(--risk-l); }
+.dotImp   .sdot { background: var(--st-agreed); }
 .dotRsk   .sdot { background: var(--fav-bad); }
 .dotSame  .sdot { background: var(--cmp-same); }
 .dotWatch .sdot { background: var(--gold); }
@@ -230,7 +230,7 @@
   font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
   padding: 3px 8px; border-radius: 5px; color: #fff;
 }
-.tagNew      { background: var(--accent); }
+.tagNew      { background: var(--st-review); }
 .tagModified { background: var(--st-counter); }
 .tagUnchanged{ background: var(--muted); }
 .tagRm       { background: var(--fav-bad); }
@@ -285,7 +285,7 @@
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 100px;
 }
-.verdictChipGood { background: color-mix(in srgb, var(--risk-l) 10%, transparent); color: var(--st-agreed-tx); }
+.verdictChipGood { background: color-mix(in srgb, var(--st-agreed) 10%, transparent); color: var(--st-agreed-tx); }
 .verdictChipFlag { background: var(--fav-bad-bg); color: var(--fav-bad-deep); }
 
 .favCta {
@@ -303,13 +303,13 @@
 .kdSub { font-size: 13px; color: var(--muted); margin-top: 4px; }
 .kdGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .kdCard { border: 1px solid var(--hair-lt); border-radius: 12px; padding: 17px 18px; }
-.kdImp { background: color-mix(in srgb, var(--risk-l) 12%, transparent); border-color: color-mix(in srgb, var(--risk-l) 28%, transparent); }
+.kdImp { background: color-mix(in srgb, var(--st-agreed) 12%, transparent); border-color: color-mix(in srgb, var(--st-agreed) 28%, transparent); }
 .kdRsk { background: var(--fav-bad-bg);  border-color: color-mix(in srgb, var(--fav-bad) 30%, transparent); }
 .kt { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
 .ktImp { color: var(--st-agreed-tx); }
 .ktRsk { color: var(--fav-bad-deep); }
 .kdTag { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .03em; padding: 5px 11px; border-radius: 100px; margin-top: 14px; }
-.kdTagImp { background: color-mix(in srgb, var(--risk-l) 20%, transparent); color: var(--st-agreed-tx); }
+.kdTagImp { background: color-mix(in srgb, var(--st-agreed) 20%, transparent); color: var(--st-agreed-tx); }
 .kdTagRsk { background: color-mix(in srgb, var(--fav-bad) 18%, transparent); color: var(--fav-bad-deep); }
 .kdTagD { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
 

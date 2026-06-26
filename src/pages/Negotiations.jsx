@@ -84,7 +84,7 @@ export default function Negotiations() {
                     <div className={styles.negMeta}>{n.docCount} document{n.docCount !== 1 ? 's' : ''}</div>
                   </div>
                   <span className={styles.propCell}>{n.wsName}</span>
-                  <span className={`${styles.chip} ${chip.cls}`}>{chip.label}</span>
+                  <span className={`${styles.chip} ${chip.cls}`}><span className={styles.chipDot} />{chip.label}</span>
                   <span className={styles.dateCell}>{formatDate(n.latest)}</span>
                 </div>
               )
