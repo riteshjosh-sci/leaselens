@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
-import Footer from '../components/Footer'
-import Nav from '../components/Nav'
+import AppSidebar from '../components/AppSidebar'
 import styles from './ReportView.module.css'
 
 export default function ReportView() {
@@ -21,6 +20,7 @@ export default function ReportView() {
   const [error, setError]             = useState('')
   const [filter, setFilter]           = useState('all')
   const [openClauses, setOpenClauses] = useState({})
+  const [shareCopied, setShareCopied] = useState(false)
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -196,14 +196,42 @@ export default function ReportView() {
     setTimeout(() => win.print(), 500)
   }
 
-  if (loading) return <><Nav /><div className={styles.loading}>Loading report…</div></>
+  const handleShare = async () => {
+    if (!workspace?.id) return
+    let token = null
+    const { data: existing } = await supabase
+      .from('share_tokens')
+      .select('token')
+      .eq('workspace_id', workspace.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (existing?.token) {
+      token = existing.token
+    } else {
+      const { data: created, error: err } = await supabase
+        .from('share_tokens')
+        .insert({ user_id: user.id, workspace_id: workspace.id, label: `Shared ${new Date().toLocaleDateString('en-AU')}` })
+        .select('token').single()
+      if (err) return
+      token = created.token
+    }
+
+    const url = `${window.location.origin}/shared/${token}`
+    await navigator.clipboard.writeText(url)
+    setShareCopied(true)
+    setTimeout(() => setShareCopied(false), 2200)
+  }
+
+  if (loading) return <AppSidebar><div className={styles.loading}>Loading report…</div></AppSidebar>
 
   if (error) return (
-    <><Nav />
+    <AppSidebar>
     <div className={styles.errorWrap}>
       <h2>{error}</h2>
       <button className="btn-primary" onClick={() => navigate('/dashboard')}>Back to dashboard</button>
-    </div></>
+    </div></AppSidebar>
   )
 
   const data     = report.report_json
@@ -214,13 +242,13 @@ export default function ReportView() {
   const lowCount  = clauses.filter(c => c.danger === 'LOW').length
 
   return (
+    <AppSidebar>
     <div className={styles.page}>
-      <Nav />
 
       {/* BREADCRUMB */}
       <div className={styles.crumb}>
-        <button onClick={() => navigate('/dashboard')}>Dashboard</button>
-        {workspace?.id && <><span>›</span><button onClick={() => navigate(`/workspace/${workspace.id}`)}>Workspace</button></>}
+        <button onClick={() => navigate('/properties')}>Properties</button>
+        {workspace?.id && <><span>›</span><button onClick={() => navigate(`/workspace/${workspace.id}`)}>{workspace.name}</button></>}
         {negotiation && <><span>›</span><button onClick={() => navigate(`/negotiation/${negotiation.id}`)}>{negotiation.property_name || 'Negotiation'}</button></>}
         <span>›</span>
         <span>{stripTimestamp(document?.filename)}</span>
@@ -252,24 +280,17 @@ export default function ReportView() {
             </div>
           </div>
           <div className={styles.docActions}>
-            {negotiation?.id && (
-              <button className={styles.btnOutline} onClick={() => navigate(`/negotiation/${negotiation.id}#review`)}>
-                Review clauses
-              </button>
-            )}
-            {allVersions.length >= 2 && (
-              <button className={styles.btnOutline} onClick={() => navigate(`/negotiation/${negotiation?.id}#compare`)}>
-                Compare versions
-              </button>
-            )}
             <button className={styles.btnOutline} onClick={handleDownloadPDF}>
               <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                 <path d="M8 1v9m0 0L5 7m3 3 3-3M2 13h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               Export PDF
             </button>
-            <button className={styles.btnInk} onClick={() => navigate('/analyser', { state: { negotiationId: negotiation?.id, workspaceId: workspace?.id, prefill: { asset_class: negotiation?.asset_class || 'retail' } } })}>
-              + Add version
+            <button className={styles.btnOutline} onClick={handleShare}>
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <circle cx="4" cy="8" r="2" stroke="currentColor" strokeWidth="1.5"/><circle cx="12.5" cy="3.5" r="2" stroke="currentColor" strokeWidth="1.5"/><circle cx="12.5" cy="12.5" r="2" stroke="currentColor" strokeWidth="1.5"/><path d="M5.7 7l5-2.7M5.7 9l5 2.7" stroke="currentColor" strokeWidth="1.5"/>
+              </svg>
+              {shareCopied ? 'Link copied!' : 'Share'}
             </button>
           </div>
         </div>
@@ -459,7 +480,7 @@ export default function ReportView() {
                   <button key={i} className={styles.jumpItem} onClick={() => {
                     setOpenClauses(prev => ({ ...prev, [i]: true }))
                     setTimeout(() => {
-                      const el = document.getElementById(`clause-${i}`)
+                      const el = window.document.getElementById(`clause-${i}`)
                       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
                     }, 50)
                   }}>
@@ -495,5 +516,6 @@ export default function ReportView() {
         </div>
       </div>
     </div>
+    </AppSidebar>
   )
 }
