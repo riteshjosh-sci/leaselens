@@ -25,51 +25,64 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
   const DocList = ({ list, type }) => (
     <div className={dStyles.col}>
       <div className={dStyles.colHead}>
-        <div className={dStyles.colTitle}>{type === 'hoa' ? 'Heads of Agreement' : 'Lease'}</div>
+        <div className={dStyles.colTitleWrap}>
+          <span className={dStyles.colBar} />
+          <span className={dStyles.colTitle}>{type === 'hoa' ? 'Heads of Agreement' : 'Lease'}</span>
+        </div>
         <button className="btn-outline btn-sm" onClick={() => onAddVersion(type)}>
           + Add {type === 'hoa' ? 'HOA' : 'Lease'}
         </button>
       </div>
 
-      {list.length === 0 ? (
-        <div className={dStyles.colEmpty}>
-          <p>No {type === 'hoa' ? 'HOA' : 'lease'} documents yet.</p>
-          <button className={dStyles.colEmptyCta} onClick={() => onAddVersion(type)}>
-            Upload {type === 'hoa' ? 'HOA' : 'Lease'} →
-          </button>
-        </div>
-      ) : (
-        <div className={dStyles.docList}>
-          {list.map((doc, i) => (
-            <div key={doc.id} className={dStyles.docRow}>
-              <div className={dStyles.fic}>{doc.filename?.split('.').pop()?.toUpperCase() || 'DOC'}</div>
-              <div className={dStyles.dm}>
-                <div className={dStyles.docRole}>
-                  V{doc.version_number} · {i === 0 ? 'current' : 'superseded'}
+      <div className={dStyles.colBody}>
+        {list.length === 0 ? (
+          <div className={dStyles.colEmpty}>
+            <span className={dStyles.colEmptyIcon}>
+              <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M4 1.5h5.5L13 5v9a.5.5 0 0 1-.5.5h-8A.5.5 0 0 1 4 14V2a.5.5 0 0 1 .5-.5z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/><path d="M9.5 1.5V5H13" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+            </span>
+            <p className={dStyles.colEmptyTitle}>No {type === 'hoa' ? 'HOA' : 'lease'} uploaded yet</p>
+            <p className={dStyles.colEmptySub}>
+              {type === 'hoa'
+                ? 'Upload the heads of agreement to start tracking this negotiation.'
+                : 'Once the HOA settles, upload the draft lease to track it against agreed terms.'}
+            </p>
+            <button className="btn-ink btn-sm" onClick={() => onAddVersion(type)}>
+              Upload {type === 'hoa' ? 'HOA' : 'lease'} →
+            </button>
+          </div>
+        ) : (
+          <div className={dStyles.docList}>
+            {list.map((doc, i) => (
+              <div key={doc.id} className={dStyles.docRow}>
+                <div className={dStyles.fic}>{doc.filename?.split('.').pop()?.toUpperCase() || 'DOC'}</div>
+                <div className={dStyles.dm}>
+                  <div className={dStyles.docRole}>
+                    V{doc.version_number} · {i === 0 ? 'current' : 'superseded'}
+                  </div>
+                  <div className={dStyles.docFn}>{stripTimestamp(doc.filename)}</div>
+                  <div className={dStyles.docMeta}>{formatDate(doc.uploaded_at)}</div>
                 </div>
-                <div className={dStyles.docFn}>{stripTimestamp(doc.filename)}</div>
-                <div className={dStyles.docMeta}>{formatDate(doc.uploaded_at)}</div>
+                <div className={dStyles.pills}>
+                  {i === 0 && <span className={dStyles.pillCur}>Current</span>}
+                  {doc.overall_risk && (
+                    <span className={`${styles.pill} ${riskPillCls[doc.overall_risk]}`}>{doc.overall_risk}</span>
+                  )}
+                </div>
+                <div className={dStyles.docActions}>
+                  {doc.reports?.[0]?.id ? (
+                    <button className="btn-outline btn-sm" onClick={() => navigate(`/report/${doc.reports[0].id}`)}>
+                      View report →
+                    </button>
+                  ) : (
+                    <span className={dStyles.processing}>Processing…</span>
+                  )}
+                  <button className={dStyles.delBtn} onClick={() => handleDeleteDoc(doc.id, doc.file_path)} title="Delete">✕</button>
+                </div>
               </div>
-              <div className={dStyles.pills}>
-                {i === 0 && <span className={dStyles.pillCur}>Current</span>}
-                {doc.overall_risk && (
-                  <span className={`${styles.pill} ${riskPillCls[doc.overall_risk]}`}>{doc.overall_risk}</span>
-                )}
-              </div>
-              <div className={dStyles.docActions}>
-                {doc.reports?.[0]?.id ? (
-                  <button className="btn-outline btn-sm" onClick={() => navigate(`/report/${doc.reports[0].id}`)}>
-                    View report →
-                  </button>
-                ) : (
-                  <span className={dStyles.processing}>Processing…</span>
-                )}
-                <button className={dStyles.delBtn} onClick={() => handleDeleteDoc(doc.id, doc.file_path)} title="Delete">✕</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 
