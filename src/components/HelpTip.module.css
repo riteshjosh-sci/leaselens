@@ -11,16 +11,9 @@
 .icon:hover { border-color: var(--accent); color: var(--accent); }
 
 .tip {
-  position: absolute; z-index: 200; width: 240px;
+  position: fixed; z-index: 200;
   background: var(--ink); color: var(--paper);
   font-size: 12px; font-weight: 500; line-height: 1.5;
   padding: 10px 12px; border-radius: 8px;
   box-shadow: 0 8px 24px -8px rgba(0,0,0,0.35);
-  left: 50%; transform: translateX(-50%);
-}
-.bottom { top: calc(100% + 8px); }
-.top    { bottom: calc(100% + 8px); }
-
-@media (max-width: 480px) {
-  .tip { width: 200px; }
 }
