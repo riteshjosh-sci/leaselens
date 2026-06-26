@@ -199,16 +199,16 @@
 }
 
 /* tints — revised column */
-.ccardImp   { background: rgba(94,140,106,.12); border-color: rgba(94,140,106,.28); }
+.ccardImp   { background: color-mix(in srgb, var(--risk-l) 12%, transparent); border-color: color-mix(in srgb, var(--risk-l) 28%, transparent); }
 .ccardImp .sdot  { background: var(--risk-l); }
-.ccardRsk   { background: var(--danger-bg); border-color: rgba(192,73,47,.3); }
-.ccardRsk .sdot  { background: var(--danger); }
-.ccardWatch { background: rgba(194,146,43,.13); border-color: rgba(194,146,43,.3); }
+.ccardRsk   { background: var(--fav-bad-bg); border-color: color-mix(in srgb, var(--fav-bad) 30%, transparent); }
+.ccardRsk .sdot  { background: var(--fav-bad); }
+.ccardWatch { background: color-mix(in srgb, var(--gold) 13%, transparent); border-color: color-mix(in srgb, var(--gold) 30%, transparent); }
 .ccardWatch .sdot{ background: var(--gold); }
 
 /* corner dot — previous column */
 .dotImp   .sdot { background: var(--risk-l); }
-.dotRsk   .sdot { background: var(--danger); }
+.dotRsk   .sdot { background: var(--fav-bad); }
 .dotSame  .sdot { background: var(--cmp-same); }
 .dotWatch .sdot { background: var(--gold); }
 
@@ -258,11 +258,11 @@
 .connLine { position: absolute; left: -2px; right: -2px; top: 50%; height: 2px; transform: translateY(-50%); background: var(--hair); }
 .connDot  { width: 13px; height: 13px; border-radius: 50%; background: var(--cmp-same); box-shadow: 0 0 0 4px var(--card); z-index: 1; }
 .connImp   .connDot  { background: var(--risk-l); }
-.connImp   .connLine { background: rgba(94,140,106,.5); }
-.connRsk   .connDot  { background: var(--danger); }
-.connRsk   .connLine { background: rgba(192,73,47,.5); }
+.connImp   .connLine { background: color-mix(in srgb, var(--risk-l) 50%, transparent); }
+.connRsk   .connDot  { background: var(--fav-bad); }
+.connRsk   .connLine { background: color-mix(in srgb, var(--fav-bad) 50%, transparent); }
 .connWatch .connDot  { background: var(--gold); }
-.connWatch .connLine { background: rgba(194,146,43,.5); }
+.connWatch .connLine { background: color-mix(in srgb, var(--gold) 50%, transparent); }
 
 /* 4th-column note */
 .chNote {
@@ -280,11 +280,11 @@
   display: block; font-weight: 700;
   font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 6px;
 }
-.ccNoteImp  { background: rgba(94,140,106,.08);  border-color: rgba(94,140,106,.22); }
-.ccNoteRsk  { background: rgba(192,73,47,.07);   border-color: rgba(192,73,47,.22); }
+.ccNoteImp  { background: color-mix(in srgb, var(--risk-l) 8%, transparent);  border-color: color-mix(in srgb, var(--risk-l) 22%, transparent); }
+.ccNoteRsk  { background: color-mix(in srgb, var(--fav-bad) 8%, transparent); border-color: color-mix(in srgb, var(--fav-bad) 22%, transparent); }
 .ccNoteMod  { background: var(--paper-2);         border-color: var(--hair); }
 .ccNoteImp .noteLead  { color: var(--st-agreed-tx); }
-.ccNoteRsk .noteLead  { color: var(--danger-deep); }
+.ccNoteRsk .noteLead  { color: var(--fav-bad-deep); }
 .ccNoteSame .noteLead { color: var(--faint); }
 .ccNoteMod .noteLead  { color: var(--muted); }
 
@@ -308,8 +308,8 @@
   display: inline-flex; align-items: center; gap: 5px;
   font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 100px;
 }
-.verdictChipGood { background: rgba(94,140,106,.1); color: var(--st-agreed-tx); }
-.verdictChipFlag { background: rgba(192,73,47,.1); color: var(--danger-deep); }
+.verdictChipGood { background: color-mix(in srgb, var(--risk-l) 10%, transparent); color: var(--st-agreed-tx); }
+.verdictChipFlag { background: var(--fav-bad-bg); color: var(--fav-bad-deep); }
 
 .favCta {
   padding: 9px 18px; background: var(--accent); color: #fff;
@@ -326,14 +326,14 @@
 .kdSub { font-size: 13px; color: var(--muted); margin-top: 4px; }
 .kdGrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .kdCard { border: 1px solid var(--hair-lt); border-radius: 12px; padding: 17px 18px; }
-.kdImp { background: rgba(94,140,106,.12); border-color: rgba(94,140,106,.28); }
-.kdRsk { background: var(--danger-bg);  border-color: rgba(192,73,47,.3); }
+.kdImp { background: color-mix(in srgb, var(--risk-l) 12%, transparent); border-color: color-mix(in srgb, var(--risk-l) 28%, transparent); }
+.kdRsk { background: var(--fav-bad-bg);  border-color: color-mix(in srgb, var(--fav-bad) 30%, transparent); }
 .kt { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
 .ktImp { color: var(--st-agreed-tx); }
-.ktRsk { color: var(--danger-deep); }
+.ktRsk { color: var(--fav-bad-deep); }
 .kdTag { display: inline-flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; letter-spacing: .03em; padding: 5px 11px; border-radius: 100px; margin-top: 14px; }
-.kdTagImp { background: rgba(94,140,106,.2); color: var(--st-agreed-tx); }
-.kdTagRsk { background: rgba(192,73,47,.18); color: var(--danger-deep); }
+.kdTagImp { background: color-mix(in srgb, var(--risk-l) 20%, transparent); color: var(--st-agreed-tx); }
+.kdTagRsk { background: color-mix(in srgb, var(--fav-bad) 18%, transparent); color: var(--fav-bad-deep); }
 .kdTagD { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
 
 /* ── RESPONSIVE ── */

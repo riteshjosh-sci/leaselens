@@ -124,7 +124,10 @@ export default function CompareTab({ negId, docs }) {
       const clauseA  = matchKey ? clauseMapA[matchKey] : null
       let change = 'same'
       if (!clauseA) {
-        change = 'imp'
+        // Brand-new clause — classify by its own risk, not a blanket "improved".
+        // A new HIGH/MEDIUM-risk clause favours the landlord (risk); only a
+        // new LOW-risk clause is genuinely favourable to the tenant.
+        change = clauseB.danger === 'LOW' ? 'imp' : 'risk'
       } else {
         const ro = { HIGH: 3, MEDIUM: 2, LOW: 1 }
         const aR = ro[clauseA.danger] || 0, bR = ro[clauseB.danger] || 0

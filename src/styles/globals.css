@@ -69,11 +69,17 @@ html {
   --st-agreed-border:  #b8d8c4;
   --st-counter-tx: #5d3fae;
 
-  /* Danger / destructive (delete actions, "worsened" comparison state) */
+  /* Danger / destructive (delete actions) */
   --danger:      #C0492F;
   --danger-deep: #993621;
   --danger-darker: #7a2a18;
   --danger-bg:   rgba(192,73,47,0.12);
+
+  /* Compare tab "landlord favourable" rose — distinct hue from --danger so a
+     clause that disfavours the tenant doesn't read as a destructive/error state */
+  --fav-bad:     #D6486B;
+  --fav-bad-deep: #B12F4F;
+  --fav-bad-bg:  rgba(214,72,107,0.10);
 
   /* Comparison tab — "watch"/changed-but-neutral state color */
   --cmp-watch:    #C25E1E;
@@ -172,6 +178,10 @@ html {
   --danger-deep: #F0A08C;
   --danger-darker: #F7C0B0;
   --danger-bg:   rgba(224,122,95,0.16);
+
+  --fav-bad:     #E87B96;
+  --fav-bad-deep: #F0A0B5;
+  --fav-bad-bg:  rgba(232,123,150,0.16);
 
   --cmp-watch:    #E0935F;
   --cmp-watch-bg: #2A2420;
