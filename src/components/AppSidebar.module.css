@@ -14,19 +14,15 @@
 }
 
 .brand {
+  display: block; width: 100%;
   padding: 24px 22px 18px;
   border-bottom: 1px solid var(--hair-lt);
+  background: none; border: none; border-bottom: 1px solid var(--hair-lt);
+  cursor: pointer; text-align: left; transition: opacity 0.15s;
 }
+.brand:hover { opacity: 0.75; }
 
-.logoImg { height: 30px; width: auto; display: block; margin-bottom: 8px; }
-
-.planTag {
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
+.logoImg { height: 30px; width: auto; display: block; }
 
 .analyseBtn {
   margin: 16px 14px 4px;
@@ -81,7 +77,18 @@
   border-radius: var(--radius-sm);
 }
 .planCardHead { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
-.planCardLabel { font-size: 12.5px; font-weight: 700; color: var(--ink); }
+.planCardLabel { font-size: 12.5px; font-weight: 700; color: var(--ink); display: inline-flex; align-items: center; gap: 4px; }
+.planCardLabelPro {
+  background: linear-gradient(100deg,
+    color-mix(in srgb, var(--gold) 70%, black) 0%,
+    var(--gold) 35%,
+    color-mix(in srgb, var(--gold) 55%, white) 50%,
+    var(--gold) 65%,
+    color-mix(in srgb, var(--gold) 70%, black) 100%);
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+  letter-spacing: 0.01em;
+}
+.proStar { font-size: 10px; color: var(--gold); -webkit-text-fill-color: var(--gold); }
 .foundingBadge {
   display: inline-flex; align-items: center;
   font-size: 9.5px; font-weight: 700; letter-spacing: 0.02em;
@@ -97,28 +104,6 @@
   cursor: pointer; transition: background 0.15s;
 }
 .planCardUpgrade:hover { background: var(--accent-deep); }
-.planCardLink {
-  display: block; width: 100%; margin-top: 9px; text-align: left;
-  background: none; border: none; color: var(--accent);
-  font-size: 12px; font-weight: 600; font-family: var(--font);
-  cursor: pointer; padding: 0;
-}
-.planCardLink:hover { text-decoration: underline; }
-
-.siteLink {
-  margin: 0 12px 12px;
-  padding: 8px 12px;
-  background: none;
-  border: none;
-  color: var(--muted);
-  font-size: 12.5px;
-  font-family: var(--font);
-  font-weight: 500;
-  cursor: pointer;
-  text-align: left;
-  transition: color 0.15s;
-}
-.siteLink:hover { color: var(--ink); }
 
 .bottom {
   padding: 14px 14px 18px;
@@ -195,6 +180,7 @@
   align-items: center;
   justify-content: space-between;
 }
+.logoBtnMobile { background: none; border: none; padding: 0; cursor: pointer; display: block; }
 .logoImgMobile { height: 26px; width: auto; display: block; }
 
 .hamburger {

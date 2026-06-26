@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { supabase } from '../lib/supabase'
-import { PLANS, openBillingPortal, isSubscribed } from '../lib/stripe'
+import { PLANS } from '../lib/stripe'
 import styles from './AppSidebar.module.css'
 import leaseroomLogoDark from '../assets/leaseroom-logo-dark.png'
 import leaseroomLogoLight from '../assets/leaseroom-logo-light.png'
@@ -21,7 +21,6 @@ export default function AppSidebar({ children }) {
   const location = useLocation()
   const [profile, setProfile] = useState(null)
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [portalLoading, setPortalLoading] = useState(false)
   const logoSrc = theme === 'dark' ? leaseroomLogoLight : leaseroomLogoDark
 
   useEffect(() => {
@@ -37,16 +36,6 @@ export default function AppSidebar({ children }) {
   const handleSignOut = async () => {
     await supabase.auth.signOut()
     navigate('/')
-  }
-
-  const handleManageBilling = async () => {
-    setPortalLoading(true)
-    try {
-      const url = await openBillingPortal({ customerId: profile.stripe_customer_id })
-      window.location.href = url
-    } catch {
-      setPortalLoading(false)
-    }
   }
 
   const planInfo = () => {
@@ -65,13 +54,6 @@ export default function AppSidebar({ children }) {
     return user?.email?.[0]?.toUpperCase() || 'U'
   }
 
-  const getPlanLabel = () => {
-    const map = {
-      free: 'Free plan', one_off: 'One-off', monthly: 'Professional', annual: 'Professional',
-    }
-    return map[profile?.plan] || 'Free plan'
-  }
-
   const isActive = (matches) => matches.some(p => location.pathname === p || location.pathname.startsWith(p + '/'))
 
   const handleNavClick = (to) => {
@@ -83,7 +65,9 @@ export default function AppSidebar({ children }) {
     <div className={styles.shell}>
       {/* Mobile header bar */}
       <div className={styles.mobileHeader}>
-        <img src={logoSrc} alt="LeaseRoom" className={styles.logoImgMobile} />
+        <button className={styles.logoBtnMobile} onClick={() => handleNavClick('/')} aria-label="Go to public site">
+          <img src={logoSrc} alt="LeaseRoom" className={styles.logoImgMobile} />
+        </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button className={styles.hamburger} onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme">
             {theme === 'dark' ? '☀' : '☾'}
@@ -99,10 +83,9 @@ export default function AppSidebar({ children }) {
 
       {/* Sidebar */}
       <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ''}`}>
-        <div className={styles.brand}>
+        <button className={styles.brand} onClick={() => handleNavClick('/')} aria-label="Go to public site">
           <img src={logoSrc} alt="LeaseRoom" className={styles.logoImg} />
-          <div className={styles.planTag}>{getPlanLabel()}</div>
-        </div>
+        </button>
 
         <button className={styles.analyseBtn} data-tour="analyse-btn" onClick={() => handleNavClick('/analyser')}>
           + Analyse document
@@ -123,24 +106,19 @@ export default function AppSidebar({ children }) {
 
         <div className={styles.planCard}>
           <div className={styles.planCardHead}>
-            <span className={styles.planCardLabel}>{planInfo().label}</span>
+            <span className={`${styles.planCardLabel} ${profile?.plan === 'adviser' ? styles.planCardLabelPro : ''}`}>
+              {profile?.plan === 'adviser' && <span className={styles.proStar}>★</span>}
+              {planInfo().label}
+            </span>
             {profile?.founding_member && <span className={styles.foundingBadge}>★ Founding</span>}
           </div>
           <div className={styles.planCardDetail}>{planInfo().detail}</div>
-          {isSubscribed(profile) ? (
-            <button className={styles.planCardLink} onClick={handleManageBilling} disabled={portalLoading}>
-              {portalLoading ? 'Opening…' : 'Manage billing →'}
-            </button>
-          ) : (
+          {profile?.plan !== 'adviser' && (
             <button className={styles.planCardUpgrade} onClick={() => handleNavClick('/pricing')}>
               Upgrade plan →
             </button>
           )}
         </div>
-
-        <button className={styles.siteLink} onClick={() => handleNavClick('/')}>
-          View public site →
-        </button>
 
         <div className={styles.bottom}>
           <button className={styles.themeToggle} onClick={toggleTheme}>
