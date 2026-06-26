@@ -189,13 +189,22 @@ export default function Analyser() {
       negIdRef.current = negId
 
       if (user && profile) {
+        // Update local state too -- without this, a second scan in the same
+        // session re-reads the pre-first-scan value and overwrites with the
+        // same total instead of incrementing further.
         if (profile.plan === 'free') {
-          await supabase.from('profiles').update({ free_scans_used: (profile.free_scans_used || 0) + 1 }).eq('id', user.id)
+          const next = (profile.free_scans_used || 0) + 1
+          await supabase.from('profiles').update({ free_scans_used: next }).eq('id', user.id)
+          setProfile(p => ({ ...p, free_scans_used: next }))
         } else if (profile.plan === 'one_off') {
-          await supabase.from('profiles').update({ scan_credits: Math.max(0, (profile.scan_credits || 0) - 1) }).eq('id', user.id)
+          const next = Math.max(0, (profile.scan_credits || 0) - 1)
+          await supabase.from('profiles').update({ scan_credits: next }).eq('id', user.id)
+          setProfile(p => ({ ...p, scan_credits: next }))
         } else if (profile.plan === 'monthly' || profile.plan === 'annual' || profile.plan === 'adviser') {
           // adviser has no enforced limit (see canAnalyse in lib/stripe.js) -- still tracked for display
-          await supabase.from('profiles').update({ monthly_scans_used: (profile.monthly_scans_used || 0) + 1 }).eq('id', user.id)
+          const next = (profile.monthly_scans_used || 0) + 1
+          await supabase.from('profiles').update({ monthly_scans_used: next }).eq('id', user.id)
+          setProfile(p => ({ ...p, monthly_scans_used: next }))
         }
       }
 
