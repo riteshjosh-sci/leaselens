@@ -31,7 +31,7 @@ export default function WorkspacePage() {
       supabase
         .from('negotiations')
         .select(`
-          id, property_name, created_at, status, lifecycle,
+          id, property_name, tenant_name, premises_address, created_at, status, lifecycle,
           documents (
             id, filename, version_number, uploaded_at, overall_risk
           )
@@ -72,6 +72,9 @@ export default function WorkspacePage() {
   const formatDate = d =>
     new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
 
+  const cleanName = (neg) =>
+    (neg.property_name || 'Unnamed').replace(/^\d+_/, '').replace(/\.[^.]+$/, '').replace(/_/g, ' ')
+
   const getDocSummary = (neg) => {
     const docs = neg.documents || []
     const hoaCount   = docs.filter(d => d.filename?.toLowerCase().includes('hoa')).length
@@ -79,18 +82,17 @@ export default function WorkspacePage() {
     const parts = []
     if (leaseCount > 0) parts.push(`${leaseCount} lease${leaseCount > 1 ? 's' : ''}`)
     if (hoaCount > 0)   parts.push(`${hoaCount} HOA${hoaCount > 1 ? 's' : ''}`)
-    if (parts.length === 0 && docs.length > 0)
-      parts.push(`${docs.length} document${docs.length > 1 ? 's' : ''}`)
-    return { summary: parts.join(' · ') || 'No documents', total: docs.length }
+    if (parts.length === 0 && docs.length > 0) parts.push(`${docs.length} document${docs.length > 1 ? 's' : ''}`)
+    return parts.join(' · ') || 'No documents'
   }
 
   const getStatusChip = (neg) => {
     const docs = neg.documents || []
-    if (neg.lifecycle === 'agreed')          return { label: 'Agreed', cls: styles.statusDone }
-    if (neg.lifecycle === 'awaiting')        return { label: 'Awaiting landlord', cls: styles.statusWait }
-    if (neg.lifecycle === 'sent')            return { label: 'Sent to agent', cls: styles.statusWait }
+    if (neg.lifecycle === 'agreed')           return { label: 'Agreed', cls: styles.statusDone }
+    if (neg.lifecycle === 'awaiting')         return { label: 'Awaiting landlord', cls: styles.statusWait }
+    if (neg.lifecycle === 'sent')             return { label: 'Sent to agent', cls: styles.statusWait }
     if (neg.lifecycle === 'counter_prepared') return { label: 'Counter prepared', cls: styles.statusCounter }
-    if (docs.length === 0)                   return { label: 'No documents', cls: styles.statusMuted }
+    if (docs.length === 0)                    return { label: 'No documents', cls: styles.statusMuted }
     return { label: 'Reviewing', cls: '' }
   }
 
@@ -100,22 +102,34 @@ export default function WorkspacePage() {
     return docs.sort((a, b) => new Date(b.uploaded_at) - new Date(a.uploaded_at))[0]?.uploaded_at
   }
 
-  // Workspace-level status from all negotiations
-  const getWsStatus = () => {
-    if (!negotiations.length) return { label: 'No documents', cls: '' }
-    if (negotiations.every(n => n.lifecycle === 'agreed')) return { label: 'Finalised', cls: styles.statusDone }
-    if (negotiations.some(n => n.lifecycle === 'awaiting')) return { label: 'Awaiting landlord', cls: styles.statusWait }
-    if (negotiations.some(n => n.lifecycle === 'counter_prepared')) return { label: 'Counter prepared', cls: styles.statusCounter }
-    return { label: 'In review', cls: '' }
-  }
-
-  const totalDocs = negotiations.reduce((a, n) => a + (n.documents?.length || 0), 0)
-  const wsStatus  = getWsStatus()
+  // Sanity-check extracted values — same guard used on Properties/Dashboard
+  const CLAUSE_WORDS = ['takes a lease', 'landlord', 'herein', 'pursuant', 'thereof', 'together with', 'non-exclusive', 'the term']
+  const isClauseText = v => !v || v.length > 150 || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
+  const negWithData = negotiations.find(n => n.tenant_name || n.premises_address)
+  const extractedTenant  = !isClauseText(negWithData?.tenant_name)  ? negWithData.tenant_name  : null
+  const extractedAddress = !isClauseText(negWithData?.premises_address) ? negWithData.premises_address : null
 
   const formatKeyDate = d =>
     new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
 
-  if (loading) return <AppSidebar><div className={styles.loading}>Loading…</div></AppSidebar>
+  const formatCountdown = (d) => {
+    const days = Math.round((new Date(d) - new Date()) / 86400000)
+    if (days < 0) return 'Passed'
+    if (days > 365) return `${(days / 365).toFixed(1)} yrs`
+    return `${days} days`
+  }
+
+  const docTypeSummary = () => {
+    const allDocs = negotiations.flatMap(n => n.documents || [])
+    const hoaDocs   = allDocs.filter(d => d.filename?.toLowerCase().includes('hoa'))
+    const leaseDocs = allDocs.filter(d => !d.filename?.toLowerCase().includes('hoa'))
+    return [
+      { label: 'Heads of agreement', count: hoaDocs.length },
+      { label: 'Lease versions', count: leaseDocs.length },
+    ]
+  }
+
+  if (loading || !ws) return <AppSidebar><div className={styles.loading}>Loading…</div></AppSidebar>
 
   return (
     <AppSidebar>
@@ -133,136 +147,100 @@ export default function WorkspacePage() {
           <div className={styles.headLeft}>
             <div className={styles.wsBadge}>{ws.name[0]?.toUpperCase()}</div>
             <div>
-              <div className={styles.kicker}>Workspace</div>
               <h1 className={styles.h1}>{ws.name}</h1>
-              {ws.client_name && <div className={styles.sub}>{ws.client_name}</div>}
-              <div className={styles.meta}>
-                {negotiations.length} negotiation{negotiations.length !== 1 ? 's' : ''} · {totalDocs} document{totalDocs !== 1 ? 's' : ''}
+              <div className={styles.sub}>
+                {extractedAddress || ws.name}
+                {(extractedTenant || ws.client_name) && <> · Tenant: <strong>{extractedTenant || ws.client_name}</strong></>}
               </div>
             </div>
           </div>
           <div className={styles.headActions}>
-            <span className={`${styles.statusChip} ${wsStatus.cls}`}>
-              <span className={styles.d} />{wsStatus.label}
-            </span>
-            <button
-              className="btn-outline btn-sm"
-              onClick={() => navigate(`/workspace/${id}/settings`)}
-            >
+            <button className="btn-outline btn-sm" onClick={() => navigate(`/workspace/${id}/settings`)}>
               Settings
             </button>
-            <button
-              className="btn-ink btn-sm"
-              onClick={() => navigate('/analyser', { state: { workspaceId: id } })}
-            >
-              + Analyse document
+            <button className="btn-ink btn-sm" onClick={() => navigate('/analyser', { state: { workspaceId: id } })}>
+              + New negotiation
             </button>
           </div>
         </div>
 
-        {/* KEY DATES */}
-        {keyDates && (
-          <div className={styles.keyDates}>
-            {keyDates.commencement_date && (
-              <div className={styles.keyDateItem}>
-                <span className={styles.keyDateLbl}>Commencement</span>
-                <span className={styles.keyDateVal}>{formatKeyDate(keyDates.commencement_date)}</span>
-              </div>
-            )}
-            {keyDates.expiry_date && (
-              <div className={styles.keyDateItem}>
-                <span className={styles.keyDateLbl}>Expiry</span>
-                <span className={styles.keyDateVal}>{formatKeyDate(keyDates.expiry_date)}</span>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* NEGOTIATIONS */}
-        <div className={styles.dsec}>
-          <div className={styles.sh}>
-            <span className={styles.shLbl}>Negotiations</span>
-            <span className={styles.shCnt}>{negotiations.length} active</span>
-            <span className={styles.shLn} />
-          </div>
-
-          {negotiations.length === 0 ? (
-            <div className={styles.empty}>
-              <p>No negotiations yet. Analyse a lease or HOA to get started.</p>
-              <button
-                className="btn-ink btn-sm"
-                style={{ marginTop: 16 }}
-                onClick={() => navigate('/analyser', { state: { workspaceId: id } })}
-              >
-                Analyse document →
-              </button>
+        <div className={styles.twoCol}>
+          {/* NEGOTIATIONS */}
+          <div className={styles.panel}>
+            <div className={styles.panelHead}>
+              <span className={styles.panelBar} />
+              <span className={styles.panelTitle}>Negotiations</span>
             </div>
-          ) : (
-            <div className={styles.wsGrid}>
-              {negotiations.map(neg => {
-                const status     = getStatusChip(neg)
-                const { summary, total } = getDocSummary(neg)
+            {negotiations.length === 0 ? (
+              <div className={styles.empty}>
+                <p>No negotiations yet. Analyse a lease or HOA to get started.</p>
+                <button className="btn-ink btn-sm" style={{ marginTop: 16 }} onClick={() => navigate('/analyser', { state: { workspaceId: id } })}>
+                  Analyse document →
+                </button>
+              </div>
+            ) : (
+              negotiations.map(neg => {
+                const status = getStatusChip(neg)
                 const latestDate = getLatestDate(neg)
-                const cleanName  = (neg.property_name || 'Unnamed')
-                  .replace(/^\d+_/, '')
-                  .replace(/\.[^.]+$/, '')
-                  .replace(/_/g, ' ')
-
                 return (
-                  <div
-                    key={neg.id}
-                    className={styles.wcard}
-                    onClick={() => navigate(`/negotiation/${neg.id}`)}
-                  >
-                    <div className={styles.wcTop}>
-                      <div className={styles.wcBadge}>
-                        {cleanName[0]?.toUpperCase()}
-                      </div>
-                      <div className={styles.wcId}>
-                        <div className={styles.wcName}>{cleanName}</div>
-                        {ws.client_name && <div className={styles.wcTn}>{ws.client_name}</div>}
-                      </div>
-                      <span className={`${styles.negChip} ${status.cls}`}>
-                        <span className={styles.d} />{status.label}
-                      </span>
+                  <div key={neg.id} className={styles.negRow} onClick={() => navigate(`/negotiation/${neg.id}`)}>
+                    <div className={styles.negMain}>
+                      <div className={styles.negName}>{cleanName(neg)}</div>
+                      <div className={styles.negMeta}>{getDocSummary(neg)}</div>
                     </div>
-
-                    <div className={styles.wcSummary}>
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                        <path d="M4 1.5h5l3 3v10H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
-                        <path d="M9 1.5v3h3" stroke="currentColor" strokeWidth="1.4"/>
-                      </svg>
-                      {summary}
-                      {total > 0 && <span className={styles.docsN}>· {total} document{total !== 1 ? 's' : ''}</span>}
+                    <div className={styles.negRight}>
+                      <span className={`${styles.negChip} ${status.cls}`}><span className={styles.d} />{status.label}</span>
+                      <span className={styles.negDate}>{latestDate ? `Updated ${formatDate(latestDate)}` : `Created ${formatDate(neg.created_at)}`} →</span>
                     </div>
-
-                    <div className={styles.wcFoot}>
-                      <span className={styles.wcUp}>
-                        {latestDate ? `Updated ${formatDate(latestDate)}` : `Created ${formatDate(neg.created_at)}`}
-                      </span>
-                      <span className={styles.wcOpen}>Open →</span>
-                    </div>
-
-                    <button
-                      className={styles.delBtn}
-                      onClick={(e) => handleDeleteNeg(neg.id, e)}
-                      title="Delete negotiation"
-                    >✕</button>
+                    <button className={styles.delBtn} onClick={(e) => handleDeleteNeg(neg.id, e)} title="Delete negotiation">✕</button>
                   </div>
                 )
-              })}
+              })
+            )}
+          </div>
 
-              {/* New negotiation card */}
-              <div
-                className={`${styles.wcard} ${styles.wcardNew}`}
-                onClick={() => navigate('/analyser', { state: { workspaceId: id } })}
-              >
-                <div className={styles.plus}>+</div>
-                <div className={styles.nt}>New negotiation</div>
-                <div className={styles.ns}>Analyse a lease or HOA for this workspace</div>
+          <div className={styles.sideCol}>
+            {/* KEY DATES */}
+            {keyDates && (
+              <div className={styles.panel}>
+                <div className={styles.panelHead}>
+                  <span className={styles.panelBar} />
+                  <span className={styles.panelTitle}>Key dates</span>
+                </div>
+                {keyDates.commencement_date && (
+                  <div className={styles.kdRow}>
+                    <div>
+                      <div className={styles.kdLbl}>Commencement</div>
+                      <div className={styles.kdDate}>{formatKeyDate(keyDates.commencement_date)}</div>
+                    </div>
+                  </div>
+                )}
+                {keyDates.expiry_date && (
+                  <div className={styles.kdRow}>
+                    <div>
+                      <div className={styles.kdLbl}>Lease expiry</div>
+                      <div className={styles.kdDate}>{formatKeyDate(keyDates.expiry_date)}</div>
+                    </div>
+                    <span className={styles.kdBadge}>{formatCountdown(keyDates.expiry_date)}</span>
+                  </div>
+                )}
               </div>
+            )}
+
+            {/* DOCUMENTS */}
+            <div className={styles.panel}>
+              <div className={styles.panelHead}>
+                <span className={styles.panelBar} />
+                <span className={styles.panelTitle}>Documents</span>
+              </div>
+              {docTypeSummary().map(d => (
+                <div key={d.label} className={styles.docRow}>
+                  <span className={styles.docLbl}>{d.label}</span>
+                  <span className={styles.docVal}>{d.count}{d.label === 'Heads of agreement' && d.count > 0 ? ` version${d.count !== 1 ? 's' : ''}` : ''}</span>
+                </div>
+              ))}
             </div>
-          )}
+          </div>
         </div>
 
       </div>
