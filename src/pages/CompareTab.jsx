@@ -194,7 +194,6 @@ export default function CompareTab({ negId, docs }) {
     })
   }
 
-  const connCls = { imp: styles.connImp, risk: styles.connRsk, same: '', watch: styles.connWatch }
   const tintCls = { imp: styles.ccardImp, risk: styles.ccardRsk, same: '', watch: styles.ccardWatch }
   const dotCls  = { imp: styles.dotImp,  risk: styles.dotRsk,  same: styles.dotSame, watch: styles.dotWatch }
 
@@ -270,12 +269,11 @@ export default function CompareTab({ negId, docs }) {
       {comparison && (
         <div className={styles.summaryStrip}>
           <span className={styles.summaryLabel}>Comparison summary</span>
-          <span className={styles.filterLabel}>Filter:</span>
           <div className={styles.summaryStats}>
             {[
               { key: 'added',    icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoAdd, label: 'Added',    val: comparison.summary.added },
-              { key: 'modified', icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L5 13.5 2 14l.5-3L11 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>, cls: styles.sumIcoMod, label: 'Modified', val: comparison.summary.modified },
               { key: 'removed',  icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoRem, label: 'Removed',  val: comparison.summary.removed },
+              { key: 'modified', icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L5 13.5 2 14l.5-3L11 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>, cls: styles.sumIcoMod, label: 'Modified', val: comparison.summary.modified },
             ].map(r => (
               <button
                 key={r.key}
@@ -287,23 +285,17 @@ export default function CompareTab({ negId, docs }) {
                 <span className={styles.statL}>{r.label}</span>
               </button>
             ))}
-            <div className={styles.statDivider} />
-            <div className={styles.statPill} style={{ cursor: 'default' }}>
-              <span className={`${styles.statIco} ${styles.sumIcoRk}`}>
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1.6l5 2v3.4c0 3-2.1 5-5 5.4-2.9-.4-5-2.4-5-5.4V3.6l5-2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
-              </span>
-              <span className={`${styles.schip} ${
-                comparison.summary.riskClass === 'Up' ? styles.schipUp :
-                comparison.summary.riskClass === 'Down' ? styles.schipDown : styles.schipMixed
-              }`}>{comparison.summary.riskLabel}</span>
-              <span className={styles.statL}>Risk</span>
-            </div>
           </div>
           {activeFilter && (
             <button className={styles.clearFilter} onClick={() => setActiveFilter(null)}>
               Clear filter ✕
             </button>
           )}
+          <div className={styles.legend}>
+            <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendGood}`} />Tenant favourable</span>
+            <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendBad}`} />Landlord favourable</span>
+            <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendSame}`} />Neutral</span>
+          </div>
         </div>
       )}
 
@@ -329,7 +321,6 @@ export default function CompareTab({ negId, docs }) {
               <span className={styles.chT}>v{leftDoc?.version_number} — Previous</span>
               <span className={styles.chCt}>{leftDoc?.reports?.[0]?.report_json?.clauses?.length || 0} clauses</span>
             </div>
-            <div className={styles.chMid} />
             <div className={styles.chSide}>
               <span className={styles.chT}>v{rightDoc?.version_number} — Revised</span>
               <span className={styles.chCt}>{rightDoc?.reports?.[0]?.report_json?.clauses?.length || 0} clauses</span>
@@ -356,11 +347,6 @@ export default function CompareTab({ negId, docs }) {
                   ) : (
                     <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in previous version</div>
                   )}
-
-                  <div className={`${styles.conn} ${connCls[row.change]}`}>
-                    <span className={styles.connLine} />
-                    <span className={styles.connDot} />
-                  </div>
 
                   {row.right ? (
                     <div className={`${styles.ccard} ${tintCls[row.change]}`}>

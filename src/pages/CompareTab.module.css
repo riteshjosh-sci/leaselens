@@ -15,10 +15,6 @@
   font-size: 11px; font-weight: 700; letter-spacing: .1em;
   text-transform: uppercase; color: var(--muted); margin-right: 4px; white-space: nowrap;
 }
-.filterLabel {
-  font-size: 12px; font-weight: 600; color: var(--muted);
-  white-space: nowrap; margin-right: 2px;
-}
 .summaryStats { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 
 .statPill {
@@ -37,26 +33,25 @@
 .statIco {
   width: 26px; height: 26px; border-radius: 7px;
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  background: var(--paper-2); color: var(--ink-soft);
 }
-.sumIcoAdd { background: rgba(94,140,106,.12); color: var(--st-agreed-tx); }
-.sumIcoMod { background: var(--accent-soft); color: var(--accent-deep); }
-.sumIcoRem { background: var(--danger-bg); color: var(--danger-deep); }
-.sumIcoRk  { background: rgba(194,146,43,.13); color: var(--st-sent-tx); }
 .statN { font-size: 18px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
 .statL { font-size: 12px; color: var(--muted); font-weight: 500; }
-.statDivider { width: 1px; height: 26px; background: var(--hair); margin: 0 4px; }
-
-.schip { font-size: 13px; font-weight: 700; }
-.schipUp    { color: var(--danger-deep); }
-.schipDown  { color: var(--st-agreed-tx); }
-.schipMixed { color: var(--st-sent-tx); }
 
 .clearFilter {
-  margin-left: auto; font-size: 11.5px; font-weight: 700;
+  font-size: 11.5px; font-weight: 700;
   color: var(--accent); background: none; border: none; cursor: pointer;
   font-family: var(--font); white-space: nowrap; padding: 4px 0;
 }
 .clearFilter:hover { text-decoration: underline; }
+
+/* favourability legend */
+.legend { display: flex; align-items: center; gap: 14px; margin-left: auto; flex-wrap: wrap; }
+.legendItem { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.legendDot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.legendGood { background: var(--risk-l); }
+.legendBad  { background: var(--fav-bad); }
+.legendSame { background: var(--cmp-same); }
 
 /* ── 2. DOC SELECTOR — directly above clause columns ── */
 .docSelect {
@@ -165,7 +160,7 @@
 }
 
 .compareHead {
-  display: grid; grid-template-columns: 1fr 56px 1fr 220px;
+  display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px;
   align-items: center; padding: 16px 4px 14px;
   border-bottom: 1px solid var(--hair-lt); margin-bottom: 16px;
 }
@@ -175,11 +170,10 @@
   font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: var(--muted);
   background: var(--paper-2); padding: 4px 10px; border-radius: 100px;
 }
-.chMid {}
 
 .crows { display: flex; flex-direction: column; gap: 13px; }
 
-.crow { display: grid; grid-template-columns: 1fr 56px 1fr 220px; align-items: stretch; gap: 0; }
+.crow { display: grid; grid-template-columns: 1fr 1fr 1fr; align-items: stretch; gap: 16px; }
 .crowOpen {}
 
 .ccard {
@@ -253,28 +247,16 @@
   -webkit-box-decoration-break: clone;
 }
 
-/* connector */
-.conn { position: relative; display: flex; align-items: center; justify-content: center; }
-.connLine { position: absolute; left: -2px; right: -2px; top: 50%; height: 2px; transform: translateY(-50%); background: var(--hair); }
-.connDot  { width: 13px; height: 13px; border-radius: 50%; background: var(--cmp-same); box-shadow: 0 0 0 4px var(--card); z-index: 1; }
-.connImp   .connDot  { background: var(--risk-l); }
-.connImp   .connLine { background: color-mix(in srgb, var(--risk-l) 50%, transparent); }
-.connRsk   .connDot  { background: var(--fav-bad); }
-.connRsk   .connLine { background: color-mix(in srgb, var(--fav-bad) 50%, transparent); }
-.connWatch .connDot  { background: var(--gold); }
-.connWatch .connLine { background: color-mix(in srgb, var(--gold) 50%, transparent); }
-
-/* 4th-column note */
+/* 3rd-column note */
 .chNote {
   font-size: 11px; font-weight: 700; letter-spacing: .1em;
   text-transform: uppercase; color: var(--muted);
-  padding-left: 16px; margin-left: 14px;
 }
 .ccNote {
-  margin-left: 14px;
   padding: 13px 14px 13px 16px;
   background: var(--paper); border: 1px solid var(--hair-lt); border-radius: 10px;
   font-size: 12.5px; line-height: 1.55; color: var(--ink-soft);
+  height: 100%;
 }
 .noteLead {
   display: block; font-weight: 700;
@@ -342,23 +324,18 @@
   .kdGrid { grid-template-columns: 1fr 1fr; }
 }
 
-/* ── Tablet (≤ 860px) — clause columns still side-by-side but tighter ── */
+/* ── Tablet (≤ 860px) — three equal columns, just tighter ── */
 @media (max-width: 860px) {
   /* Doc cards: shrink filename area */
   .fn   { font-size: 13px; }
   .fmeta { font-size: 11px; }
   .ficon { width: 30px; height: 38px; font-size: 7.5px; }
 
-  /* Clause column headers — collapse to 3-col, hide note column */
-  .compareHead { grid-template-columns: 1fr 40px 1fr; padding: 12px 4px 10px; }
+  .compareHead { gap: 10px; padding: 12px 4px 10px; }
   .chT  { font-size: 13px; }
   .chCt { font-size: 10.5px; padding: 3px 8px; }
-  .chNote { display: none; }
 
-  /* Clause rows — collapse to 3-col, note spans below */
-  .crow   { grid-template-columns: 1fr 40px 1fr; }
-  .ccNote { grid-column: 1 / -1; margin-top: 2px; }
-  .connDot { width: 11px; height: 11px; }
+  .crow { gap: 10px; }
 
   /* Clause cards */
   .ccard { padding: 12px 13px; gap: 10px; }
@@ -368,7 +345,6 @@
 
   /* Summary strip wraps */
   .summaryStrip { flex-wrap: wrap; }
-  .clearFilter  { margin-left: 0; }
 }
 
 /* ── Large phone (≤ 680px) — stack doc cards, collapse clause rows ── */
@@ -378,14 +354,13 @@
 
   /* Clause rows stack vertically */
   .crow { grid-template-columns: 1fr; gap: 6px; }
-  .conn { display: none; }
 
   /* Restore card padding now that they're full-width */
   .ccard { padding: 14px 16px; }
 
-  /* Column header becomes simple label row */
+  /* Column header becomes simple label row, note label hidden (shown inline per-row instead) */
   .compareHead { grid-template-columns: 1fr 1fr; gap: 8px; }
-  .chMid       { display: none; }
+  .chNote      { display: none; }
   .chSide      { flex-direction: column; align-items: flex-start; gap: 3px; }
 
   /* Key diff grid */
