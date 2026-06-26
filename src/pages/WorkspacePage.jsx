@@ -3,7 +3,27 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AppSidebar from '../components/AppSidebar'
+import Tour from '../components/Tour'
+import HelpTip from '../components/HelpTip'
 import styles from './WorkspacePage.module.css'
+
+const TOUR_STEPS = [
+  {
+    target: 'negotiations-panel',
+    title: 'Every negotiation, in one place',
+    body: 'Each round of dealing on this property — HOA, lease renewal, whatever’s in motion — lives here.',
+  },
+  {
+    target: 'keydates-panel',
+    title: 'Key dates',
+    body: 'Commencement and expiry pulled straight from the most recently uploaded document.',
+  },
+  {
+    target: 'documents-panel',
+    title: 'Documents',
+    body: 'A running count of Heads of Agreement and lease versions across this property.',
+  },
+]
 
 export default function WorkspacePage() {
   const { id } = useParams()
@@ -138,6 +158,7 @@ export default function WorkspacePage() {
 
   return (
     <AppSidebar>
+      <Tour steps={TOUR_STEPS} storageKey="ll_property_tour_seen" />
       <div className={styles.page}>
 
         {/* BREADCRUMB */}
@@ -171,7 +192,7 @@ export default function WorkspacePage() {
 
         <div className={styles.twoCol}>
           {/* NEGOTIATIONS */}
-          <div className={styles.panel}>
+          <div className={styles.panel} data-tour="negotiations-panel">
             <div className={styles.panelHead}>
               <span className={styles.panelBar} />
               <span className={styles.panelTitle}>Negotiations</span>
@@ -206,10 +227,11 @@ export default function WorkspacePage() {
 
           <div className={styles.sideCol}>
             {/* KEY DATES */}
-            <div className={styles.panel}>
+            <div className={styles.panel} data-tour="keydates-panel">
               <div className={styles.panelHead}>
                 <span className={styles.panelBar} />
                 <span className={styles.panelTitle}>Key dates</span>
+                <HelpTip placement="bottom">Commencement and expiry dates extracted from the most recently uploaded lease document.</HelpTip>
               </div>
               {!keyDates?.commencement_date && !keyDates?.expiry_date ? (
                 <div className={styles.empty}>No dates extracted from this lease yet.</div>
@@ -237,7 +259,7 @@ export default function WorkspacePage() {
             </div>
 
             {/* DOCUMENTS */}
-            <div className={styles.panel}>
+            <div className={styles.panel} data-tour="documents-panel">
               <div className={styles.panelHead}>
                 <span className={styles.panelBar} />
                 <span className={styles.panelTitle}>Documents</span>

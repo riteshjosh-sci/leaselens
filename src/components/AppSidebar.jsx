@@ -83,7 +83,7 @@ export default function AppSidebar({ children }) {
           <div className={styles.planTag}>{getPlanLabel()}</div>
         </div>
 
-        <button className={styles.analyseBtn} onClick={() => handleNavClick('/analyser')}>
+        <button className={styles.analyseBtn} data-tour="analyse-btn" onClick={() => handleNavClick('/analyser')}>
           + Analyse document
         </button>
 

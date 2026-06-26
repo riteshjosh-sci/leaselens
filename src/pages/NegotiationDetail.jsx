@@ -3,11 +3,30 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AppSidebar from '../components/AppSidebar'
+import Tour from '../components/Tour'
 import ReviewTab from './ReviewTab'
 import CompareTab from './CompareTab'
 import DocumentsTab from './DocumentsTab'
 import ActivityTab from './ActivityTab'
 import styles from './NegotiationDetail.module.css'
+
+const TOUR_STEPS = [
+  {
+    target: 'neg-tabs',
+    title: 'Four ways to work a negotiation',
+    body: 'Compare versions side by side, review clauses one at a time, manage documents, or check the activity history.',
+  },
+  {
+    target: 'neg-status',
+    title: 'Status at a glance',
+    body: 'Shows where this round stands — awaiting a reply, a counter prepared, or finalised.',
+  },
+  {
+    target: 'neg-addversion',
+    title: 'Add a new version',
+    body: 'Uploaded a revised draft back from the landlord or agent? Add it here to compare against the last one.',
+  },
+]
 
 const TABS_ONE = [
   { key: 'review',    label: 'Review' },
@@ -111,6 +130,7 @@ export default function NegotiationDetail() {
 
   return (
     <AppSidebar>
+      <Tour steps={TOUR_STEPS} storageKey="ll_negotiation_tour_seen" />
       <div className={styles.page}>
 
         {/* BREADCRUMB */}
@@ -137,17 +157,17 @@ export default function NegotiationDetail() {
             </div>
           </div>
           <div className={styles.wsActions}>
-            <span className={`${styles.statusChip} ${status.cls}`}>
+            <span className={`${styles.statusChip} ${status.cls}`} data-tour="neg-status">
               <span className={styles.statusD} />{status.label}
             </span>
-            <button className="btn-outline btn-sm" onClick={() => handleAddVersion()}>
+            <button className="btn-outline btn-sm" data-tour="neg-addversion" onClick={() => handleAddVersion()}>
               + Add version
             </button>
           </div>
         </div>
 
         {/* TAB BAR */}
-        <div className={styles.wstabs}>
+        <div className={styles.wstabs} data-tour="neg-tabs">
           {TABS.map(tab => (
             <button
               key={tab.key}

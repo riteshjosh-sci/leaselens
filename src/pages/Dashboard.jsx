@@ -3,7 +3,31 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AppSidebar from '../components/AppSidebar'
+import Tour from '../components/Tour'
+import HelpTip from '../components/HelpTip'
 import styles from './Dashboard.module.css'
+
+const TOUR_STEPS = [
+  {
+    title: 'Your portfolio at a glance',
+    body: "This is Home — a quick read on what's active and what needs you today.",
+  },
+  {
+    target: 'stats-strip',
+    title: 'Headline numbers',
+    body: 'Properties, active negotiations, reports generated, and dates coming due within 30 days.',
+  },
+  {
+    target: 'attention-panel',
+    title: "Needs your attention",
+    body: 'Anything waiting on a reply or a decision shows up here first, across every property.',
+  },
+  {
+    target: 'negotiations-section',
+    title: 'All your negotiations',
+    body: 'Grouped by property by default — switch to "By tenant" if that suits how you work.',
+  },
+]
 
 const CRITICAL_WINDOW_DAYS = 30
 
@@ -151,6 +175,7 @@ export default function Dashboard() {
 
   return (
     <AppSidebar>
+      <Tour steps={TOUR_STEPS} storageKey="ll_home_tour_seen" />
       <div className={styles.page}>
 
         {/* HEAD */}
@@ -168,7 +193,7 @@ export default function Dashboard() {
         </div>
 
         {/* STATS STRIP */}
-        <div className={styles.statsStrip}>
+        <div className={styles.statsStrip} data-tour="stats-strip">
           <div className={styles.statCell}>
             <div className={styles.statLbl}>Properties</div>
             <div className={styles.statVal}>{activeWorkspaces.length} <span>active</span></div>
@@ -182,14 +207,17 @@ export default function Dashboard() {
             <div className={styles.statVal}>{totalDocs} <span>all-time</span></div>
           </div>
           <div className={styles.statCell}>
-            <div className={styles.statLbl}>Critical dates ≤30d</div>
+            <div className={styles.statLbl}>
+              Critical dates ≤30d
+              <HelpTip>Lease and HOA documents with a commencement or expiry date falling within the next 30 days.</HelpTip>
+            </div>
             <div className={styles.statVal}>{criticalCount} <span>due soon</span></div>
           </div>
         </div>
 
         <div className={styles.twoCol}>
           {/* NEEDS ATTENTION */}
-          <div className={styles.panel}>
+          <div className={styles.panel} data-tour="attention-panel">
             <div className={styles.panelHead}>
               <span className={styles.panelBar} />
               <span className={styles.panelTitle}>Needs your attention</span>
@@ -235,7 +263,7 @@ export default function Dashboard() {
         </div>
 
         {/* NEGOTIATIONS — grouped by property */}
-        <div className={styles.dsec}>
+        <div className={styles.dsec} data-tour="negotiations-section">
           <div className={styles.sh}>
             <span className={styles.panelBar} />
             <span className={styles.shLbl}>Negotiations</span>

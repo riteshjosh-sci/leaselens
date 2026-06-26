@@ -14,7 +14,7 @@
 }
 .statCell { flex:1; padding:16px 22px; border-left:1px solid var(--hair-lt); }
 .statCell:first-child { border-left:none; }
-.statLbl { font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.statLbl { display:flex; align-items:center; gap:6px; font-size:11px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
 .statVal { font-size:26px; font-weight:700; color:var(--ink); letter-spacing:-0.02em; }
 .statVal span { font-size:13px; font-weight:500; color:var(--muted); letter-spacing:0; margin-left:4px; }
 

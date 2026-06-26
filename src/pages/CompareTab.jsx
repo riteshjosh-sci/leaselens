@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import HelpTip from '../components/HelpTip'
 import styles from './CompareTab.module.css'
 
 // Tokenise into words + whitespace/punctuation runs, preserving original string
@@ -271,6 +272,7 @@ export default function CompareTab({ negId, docs }) {
       {comparison && (
         <div className={styles.summaryStrip}>
           <span className={styles.summaryLabel}>Comparison summary</span>
+          <HelpTip>Each changed clause is colored by who it favours: green when the change benefits you as tenant, rose when it favours the landlord, grey when it's neutral or unchanged.</HelpTip>
           <div className={styles.summaryStats}>
             {[
               { key: 'added',    icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoAdd, label: 'Added',    val: comparison.summary.added },
