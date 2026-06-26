@@ -32,7 +32,6 @@ export default function Properties() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [workspaces, setWorkspaces] = useState([])
-  const [profile, setProfile]       = useState(null)
   const [loading, setLoading]       = useState(true)
   const [wsModal, setWsModal]       = useState(false)
   const [wsName, setWsName]         = useState('')
@@ -49,7 +48,7 @@ export default function Properties() {
         .select(`
           id, name, client_name, logo_path, created_at,
           negotiations (
-            id, status, lifecycle, tenant_name, premises_address,
+            id, status, lifecycle, tenant_name, premises_address, created_at,
             documents (
               id, filename, uploaded_at, overall_risk
             )
@@ -58,12 +57,10 @@ export default function Properties() {
         .eq('user_id', user.id)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false }),
-      supabase.from('profiles').select('*').eq('id', user.id).single(),
+      supabase.from('profiles').select('sort_preference').eq('id', user.id).single(),
     ])
     setWorkspaces(wsRes.data || [])
-    const p = profileRes.data
-    setProfile(p)
-    if (p?.sort_preference) setSortPref(p.sort_preference)
+    if (profileRes.data?.sort_preference) setSortPref(profileRes.data.sort_preference)
     setLoading(false)
   }
 
@@ -94,27 +91,44 @@ export default function Properties() {
   const formatDate = d =>
     new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })
 
-  const getStatusChip = (ws) => {
-    const negs = ws.negotiations || []
-    if (negs.length === 0) return { label: 'No documents', cls: '' }
-    const lifecycles = negs.map(n => n.lifecycle)
-    if (negs.every(n => n.lifecycle === 'agreed'))       return { label: 'Finalised', cls: styles.statusDone }
-    if (lifecycles.includes('awaiting'))                  return { label: 'Awaiting landlord', cls: styles.statusWait }
-    if (lifecycles.includes('sent'))                      return { label: 'Sent to agent', cls: styles.statusWait }
-    if (lifecycles.includes('counter_prepared'))          return { label: 'Counter prepared', cls: '' }
-    return { label: 'Reviewing', cls: '' }
-  }
+  const cleanName = (n) =>
+    (n.property_name || n.tenant_name || 'Unnamed negotiation').replace(/^\d+_/, '').replace(/\.[^.]+$/, '').replace(/_/g, ' ')
 
-  const getDocSummary = (ws) => {
-    const allDocs = (ws.negotiations || []).flatMap(n => n.documents || [])
-    const hoaCount   = allDocs.filter(d => d.filename?.toLowerCase().includes('hoa')).length
-    const leaseCount = allDocs.filter(d => !d.filename?.toLowerCase().includes('hoa')).length
+  const getDocSummary = (n) => {
+    const docs = n.documents || []
+    const hoaCount   = docs.filter(d => d.filename?.toLowerCase().includes('hoa')).length
+    const leaseCount = docs.filter(d => !d.filename?.toLowerCase().includes('hoa')).length
     const parts = []
     if (leaseCount > 0) parts.push(`${leaseCount} lease${leaseCount > 1 ? 's' : ''}`)
     if (hoaCount > 0)   parts.push(`${hoaCount} HOA${hoaCount > 1 ? 's' : ''}`)
-    if (parts.length === 0 && allDocs.length > 0)
-      parts.push(`${allDocs.length} document${allDocs.length > 1 ? 's' : ''}`)
-    return { summary: parts.join(' · ') || 'No documents', total: allDocs.length }
+    if (parts.length === 0 && docs.length > 0) parts.push(`${docs.length} document${docs.length > 1 ? 's' : ''}`)
+    return parts.join(' · ') || 'No documents'
+  }
+
+  const getNegStatus = (n) => {
+    if (n.lifecycle === 'agreed')           return { label: 'Finalised', cls: styles.chipDone }
+    if (n.lifecycle === 'awaiting')         return { label: 'Awaiting landlord', cls: styles.chipWait }
+    if (n.lifecycle === 'sent')              return { label: 'Sent to agent', cls: styles.chipWait }
+    if (n.lifecycle === 'counter_prepared') return { label: 'Counter prepared', cls: styles.chipNeutral }
+    if (!(n.documents || []).length)        return { label: 'No documents', cls: styles.chipNeutral }
+    return { label: 'Reviewing', cls: styles.chipNeutral }
+  }
+
+  // Sanity-check extracted values — reject anything that looks like clause text
+  const CLAUSE_WORDS = ['takes a lease', 'landlord', 'herein', 'pursuant', 'thereof', 'together with', 'non-exclusive', 'the term']
+  const isClauseText = v => !v || v.length > 150 || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
+
+  const wsDisplay = (ws) => {
+    const negs = ws.negotiations || []
+    const negWithData = negs.find(n => n.tenant_name || n.premises_address)
+    const extractedTenant  = !isClauseText(negWithData?.tenant_name)  ? negWithData.tenant_name  : null
+    const extractedAddress = !isClauseText(negWithData?.premises_address) ? negWithData.premises_address : null
+    const displayName    = extractedTenant  || ws.client_name || ws.name
+    const displayAddress = extractedAddress
+      || (extractedTenant  && ws.name)
+      || (ws.client_name   && ws.name)
+      || null
+    return { displayName, displayAddress }
   }
 
   const getLatestDate = (ws) => {
@@ -136,10 +150,8 @@ export default function Properties() {
     return negs.length > 0 && negs.every(n => n.lifecycle === 'agreed')
   })
 
-  // Sort by property name or tenant name
   const sortFn = (a, b) => {
     if (sortPref === 'tenant') {
-      // Workspaces without client_name go to bottom
       if (!a.client_name && !b.client_name) return a.name.localeCompare(b.name)
       if (!a.client_name) return 1
       if (!b.client_name) return -1
@@ -153,61 +165,42 @@ export default function Properties() {
 
   if (loading) return <AppSidebar><div className={styles.loading}>Loading…</div></AppSidebar>
 
-  const PropertyCard = ({ ws, fin = false }) => {
-    const status             = getStatusChip(ws)
-    const { summary, total } = getDocSummary(ws)
-    const latestDate         = getLatestDate(ws)
-
-    // Sanity-check extracted values — reject anything that looks like clause text
-    const CLAUSE_WORDS = ['takes a lease', 'landlord', 'herein', 'pursuant',
-      'thereof', 'together with', 'non-exclusive', 'the term']
-    const isClauseText = v => !v || v.length > 150
-      || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
-
+  const WorkspaceGroup = ({ ws }) => {
+    const { displayName, displayAddress } = wsDisplay(ws)
     const negs = ws.negotiations || []
-    const negWithData = negs.find(n => n.tenant_name || n.premises_address)
-    const extractedTenant  = !isClauseText(negWithData?.tenant_name)  ? negWithData.tenant_name  : null
-    const extractedAddress = !isClauseText(negWithData?.premises_address) ? negWithData.premises_address : null
-
-    const displayName    = extractedTenant  || ws.client_name || ws.name
-    const displayAddress = extractedAddress
-      || (extractedTenant  && ws.name)
-      || (ws.client_name   && ws.name)
-      || null
-
     return (
-      <div
-        className={`${styles.wcard} ${fin ? styles.wcardFin : ''}`}
-        onClick={() => navigate(`/workspace/${ws.id}`)}
-      >
-        <div className={styles.wcTop}>
-          <div className={styles.wcBadge}>{(displayName)[0]?.toUpperCase()}</div>
-          <div className={styles.wcId}>
-            <div className={styles.wcName}>{displayName}</div>
-            {displayAddress && <div className={styles.wcTn}>{displayAddress}</div>}
+      <div className={styles.wsGroup}>
+        <div className={styles.wsGroupHead} onClick={() => navigate(`/workspace/${ws.id}`)}>
+          <div className={styles.wsBadge}>{displayName[0]?.toUpperCase()}</div>
+          <div className={styles.wsGroupId}>
+            <div className={styles.wsGroupName}>{displayName}</div>
+            {displayAddress && <div className={styles.wsGroupAddr}>{displayAddress}</div>}
           </div>
-          <span className={`${styles.statusChip} ${status.cls}`}>
-            <span className={styles.d} />{status.label}
-          </span>
+          <span className={styles.wsGroupOpen}>Open →</span>
         </div>
-
-        <div className={styles.wcSummary}>
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <path d="M4 1.5h5l3 3v10H4z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
-            <path d="M9 1.5v3h3" stroke="currentColor" strokeWidth="1.4"/>
-          </svg>
-          {summary}
-          {total > 0 && <span className={styles.docsN}>· {total} document{total !== 1 ? 's' : ''}</span>}
-        </div>
-
-        <div className={styles.wcFoot}>
-          <span className={styles.wcUp}>
-            {latestDate
-              ? `${fin ? 'Signed' : 'Updated'} ${formatDate(latestDate)}`
-              : 'No activity'}
-          </span>
-          <span className={styles.wcOpen}>Open →</span>
-        </div>
+        {negs.length === 0 ? (
+          <div className={styles.negRow} style={{ cursor: 'default' }}>
+            <div className={styles.negMain}>
+              <div className={styles.negMeta}>No negotiations yet</div>
+            </div>
+          </div>
+        ) : (
+          negs.map(n => {
+            const status = getNegStatus(n)
+            return (
+              <div key={n.id} className={styles.negRow} onClick={() => navigate(`/negotiation/${n.id}`)}>
+                <div className={styles.negMain}>
+                  <div className={styles.negName}>{cleanName(n)}</div>
+                  <div className={styles.negMeta}>{getDocSummary(n)}</div>
+                </div>
+                <div className={styles.negRight}>
+                  <span className={`${styles.chip} ${status.cls}`}><span className={styles.chipDot} />{status.label}</span>
+                  <span className={styles.negDate}>{formatDate(n.created_at)}</span>
+                </div>
+              </div>
+            )
+          })
+        )}
       </div>
     )
   }
@@ -222,29 +215,25 @@ export default function Properties() {
           <div>
             <h1 className={styles.h1}>Properties</h1>
             <div className={styles.summaryLine}>
-              {active.length} in negotiation · {finalised.length} finalised · {totalDocs} document{totalDocs !== 1 ? 's' : ''} analysed
+              {workspaces.length} propert{workspaces.length !== 1 ? 'ies' : 'y'} · each a site, its tenant and its negotiations.
             </div>
           </div>
-          <div className={styles.headActions}>
-            <button className="btn-outline btn-sm" data-tour="new-property-btn" onClick={() => setWsModal(true)}>
-              + New property
-            </button>
-            <button className="btn-ink btn-sm" data-tour="analyse-btn" onClick={() => navigate('/analyser')}>
-              + Analyse document
-            </button>
-          </div>
+          <button className="btn-outline btn-sm" data-tour="new-property-btn" onClick={() => setWsModal(true)}>
+            + New property
+          </button>
         </div>
 
-        {/* SORT TABS */}
-        <div className={styles.sortTabs} data-tour="sort-tabs">
+        {/* SORT TOGGLE */}
+        <div className={styles.sortRow} data-tour="sort-tabs">
           <button
-            className={`${styles.sortTab} ${sortPref === 'property' ? styles.sortTabActive : ''}`}
+            className={sortPref === 'property' ? styles.sortActive : ''}
             onClick={() => handleSortPref('property')}
           >
             By property
           </button>
+          <span className={styles.sortDiv}>·</span>
           <button
-            className={`${styles.sortTab} ${sortPref === 'tenant' ? styles.sortTabActive : ''}`}
+            className={sortPref === 'tenant' ? styles.sortActive : ''}
             onClick={() => handleSortPref('tenant')}
           >
             By tenant
@@ -254,47 +243,22 @@ export default function Properties() {
         {/* ACTIVE */}
         <div className={styles.dsec}>
           <div className={styles.sh}>
+            <span className={styles.panelBar} />
             <span className={styles.shLbl}>Active</span>
             <span className={styles.shCnt}>{active.length} in negotiation</span>
-            <span className={styles.shLn} />
           </div>
-          <div className={styles.wsGrid}>
-            {sortedActive.map(ws => <PropertyCard key={ws.id} ws={ws} />)}
-            <div
-              className={`${styles.wcard} ${styles.wcardNew}`}
-              onClick={() => setWsModal(true)}
-            >
-              <div className={styles.plus}>+</div>
-              <div className={styles.nt}>New property</div>
-              <div className={styles.ns}>Start a workspace for a new tenancy</div>
-            </div>
-          </div>
+          {sortedActive.map(ws => <WorkspaceGroup key={ws.id} ws={ws} />)}
         </div>
 
         {/* FINALISED */}
         {sortedFinalised.length > 0 && (
           <div className={styles.dsec}>
             <div className={styles.sh}>
+              <span className={styles.panelBar} />
               <span className={styles.shLbl}>Finalised</span>
               <span className={styles.shCnt}>{sortedFinalised.length} signed</span>
-              <span className={styles.shLn} />
             </div>
-            <div className={styles.wsGrid}>
-              {sortedFinalised.map(ws => <PropertyCard key={ws.id} ws={ws} fin />)}
-            </div>
-          </div>
-        )}
-
-        {/* UPGRADE BAR */}
-        {(profile?.plan === 'free' || profile?.plan === 'one_off') && (
-          <div className={styles.upgradeBar}>
-            <div>
-              <strong>Upgrade to Professional</strong>
-              <span> — unlimited scans, branded PDFs, client workspaces and more.</span>
-            </div>
-            <button className="btn-primary btn-sm" onClick={() => navigate('/pricing')}>
-              View plans →
-            </button>
+            {sortedFinalised.map(ws => <WorkspaceGroup key={ws.id} ws={ws} />)}
           </div>
         )}
 
