@@ -119,6 +119,11 @@ export default function WorkspacePage() {
     return `${days} days`
   }
 
+  const isDateSoon = (d) => {
+    const days = Math.round((new Date(d) - new Date()) / 86400000)
+    return days >= 0 && days <= 30
+  }
+
   const docTypeSummary = () => {
     const allDocs = negotiations.flatMap(n => n.documents || [])
     const hoaDocs   = allDocs.filter(d => d.filename?.toLowerCase().includes('hoa'))
@@ -224,7 +229,7 @@ export default function WorkspacePage() {
                         <div className={styles.kdLbl}>Lease expiry</div>
                         <div className={styles.kdDate}>{formatKeyDate(keyDates.expiry_date)}</div>
                       </div>
-                      <span className={styles.kdBadge}>{formatCountdown(keyDates.expiry_date)}</span>
+                      <span className={`${styles.kdBadge} ${isDateSoon(keyDates.expiry_date) ? styles.kdBadgeSoon : styles.kdBadgeNormal}`}>{formatCountdown(keyDates.expiry_date)}</span>
                     </div>
                   )}
                 </>
