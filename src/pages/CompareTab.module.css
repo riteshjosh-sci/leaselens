@@ -226,14 +226,14 @@
 .rowChevOpen { transform: rotate(180deg); color: var(--accent); }
 .ccardToggle:hover .rowChev { color: var(--accent); }
 
-.tagNew {
+.tagNew, .tagModified, .tagUnchanged, .tagRm {
   font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
-  padding: 3px 7px; border-radius: 5px; background: rgba(94,140,106,.12); color: var(--st-agreed-tx);
+  padding: 3px 8px; border-radius: 5px; color: #fff;
 }
-.tagRm {
-  font-size: 9.5px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase;
-  padding: 3px 7px; border-radius: 5px; background: var(--danger-bg); color: var(--danger-deep);
-}
+.tagNew      { background: var(--accent); }
+.tagModified { background: var(--st-counter); }
+.tagUnchanged{ background: var(--muted); }
+.tagRm       { background: var(--fav-bad); }
 
 /* phrase-level diff highlight — contiguous changed run */
 .diffMark {
@@ -253,18 +253,13 @@
   text-transform: uppercase; color: var(--muted);
 }
 .ccNote {
-  padding: 13px 14px 13px 16px;
-  background: var(--paper); border: 1px solid var(--hair-lt); border-radius: 10px;
+  padding: 13px 4px;
   font-size: 12.5px; line-height: 1.55; color: var(--ink-soft);
-  height: 100%;
 }
 .noteLead {
   display: block; font-weight: 700;
   font-size: 10.5px; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 6px;
 }
-.ccNoteImp  { background: color-mix(in srgb, var(--risk-l) 8%, transparent);  border-color: color-mix(in srgb, var(--risk-l) 22%, transparent); }
-.ccNoteRsk  { background: color-mix(in srgb, var(--fav-bad) 8%, transparent); border-color: color-mix(in srgb, var(--fav-bad) 22%, transparent); }
-.ccNoteMod  { background: var(--paper-2);         border-color: var(--hair); }
 .ccNoteImp .noteLead  { color: var(--st-agreed-tx); }
 .ccNoteRsk .noteLead  { color: var(--fav-bad-deep); }
 .ccNoteSame .noteLead { color: var(--faint); }

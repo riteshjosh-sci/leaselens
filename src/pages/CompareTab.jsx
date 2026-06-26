@@ -136,11 +136,13 @@ export default function CompareTab({ negId, docs }) {
       }
       const leftText  = clauseA ? (clauseA.quote || clauseA.risk || '') : ''
       const rightText = clauseB.quote || clauseB.risk || ''
+      const textChanged = clauseA ? leftText.trim() !== rightText.trim() : false
+      const rightTag = !clauseA ? 'new' : (textChanged ? 'modified' : 'unchanged')
       rows.push({
         change,
-        textChanged: clauseA ? leftText.trim() !== rightText.trim() : false,
+        textChanged,
         left:  clauseA ? { nm: clauseA.name, text: leftText, tag: null } : null,
-        right: { nm: clauseB.name, text: rightText, tag: !clauseA ? 'new' : null },
+        right: { nm: clauseB.name, text: rightText, tag: rightTag },
         note: clauseB.risk || '',
       })
     })
@@ -325,7 +327,7 @@ export default function CompareTab({ negId, docs }) {
               <span className={styles.chT}>v{rightDoc?.version_number} — Revised</span>
               <span className={styles.chCt}>{rightDoc?.reports?.[0]?.report_json?.clauses?.length || 0} clauses</span>
             </div>
-            <div className={styles.chNote}>Changes</div>
+            <div className={styles.chNote}>What changed</div>
           </div>
 
           <div className={styles.crows}>
@@ -355,6 +357,8 @@ export default function CompareTab({ negId, docs }) {
                         <div className={styles.nm}>
                           {row.right.nm}
                           {row.right.tag === 'new' && <span className={styles.tagNew}>New</span>}
+                          {row.right.tag === 'modified' && <span className={styles.tagModified}>Modified</span>}
+                          {row.right.tag === 'unchanged' && <span className={styles.tagUnchanged}>Unchanged</span>}
                         </div>
                         <p>
                           {row.left
