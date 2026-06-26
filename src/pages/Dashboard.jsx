@@ -80,6 +80,17 @@ export default function Dashboard() {
 
   const firstName = profile?.full_name?.split(' ')[0] || null
 
+  const getDocSummary = (n) => {
+    const docs = n.documents || []
+    const hoaCount   = docs.filter(d => d.filename?.toLowerCase().includes('hoa')).length
+    const leaseCount = docs.filter(d => !d.filename?.toLowerCase().includes('hoa')).length
+    const parts = []
+    if (leaseCount > 0) parts.push(`${leaseCount} lease${leaseCount > 1 ? 's' : ''}`)
+    if (hoaCount > 0)   parts.push(`${hoaCount} HOA${hoaCount > 1 ? 's' : ''}`)
+    if (parts.length === 0 && docs.length > 0) parts.push(`${docs.length} document${docs.length > 1 ? 's' : ''}`)
+    return parts.join(' · ') || 'No documents'
+  }
+
   // Sanity-check extracted values — same guard Properties.jsx uses to avoid showing clause text
   const CLAUSE_WORDS = ['takes a lease', 'landlord', 'herein', 'pursuant', 'thereof', 'together with', 'non-exclusive', 'the term']
   const isClauseText = v => !v || v.length > 150 || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
@@ -253,12 +264,11 @@ export default function Dashboard() {
                   </div>
                   {negs.map(n => {
                     const info = statusInfo(n.lifecycle)
-                    const docCount = n.documents?.length || 0
                     return (
                       <div key={n.id} className={styles.negRow} onClick={() => navigate(`/negotiation/${n.id}`)}>
                         <div className={styles.negMain}>
                           <div className={styles.negName}>{cleanName(n)}</div>
-                          <div className={styles.negMeta}>{docCount} document{docCount !== 1 ? 's' : ''}</div>
+                          <div className={styles.negMeta}>{getDocSummary(n)}</div>
                         </div>
                         <div className={styles.negRight}>
                           <span className={`${styles.chip} ${info.cls}`}><span className={styles.chipDot} />{info.label}</span>
