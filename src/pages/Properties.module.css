@@ -1,6 +1,6 @@
 .loading { display:flex; align-items:center; justify-content:center; height:100vh; color:var(--muted); }
 
-.page { max-width:var(--maxw); margin:0 auto; padding:40px var(--gut) 80px; min-height:100vh; }
+.page { max-width:1600px; margin:0 auto; padding:40px var(--gut) 80px; min-height:100vh; }
 
 /* HEAD */
 .head { display:flex; align-items:flex-start; justify-content:space-between; gap:24px; flex-wrap:wrap; margin-bottom:8px; }

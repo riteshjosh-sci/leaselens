@@ -1,6 +1,6 @@
 .loading { display:flex; align-items:center; justify-content:center; height:100vh; color:var(--muted); }
 
-.page { max-width:var(--maxw); margin:0 auto; padding:40px var(--gut) 80px; min-height:100vh; overflow-x:hidden; width:100%; }
+.page { max-width:1600px; margin:0 auto; padding:40px var(--gut) 80px; min-height:100vh; overflow-x:hidden; width:100%; }
 
 /* BREADCRUMB */
 .crumb { display:flex; align-items:center; gap:9px; font-size:13px; color:var(--muted); margin-bottom:22px; }

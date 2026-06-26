@@ -1,6 +1,6 @@
 .loading { display:flex; align-items:center; justify-content:center; height:100vh; color:var(--muted); }
 
-.page { max-width:var(--maxw); margin:0 auto; padding:40px var(--gut) 80px; min-height:100vh; }
+.page { max-width:1600px; margin:0 auto; padding:40px var(--gut) 80px; min-height:100vh; }
 
 .h1 { font-size:30px; font-weight:600; letter-spacing:-0.03em; color:var(--ink); }
 .summaryLine { margin-top:8px; font-size:14.5px; color:var(--muted); margin-bottom:28px; }
