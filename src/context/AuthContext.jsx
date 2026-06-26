@@ -14,7 +14,12 @@ export function AuthProvider({ children }) {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+      // Supabase fires this on every token refresh (including right after a
+      // background tab regains focus), not just on real sign-in/out. Keep the
+      // same object reference when the user identity hasn't changed, so
+      // components depending on `user` in a useEffect array (most pages, plus
+      // ProtectedRoute's beta check) don't re-run and flash blank/reload.
+      setUser(prev => (prev?.id === session?.user?.id ? prev : (session?.user ?? null)))
       if (session?.user) checkFreeReset(session.user.id)
     })
 
