@@ -4,7 +4,6 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AppSidebar from '../components/AppSidebar'
 import Tour from '../components/Tour'
-import HelpTip from '../components/HelpTip'
 import styles from './Dashboard.module.css'
 
 const TOUR_STEPS = [
@@ -15,12 +14,12 @@ const TOUR_STEPS = [
   {
     target: 'stats-strip',
     title: 'Headline numbers',
-    body: 'Properties, active negotiations, reports generated, and dates coming due within 30 days.',
+    body: 'Properties, active negotiations, and reports generated.',
   },
   {
     target: 'attention-panel',
-    title: "Needs your attention",
-    body: 'Anything waiting on a reply or a decision shows up here first, across every property.',
+    title: "Active negotiations",
+    body: 'Anything still sitting un-reviewed since its last upload is flagged with ! and bumped to the top.',
   },
   {
     target: 'negotiations-section',
@@ -28,8 +27,6 @@ const TOUR_STEPS = [
     body: 'Grouped by property by default — switch to "By tenant" if that suits how you work.',
   },
 ]
-
-const CRITICAL_WINDOW_DAYS = 30
 
 // Checks counts are the number of legislation chunks the worker holds for
 // each state/territory (see leaselens-worker/legislation.py STATE_META +
@@ -50,7 +47,6 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [workspaces, setWorkspaces] = useState([])
   const [profile, setProfile] = useState(null)
-  const [criticalCount, setCriticalCount] = useState(0)
   const [sortPref, setSortPref] = useState('property') // 'property' | 'tenant'
   const [loading, setLoading] = useState(true)
 
@@ -77,22 +73,6 @@ export default function Dashboard() {
     setWorkspaces(ws)
     setProfile(profileRes.data)
     if (profileRes.data?.sort_preference) setSortPref(profileRes.data.sort_preference)
-
-    const allDocIds = ws.flatMap(w => (w.negotiations || []).flatMap(n => (n.documents || []).map(d => d.id)))
-    if (allDocIds.length) {
-      const { data: leaseRows } = await supabase
-        .from('lease_data')
-        .select('document_id, expiry_date')
-        .in('document_id', allDocIds)
-      const now = new Date()
-      const cutoff = new Date(now.getTime() + CRITICAL_WINDOW_DAYS * 86400000)
-      const upcoming = (leaseRows || []).filter(r => {
-        if (!r.expiry_date) return false
-        const d = new Date(r.expiry_date)
-        return d >= now && d <= cutoff
-      })
-      setCriticalCount(upcoming.length)
-    }
 
     setLoading(false)
   }
@@ -154,10 +134,21 @@ export default function Dashboard() {
     (w.negotiations || []).some(n => n.lifecycle !== 'agreed') || (w.negotiations || []).length === 0
   )
 
-  const needsAttention = allNegs
-    .filter(n => n.lifecycle === 'awaiting' || n.lifecycle === 'sent' || n.lifecycle === 'counter_prepared')
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
-    .slice(0, 5)
+  // A negotiation still needs review if it hasn't been marked as sent to the
+  // landlord since its last document upload — see ReviewTab's "Mark as with
+  // landlord for review" action and Analyser's merge-into-existing flow,
+  // which resets this back to 'reviewing' when a new document lands.
+  const needsReview = (n) => !n.lifecycle || n.lifecycle === 'reviewing'
+
+  const activeNegsList = allNegs
+    .filter(n => n.lifecycle !== 'agreed')
+    .sort((a, b) => {
+      const af = needsReview(a), bf = needsReview(b)
+      if (af !== bf) return af ? -1 : 1
+      return new Date(b.created_at) - new Date(a.created_at)
+    })
+
+  const needsReviewCount = allNegs.filter(needsReview).length
 
   const finalisedNegs = allNegs
     .filter(n => n.lifecycle === 'agreed')
@@ -199,7 +190,7 @@ export default function Dashboard() {
             <h1 className={styles.h1}>Welcome back{firstName ? `, ${firstName}` : ''}</h1>
             <div className={styles.summaryLine}>
               {activeWorkspaces.length} properties · {activeNegs.length} active negotiations
-              {needsAttention.length > 0 && ` · ${needsAttention.length} need your attention today.`}
+              {needsReviewCount > 0 && ` · ${needsReviewCount} need your review today.`}
             </div>
           </div>
           <button className="btn-ink btn-sm" onClick={() => navigate('/analyser')}>
@@ -222,13 +213,6 @@ export default function Dashboard() {
             <div className={styles.statVal}>{totalDocs} <span>all-time</span></div>
           </div>
           <div className={styles.statCell}>
-            <div className={styles.statLbl}>
-              Critical dates ≤30d
-              <HelpTip>Lease and HOA documents with a commencement or expiry date falling within the next 30 days.</HelpTip>
-            </div>
-            <div className={styles.statVal}>{criticalCount} <span>due soon</span></div>
-          </div>
-          <div className={styles.statCell}>
             <div className={styles.statLbl}>Scans used</div>
             <div className={styles.statVal}>{scanUsage().val} <span>{scanUsage().unit}</span></div>
             {(!profile?.plan || profile.plan === 'free' || profile.plan === 'one_off') && (
@@ -238,24 +222,27 @@ export default function Dashboard() {
         </div>
 
         <div className={styles.twoCol}>
-          {/* NEEDS ATTENTION */}
+          {/* ACTIVE NEGOTIATIONS */}
           <div className={styles.panel} data-tour="attention-panel">
             <div className={styles.panelHead}>
               <span className={styles.panelBar} />
-              <span className={styles.panelTitle}>Needs your attention</span>
-              <span className={styles.panelCount}>{needsAttention.length} items</span>
+              <span className={styles.panelTitle}>Active negotiations</span>
+              <span className={styles.panelCount}>{activeNegsList.length} items</span>
             </div>
             <div className={styles.panelBody}>
-              {needsAttention.length === 0 ? (
-                <div className={styles.empty}>Nothing waiting on you right now.</div>
+              {activeNegsList.length === 0 ? (
+                <div className={styles.empty}>Nothing active right now.</div>
               ) : (
-                needsAttention.map(n => {
+                activeNegsList.map(n => {
                   const info = statusInfo(n.lifecycle)
                   return (
                     <div key={n.id} className={styles.attnRow} onClick={() => navigate(`/negotiation/${n.id}`)}>
                       <span className={`${styles.attnBadge} ${info.cls}`}>{info.label}</span>
                       <div className={styles.attnMain}>
-                        <div className={styles.attnName}>{cleanName(n)}</div>
+                        <div className={styles.attnName}>
+                          {needsReview(n) && <span className={styles.attnFlag} title="Needs review">!</span>}
+                          {cleanName(n)}
+                        </div>
                         <div className={styles.attnSub}>{n.wsName}</div>
                       </div>
                       <span className={styles.attnOpen}>Open →</span>

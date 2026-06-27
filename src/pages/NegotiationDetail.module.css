@@ -668,6 +668,17 @@
   cursor: pointer; color: var(--ink-soft); text-align: center; transition: all .15s;
 }
 .sendExport:hover { border-color: var(--muted); color: var(--ink); }
+.markSent {
+  width: 100%; margin-top: 8px; padding: 12px; background: var(--accent); border: none;
+  border-radius: 9px; font-size: 13.5px; font-weight: 600; font-family: var(--font);
+  cursor: pointer; color: #fff; text-align: center; transition: background .15s;
+}
+.markSent:hover { background: var(--accent-deep); }
+.markedDone {
+  width: 100%; margin-top: 8px; padding: 12px; display: flex; align-items: center;
+  justify-content: center; gap: 7px; background: color-mix(in srgb, var(--st-agreed) 14%, transparent);
+  border-radius: 9px; font-size: 13.5px; font-weight: 600; color: var(--st-agreed-tx);
+}
 
 /* Option picker (radio buttons for multi-option counters) */
 .optionPicker {

@@ -579,6 +579,13 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
           <button className={styles.sendExport} onClick={handleCopy}>
             {copied ? '✓ Copied to clipboard' : 'Copy email to clipboard'}
           </button>
+          {lifecycle === 'awaiting' || lifecycle === 'sent' ? (
+            <div className={styles.markedDone}><CheckIcon s={12} /> With landlord for review</div>
+          ) : (
+            <button className={styles.markSent} onClick={() => updateLifecycle('awaiting')}>
+              Mark as with landlord for review
+            </button>
+          )}
         </div>
         <p className={styles.disclaimer}>LeaseRoom provides informational analysis and does not constitute legal advice.</p>
       </div>

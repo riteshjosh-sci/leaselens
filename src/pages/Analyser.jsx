@@ -328,6 +328,10 @@ export default function Analyser() {
     await supabase.from('negotiations').delete().eq('id', throwawayNegId)
     if (throwawayWsId) await supabase.from('workspaces').delete().eq('id', throwawayWsId)
 
+    // A new document landed on an existing negotiation — back to "needs review"
+    // even if it had previously been marked as with the landlord.
+    await supabase.from('negotiations').update({ lifecycle: 'reviewing' }).eq('id', targetNegId)
+
     setMatchLoading(false)
     setMatchPrompt(null)
 
