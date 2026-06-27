@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { supabaseAdmin } from '../lib/supabaseAdmin'
 import AdminNav from '../components/AdminNav'
 import ClauseCard from '../components/ClauseCard'
 import styles from './AdminReportView.module.css'
@@ -19,21 +18,15 @@ export default function AdminReportView() {
   }, [documentId])
 
   const fetchReport = async () => {
-    const { data: doc } = await supabaseAdmin
-      .from('documents')
-      .select('*, negotiations(property_name)')
-      .eq('id', documentId)
-      .single()
+    const { data: { session } } = await supabase.auth.getSession()
+    const res = await fetch(`/api/admin-data?resource=report-detail&documentId=${documentId}`, {
+      headers: { Authorization: `Bearer ${session?.access_token}` }
+    })
+    if (!res.ok) { setLoading(false); return }
+    const { document: doc, report: reportData } = await res.json()
 
     if (!doc) { setLoading(false); return }
     setDocument(doc)
-
-    const { data: reportData } = await supabaseAdmin
-      .from('reports')
-      .select('*')
-      .eq('document_id', documentId)
-      .single()
-
     if (reportData) setReport(reportData.report_json)
     setLoading(false)
   }

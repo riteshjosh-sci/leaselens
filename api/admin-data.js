@@ -13,9 +13,28 @@ export default async function handler(req, res) {
   if (error || !user) return res.status(401).json({ error: 'Unauthorized' })
   if (user.email !== process.env.VITE_ADMIN_EMAIL) return res.status(403).json({ error: 'Forbidden' })
 
-  const { resource } = req.query
+  const { resource, documentId } = req.query
 
   try {
+    if (resource === 'report-detail') {
+      if (!documentId) return res.status(400).json({ error: 'documentId required' })
+      const { data: document, error: docErr } = await supabase
+        .from('documents')
+        .select('*, negotiations(property_name)')
+        .eq('id', documentId)
+        .single()
+      if (docErr) throw docErr
+
+      const { data: reportRow, error: repErr } = await supabase
+        .from('reports')
+        .select('*')
+        .eq('document_id', documentId)
+        .single()
+      if (repErr && repErr.code !== 'PGRST116') throw repErr
+
+      return res.status(200).json({ document, report: reportRow || null })
+    }
+
     const queries = {
       profiles: () => supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       documents: () => supabase.from('documents').select('*, negotiations(property_name)').order('uploaded_at', { ascending: false }).limit(200),
