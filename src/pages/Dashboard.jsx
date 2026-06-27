@@ -31,12 +31,18 @@ const TOUR_STEPS = [
 
 const CRITICAL_WINDOW_DAYS = 30
 
-// Dummy placeholder until Adam confirms real per-jurisdiction check counts —
-// not derived from any data source, swap out before this ships to real users.
-const JURISDICTION_GROUNDING_DUMMY = [
-  { act: 'Retail Leases Act 2003 (VIC)', checks: 31 },
-  { act: 'Commercial Tenancy Act (WA)', checks: 31 },
-  { act: 'Retail Leases Act 1994 (NSW)', checks: 28 },
+// Checks counts are the number of legislation chunks the worker holds for
+// each state/territory (see leaselens-worker/legislation.py STATE_META +
+// LEGISLATION_CHUNKS) — real per-jurisdiction coverage, not per-document.
+const JURISDICTION_GROUNDING = [
+  { act: 'Retail Leases Act 1994 (NSW)', checks: 11 },
+  { act: 'Retail Leases Act 2003 (VIC)', checks: 10 },
+  { act: 'Retail Shop Leases Act 1994 (QLD)', checks: 9 },
+  { act: 'Retail and Commercial Leases Act 1995 (SA)', checks: 7 },
+  { act: 'Commercial Tenancy (Retail Shops) Agreements Act 1985 (WA)', checks: 6 },
+  { act: 'Leases (Commercial and Retail) Act 2001 (ACT)', checks: 6 },
+  { act: 'Business Tenancies (Fair Dealings) Act 2003 (NT)', checks: 6 },
+  { act: 'Retail Tenancies Code 1998 (TAS)', checks: 4 },
 ]
 
 export default function Dashboard() {
@@ -260,7 +266,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* JURISDICTION GROUNDING — dummy data, see comment above JURISDICTION_GROUNDING_DUMMY */}
+          {/* JURISDICTION GROUNDING — see comment above JURISDICTION_GROUNDING */}
           <div className={styles.panel}>
             <div className={styles.panelHead}>
               <span className={styles.panelBar} />
@@ -268,7 +274,7 @@ export default function Dashboard() {
             </div>
             <div className={styles.panelBody}>
               <div className={styles.jurisSub}>Every clause checked against the legislation that applies.</div>
-              {JURISDICTION_GROUNDING_DUMMY.map(j => (
+              {JURISDICTION_GROUNDING.map(j => (
                 <div key={j.act} className={styles.jurisRow}>
                   <span className={styles.jurisAct}>{j.act}</span>
                   <span className={styles.jurisChecks}>{j.checks} checks</span>
