@@ -19,12 +19,7 @@ const TOUR_STEPS = [
   {
     target: 'attention-panel',
     title: "Active negotiations",
-    body: 'Anything still sitting un-reviewed since its last upload is flagged with ! and bumped to the top.',
-  },
-  {
-    target: 'negotiations-section',
-    title: 'All your negotiations',
-    body: 'Grouped by property by default — switch to "By tenant" if that suits how you work.',
+    body: 'Anything still sitting un-reviewed since its last upload is flagged with ! and bumped to the top. Open "Properties" in the sidebar for the full grouped view.',
   },
 ]
 
@@ -47,7 +42,6 @@ export default function Dashboard() {
   const navigate = useNavigate()
   const [workspaces, setWorkspaces] = useState([])
   const [profile, setProfile] = useState(null)
-  const [sortPref, setSortPref] = useState('property') // 'property' | 'tenant'
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { if (!user) return; fetchAll() }, [user])
@@ -66,20 +60,14 @@ export default function Dashboard() {
         .eq('user_id', user.id)
         .eq('is_deleted', false)
         .order('created_at', { ascending: false }),
-      supabase.from('profiles').select('full_name, sort_preference, plan, free_scans_used, monthly_scans_used, scan_credits').eq('id', user.id).single(),
+      supabase.from('profiles').select('full_name, plan, free_scans_used, monthly_scans_used, scan_credits').eq('id', user.id).single(),
     ])
 
     const ws = wsRes.data || []
     setWorkspaces(ws)
     setProfile(profileRes.data)
-    if (profileRes.data?.sort_preference) setSortPref(profileRes.data.sort_preference)
 
     setLoading(false)
-  }
-
-  const handleSortPref = async (pref) => {
-    setSortPref(pref)
-    await supabase.from('profiles').update({ sort_preference: pref }).eq('id', user.id)
   }
 
   const formatDate = d =>
@@ -97,31 +85,6 @@ export default function Dashboard() {
     if (plan === 'monthly' || plan === 'annual') return { val: `${profile?.monthly_scans_used || 0} / 10`, unit: 'this month' }
     if (plan === 'adviser') return { val: `${profile?.monthly_scans_used || 0} / ∞`, unit: 'this month' }
     return { val: '—', unit: '' }
-  }
-
-  const getDocSummary = (n) => {
-    const docs = n.documents || []
-    const hoaCount   = docs.filter(d => d.filename?.toLowerCase().includes('hoa')).length
-    const leaseCount = docs.filter(d => !d.filename?.toLowerCase().includes('hoa')).length
-    const parts = []
-    if (leaseCount > 0) parts.push(`${leaseCount} lease${leaseCount > 1 ? 's' : ''}`)
-    if (hoaCount > 0)   parts.push(`${hoaCount} HOA${hoaCount > 1 ? 's' : ''}`)
-    if (parts.length === 0 && docs.length > 0) parts.push(`${docs.length} document${docs.length > 1 ? 's' : ''}`)
-    return parts.join(' · ') || 'No documents'
-  }
-
-  // Sanity-check extracted values — same guard Properties.jsx uses to avoid showing clause text
-  const CLAUSE_WORDS = ['takes a lease', 'landlord', 'herein', 'pursuant', 'thereof', 'together with', 'non-exclusive', 'the term']
-  const isClauseText = v => !v || v.length > 150 || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
-
-  const wsDisplay = (ws) => {
-    const negs = ws.negotiations || []
-    const negWithData = negs.find(n => n.tenant_name || n.premises_address)
-    const extractedTenant = !isClauseText(negWithData?.tenant_name) ? negWithData.tenant_name : null
-    const extractedAddress = !isClauseText(negWithData?.premises_address) ? negWithData.premises_address : null
-    const displayName = extractedTenant || ws.client_name || ws.name
-    const displayAddress = extractedAddress || (extractedTenant && ws.name) || (ws.client_name && ws.name) || null
-    return { displayName, displayAddress }
   }
 
   const allNegs = workspaces.flatMap(w =>
@@ -154,21 +117,6 @@ export default function Dashboard() {
     .filter(n => n.lifecycle === 'agreed')
     .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
     .slice(0, 5)
-
-  const sortFn = (a, b) => {
-    if (sortPref === 'tenant') {
-      const an = a.client_name, bn = b.client_name
-      if (!an && !bn) return a.name.localeCompare(b.name)
-      if (!an) return 1
-      if (!bn) return -1
-      return an.toLowerCase().localeCompare(bn.toLowerCase())
-    }
-    return a.name.toLowerCase().localeCompare(b.name.toLowerCase())
-  }
-
-  const groupedWorkspaces = [...activeWorkspaces]
-    .filter(w => (w.negotiations || []).length > 0)
-    .sort(sortFn)
 
   const statusInfo = (lc) => ({
     awaiting: { label: 'Awaiting landlord', cls: styles.chipWait },
@@ -269,55 +217,6 @@ export default function Dashboard() {
               ))}
             </div>
           </div>
-        </div>
-
-        {/* NEGOTIATIONS — grouped by property */}
-        <div className={styles.dsec} data-tour="negotiations-section">
-          <div className={styles.sh}>
-            <span className={styles.panelBar} />
-            <span className={styles.shLbl}>Negotiations</span>
-            <span className={styles.sortToggle}>
-              <button className={sortPref === 'property' ? styles.sortActive : ''} onClick={() => handleSortPref('property')}>By property</button>
-              <span className={styles.sortDiv}>·</span>
-              <button className={sortPref === 'tenant' ? styles.sortActive : ''} onClick={() => handleSortPref('tenant')}>By tenant</button>
-            </span>
-          </div>
-
-          {groupedWorkspaces.length === 0 ? (
-            <div className={styles.empty}>No negotiations yet. <button className={styles.linkBtn} onClick={() => navigate('/analyser')}>Analyse a document →</button></div>
-          ) : (
-            groupedWorkspaces.map(ws => {
-              const { displayName, displayAddress } = wsDisplay(ws)
-              const negs = ws.negotiations || []
-              return (
-                <div key={ws.id} className={styles.wsGroup}>
-                  <div className={styles.wsGroupHead} onClick={() => navigate(`/workspace/${ws.id}`)}>
-                    <div className={styles.wsBadge}>{displayName[0]?.toUpperCase()}</div>
-                    <div className={styles.wsGroupId}>
-                      <div className={styles.wsGroupName}>{displayName}</div>
-                      {displayAddress && <div className={styles.wsGroupAddr}>{displayAddress}</div>}
-                    </div>
-                    <span className={styles.wsGroupOpen}>Open →</span>
-                  </div>
-                  {negs.map(n => {
-                    const info = statusInfo(n.lifecycle)
-                    return (
-                      <div key={n.id} className={styles.negRow} onClick={() => navigate(`/negotiation/${n.id}`)}>
-                        <div className={styles.negMain}>
-                          <div className={styles.negName}>{cleanName(n)}</div>
-                          <div className={styles.negMeta}>{getDocSummary(n)}</div>
-                        </div>
-                        <div className={styles.negRight}>
-                          <span className={`${styles.chip} ${info.cls}`}><span className={styles.chipDot} />{info.label}</span>
-                          <span className={styles.negDate}>{formatDate(n.created_at)}</span>
-                        </div>
-                      </div>
-                    )
-                  })}
-                </div>
-              )
-            })
-          )}
         </div>
 
         {/* FINALISED */}
