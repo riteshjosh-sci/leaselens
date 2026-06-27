@@ -48,6 +48,19 @@ export default function Home() {
 
   useSEO({ title: 'Retail Lease & HOA Analysis for Australian Tenants', path: '/' })
 
+  // Google OAuth round-trips through accounts.google.com and back to whatever
+  // URL Supabase's project settings land it on -- if that's "/" instead of
+  // "/dashboard", this catches the fresh sign-in and forwards them. Listening
+  // for the SIGNED_IN event (not just `user` being set) means an already
+  // logged-in visitor who clicks through to the public homepage on purpose
+  // isn't bounced back out.
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN') navigate('/dashboard', { replace: true })
+    })
+    return () => subscription.unsubscribe()
+  }, [navigate])
+
   useEffect(() => {
     observerRef.current = new IntersectionObserver((entries) => {
       entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add(styles.in); observerRef.current.unobserve(e.target) } })
