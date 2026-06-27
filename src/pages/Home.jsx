@@ -18,7 +18,7 @@ const STAGES = [
   { n: '04', tab: 'Compare & Customise', eyebrow: 'STAGE 04 · COMPARE & CUSTOMISE', h: 'Compare & Customise',
     p: 'Compare versions, adjust report settings and tailor outputs for your use case.' },
   { n: '05', tab: 'Download & Share', eyebrow: 'STAGE 05 · DOWNLOAD & SHARE REPORT', h: 'Download & Share Report',
-    p: 'Generate a professional report with findings, recommendations and executive summary.' },
+    p: 'Generate a professional report with findings, recommendations and executive summary. Counter positions are summarised into a copy/paste-ready format for your landlord email.' },
 ]
 
 const TRUST_POINTS = [
