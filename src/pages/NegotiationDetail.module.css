@@ -676,7 +676,7 @@
 .optionLabel {
   display: flex; align-items: flex-start; gap: 10px; padding: 10px 13px;
   border-radius: 9px; border: 1.5px solid rgba(44,80,214,.15);
-  background: rgba(255,255,255,.6); cursor: pointer; transition: all .15s;
+  background: color-mix(in srgb, var(--card) 60%, transparent); cursor: pointer; transition: all .15s;
 }
 .optionLabel:hover { border-color: rgba(44,80,214,.35); background: var(--card); }
 .optionLabelActive { border-color: var(--accent); background: var(--card); box-shadow: 0 0 0 3px var(--accent-soft); }

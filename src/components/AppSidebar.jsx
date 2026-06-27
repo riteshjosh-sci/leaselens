@@ -21,7 +21,14 @@ export default function AppSidebar({ children }) {
   const location = useLocation()
   const [profile, setProfile] = useState(null)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return localStorage.getItem('leaseroom-sidebar-collapsed') === 'true' } catch { return false }
+  })
   const logoSrc = theme === 'dark' ? leaseroomLogoLight : leaseroomLogoDark
+
+  useEffect(() => {
+    try { localStorage.setItem('leaseroom-sidebar-collapsed', collapsed) } catch {}
+  }, [collapsed])
 
   useEffect(() => {
     if (!user) return
@@ -81,11 +88,27 @@ export default function AppSidebar({ children }) {
       {/* Overlay */}
       {mobileOpen && <div className={styles.overlay} onClick={() => setMobileOpen(false)} />}
 
+      {/* Expand tab — shown when sidebar is collapsed on desktop */}
+      <button
+        className={`${styles.expandTab} ${collapsed ? styles.expandTabShow : ''}`}
+        onClick={() => setCollapsed(false)}
+        aria-label="Show sidebar"
+        title="Show sidebar"
+      >›</button>
+
       {/* Sidebar */}
-      <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ''}`}>
-        <button className={styles.brand} onClick={() => handleNavClick('/')} aria-label="Go to public site">
-          <img src={logoSrc} alt="LeaseRoom" className={styles.logoImg} />
-        </button>
+      <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ''} ${collapsed ? styles.sidebarCollapsed : ''}`}>
+        <div className={styles.brandRow}>
+          <button className={styles.brand} onClick={() => handleNavClick('/')} aria-label="Go to public site">
+            <img src={logoSrc} alt="LeaseRoom" className={styles.logoImg} />
+          </button>
+          <button
+            className={styles.collapseBtn}
+            onClick={() => setCollapsed(true)}
+            aria-label="Hide sidebar"
+            title="Hide sidebar"
+          >‹</button>
+        </div>
 
         <button className={styles.analyseBtn} data-tour="analyse-btn" onClick={() => handleNavClick('/analyser')}>
           + Analyse document
@@ -135,7 +158,7 @@ export default function AppSidebar({ children }) {
         </div>
       </aside>
 
-      <main className={styles.main}>{children}</main>
+      <main className={`${styles.main} ${collapsed ? styles.mainFull : ''}`}>{children}</main>
     </div>
   )
 }
