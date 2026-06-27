@@ -36,7 +36,7 @@
 .btnFinalGhost { background:transparent; color:var(--band-ink); box-shadow:inset 0 0 0 1.5px var(--band-border); }
 
 /* ── EYEBROW ── */
-.eyebrow { display:inline-flex; align-items:center; gap:11px; font-family:var(--font-mono); font-size:12px; font-weight:500; letter-spacing:0.1em; color:var(--accent); text-transform:uppercase; }
+.eyebrow { display:inline-flex; align-items:center; gap:11px; font-family:var(--font); font-size:12px; font-weight:500; letter-spacing:0.1em; color:var(--accent); text-transform:uppercase; }
 .eyebrowLt { color:var(--band-accent); }
 
 /* ── HERO ── */
