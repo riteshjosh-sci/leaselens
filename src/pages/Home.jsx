@@ -122,7 +122,7 @@ export default function Home() {
         <div className={`${styles.wrap} ${styles.heroInner}`}>
           <span className={styles.eyebrow}>AU · Retail lease &amp; HOA intelligence</span>
           <h1 className={styles.heroH1}>Never sign a retail lease you don't fully understand.</h1>
-          <p className={styles.heroSub}>Upload a lease and see every costly clause flagged in plain English — each one traceable to the exact clause and the Retail Leases Act behind it.</p>
+          <p className={styles.heroSub}>Upload a Lease or Heads of Agreement and see how every clause can affect you and your business in plain English, each one traceable to the exact clause and the state legislation behind it.</p>
           <div className={styles.heroActions}>
             <button className={`${styles.btn} ${styles.btnInk}`} onClick={handleCTA}>Analyse a lease →</button>
           </div>
