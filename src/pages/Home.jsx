@@ -23,7 +23,6 @@ const STAGES = [
 
 const TRUST_POINTS = [
   { t: 'Statutory grounding', d: 'References the relevant Retail Leases Act for each state & territory.' },
-  { t: 'Cost exposure modelling', d: 'Projects outgoings, reviews and make-good over the full term.' },
   { t: 'Counter-position library', d: 'Drafts redlines and fallback positions you can send.' },
 ]
 
