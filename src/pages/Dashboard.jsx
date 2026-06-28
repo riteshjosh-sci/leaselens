@@ -27,14 +27,14 @@ const TOUR_STEPS = [
 // each state/territory (see leaselens-worker/legislation.py STATE_META +
 // LEGISLATION_CHUNKS) — real per-jurisdiction coverage, not per-document.
 const JURISDICTION_GROUNDING = [
-  { act: 'Retail Leases Act 1994 (NSW)', checks: 11 },
-  { act: 'Retail Leases Act 2003 (VIC)', checks: 10 },
-  { act: 'Retail Shop Leases Act 1994 (QLD)', checks: 9 },
-  { act: 'Retail and Commercial Leases Act 1995 (SA)', checks: 7 },
-  { act: 'Commercial Tenancy (Retail Shops) Agreements Act 1985 (WA)', checks: 6 },
-  { act: 'Leases (Commercial and Retail) Act 2001 (ACT)', checks: 6 },
-  { act: 'Business Tenancies (Fair Dealings) Act 2003 (NT)', checks: 6 },
-  { act: 'Retail Tenancies Code 1998 (TAS)', checks: 4 },
+  { act: 'Retail Leases Act 1994 (NSW)', checks: 13 },
+  { act: 'Retail Leases Act 2003 (VIC)', checks: 12 },
+  { act: 'Retail Shop Leases Act 1994 (QLD)', checks: 11 },
+  { act: 'Retail and Commercial Leases Act 1995 (SA)', checks: 12 },
+  { act: 'Commercial Tenancy (Retail Shops) Agreements Act 1985 (WA)', checks: 8 },
+  { act: 'Leases (Commercial and Retail) Act 2001 (ACT)', checks: 12 },
+  { act: 'Business Tenancies (Fair Dealings) Act 2003 (NT)', checks: 12 },
+  { act: 'Retail Tenancies Code 1998 (TAS)', checks: 8 },
 ]
 
 export default function Dashboard() {
