@@ -26,8 +26,6 @@ export default function Analyser() {
   const [leaseData, setLeaseData] = useState(null)
   const [docType, setDocType]   = useState(prefill.doc_type || 'hoa')
   const [includeCommercials, setIncludeCommercials] = useState(false)
-  const [assetClass, setAssetClass] = useState(prefill.asset_class || 'retail')
-  const [propertyType, setPropertyType] = useState(prefill.property_type || '')
   const [file, setFile] = useState(null)
   const [pasteText, setPasteText] = useState('')
   const [showPaste, setShowPaste] = useState(false)
@@ -215,8 +213,8 @@ export default function Analyser() {
         paste_text: pasteText || null,
         negotiation_id: negId || null,
         status: 'pending',
-        asset_class: assetClass,
-        property_type: propertyType || null,
+        asset_class: 'retail',
+        property_type: null,
         finalised: docType === 'lease',
         doc_type: docType,
         include_commercials: docType === 'hoa' ? true : includeCommercials,
@@ -413,46 +411,23 @@ export default function Analyser() {
               onChange={e => handleFile(e.target.files[0])} />
 
             <div className={styles.metaInputs}>
-              <div className={styles.metaRow}>
-                <div className={styles.metaField}>
-                  <label className={styles.metaLabel}>Document type</label>
-                  <div className={styles.toggleRow}>
-                    <button type="button"
-                      className={`${styles.toggleBtn} ${docType === 'hoa' ? styles.toggleActive : ''}`}
-                      onClick={() => setDocType('hoa')}>HOA</button>
-                    <button type="button"
-                      className={`${styles.toggleBtn} ${docType === 'lease' ? styles.toggleActive : ''}`}
-                      onClick={() => setDocType('lease')}>Lease</button>
-                  </div>
-                  {docType === 'lease' && (
-                    <label className={styles.checkRow}>
-                      <input type="checkbox" checked={includeCommercials}
-                        onChange={e => setIncludeCommercials(e.target.checked)} />
-                      <span>Also review commercial terms</span>
-                    </label>
-                  )}
+              <div className={styles.metaField}>
+                <label className={styles.metaLabel}>Document type</label>
+                <div className={styles.toggleRow}>
+                  <button type="button"
+                    className={`${styles.toggleBtn} ${docType === 'hoa' ? styles.toggleActive : ''}`}
+                    onClick={() => setDocType('hoa')}>HOA</button>
+                  <button type="button"
+                    className={`${styles.toggleBtn} ${docType === 'lease' ? styles.toggleActive : ''}`}
+                    onClick={() => setDocType('lease')}>Lease</button>
                 </div>
-                <div className={styles.metaField}>
-                  <label className={styles.metaLabel}>Asset class</label>
-                  <select className="input" value={assetClass} onChange={e => setAssetClass(e.target.value)}>
-                    <option value="retail">Retail</option>
-                    <option value="office">Office</option>
-                    <option value="industrial">Industrial</option>
-                    <option value="childcare">Childcare</option>
-                    <option value="medical">Medical</option>
-                  </select>
-                </div>
-                <div className={styles.metaField}>
-                  <label className={styles.metaLabel}>Property type</label>
-                  <select className="input" value={propertyType} onChange={e => setPropertyType(e.target.value)}>
-                    <option value="">Select...</option>
-                    <option value="shopping_centre">Shopping Centre</option>
-                    <option value="retail_strip">Retail Strip</option>
-                    <option value="standalone">Standalone</option>
-                    <option value="mixed_use">Mixed Use</option>
-                    <option value="other">Other</option>
-                  </select>
-                </div>
+                {docType === 'lease' && (
+                  <label className={styles.checkRow}>
+                    <input type="checkbox" checked={includeCommercials}
+                      onChange={e => setIncludeCommercials(e.target.checked)} />
+                    <span>Also review commercial terms</span>
+                  </label>
+                )}
               </div>
             </div>
 

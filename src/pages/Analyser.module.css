@@ -6,7 +6,7 @@
 
 .h1 { font-family: var(--font-serif); font-size: 40px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; margin-bottom: 12px; line-height: 1.1; }
 .h1 em { font-style: normal; color: var(--accent); }
-.sub { font-size: 16px; color: var(--ink-soft); line-height: 1.75; margin-bottom: 32px; max-width: 520px; font-weight: 400; }
+.sub { font-size: 16px; color: var(--ink-soft); line-height: 1.75; margin-bottom: 32px; max-width: 620px; font-weight: 400; }
 
 .card { background: var(--card); border: 1px solid var(--hair); border-radius: var(--radius-sm); padding: 32px; margin-bottom: 24px; }
 
@@ -226,40 +226,6 @@
   font-weight: 500;
 }
 
-/* Asset class selector */
-.assetClassRow {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
-}
-.assetClassLabel {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ink-soft);
-  white-space: nowrap;
-}
-
-/* Asset class row - improved styling */
-.assetClassRow {
-  display: flex !important;
-  align-items: center !important;
-  gap: 12px !important;
-  padding: 14px 0 !important;
-  border-top: 1px solid var(--hair) !important;
-  margin-top: 4px !important;
-}
-
-.assetClassLabel {
-  font-size: 12px !important;
-  font-weight: 600 !important;
-  letter-spacing: 0.08em !important;
-  text-transform: uppercase !important;
-  color: var(--muted) !important;
-  white-space: nowrap !important;
-  min-width: 80px !important;
-}
-
 /* Metadata inputs */
 .metaInputs {
   border-top: 1px solid var(--hair);
@@ -269,15 +235,11 @@
   flex-direction: column;
   gap: 12px;
 }
-.metaRow {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 12px;
-}
 .metaField {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  max-width: 280px;
 }
 .metaLabel {
   font-size: 11px;
@@ -315,10 +277,6 @@
   font-size: 12.5px; color: var(--muted); margin-top: 8px; cursor: pointer;
 }
 .checkRow input { accent-color: var(--accent); cursor: pointer; }
-
-@media (max-width: 600px) {
-  .metaRow { grid-template-columns: 1fr 1fr; }
-}
 
 /* Lease summary card */
 .leaseSummaryCard {
@@ -403,8 +361,7 @@
   .sub { font-size: 14px; margin-bottom: 24px; }
   .card { padding: 16px; }
   .zone { padding: 32px 16px; }
-  .metaRow { grid-template-columns: 1fr 1fr; }
-  .metaRow:first-child { grid-template-columns: 1fr; }
+  .metaField { max-width: none; }
   .freeStats { grid-template-columns: 1fr 1fr; }
   .freeStatValue { font-size: 32px; }
   .leaseSummaryGrid { grid-template-columns: 1fr 1fr; }
@@ -415,6 +372,5 @@
 }
 
 @media (max-width: 360px) {
-  .metaRow { grid-template-columns: 1fr; }
   .freeStats { grid-template-columns: 1fr; }
 }
