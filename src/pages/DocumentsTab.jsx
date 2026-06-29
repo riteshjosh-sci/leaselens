@@ -17,11 +17,10 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
     }
   }, [user])
 
-  const handleDeleteDoc = async (docId, filePath) => {
-    if (!confirm('Delete this document and its report?')) return
-    if (filePath) await supabase.storage.from('documents').remove([filePath])
-    await supabase.from('reports').delete().eq('document_id', docId)
-    await supabase.from('documents').delete().eq('id', docId)
+  const handleDeleteDoc = async (docId) => {
+    if (!confirm('Delete this document?')) return
+    const { error } = await supabase.from('documents').update({ is_deleted: true }).eq('id', docId)
+    if (error) { alert('Failed to delete document: ' + error.message); return }
     setDocs(prev => prev.filter(d => d.id !== docId))
   }
 
@@ -30,6 +29,7 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
       .from('documents')
       .select('id, filename, version_number, doc_type, uploaded_at, overall_risk, file_path, reports ( id, report_json, created_at )')
       .eq('negotiation_id', negId)
+      .eq('is_deleted', false)
     if (data) setDocs([...data].sort((a, b) => b.version_number - a.version_number))
   }
 
@@ -252,7 +252,7 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
                     ) : (
                       <span className={dStyles.processing}>Processing…</span>
                     )}
-                    <button className={dStyles.delBtn} onClick={() => handleDeleteDoc(doc.id, doc.file_path)} title="Delete">✕</button>
+                    <button className={dStyles.delBtn} onClick={() => handleDeleteDoc(doc.id)} title="Delete">✕</button>
                   </div>
                 </div>
               ))}

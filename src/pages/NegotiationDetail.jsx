@@ -99,7 +99,7 @@ export default function NegotiationDetail() {
       .select(`
         id, property_name, asset_class, created_at, status, lifecycle, workspace_id,
         documents (
-          id, filename, version_number, doc_type, uploaded_at, overall_risk, file_path,
+          id, filename, version_number, doc_type, uploaded_at, overall_risk, file_path, is_deleted,
           reports ( id, report_json, created_at )
         )
       `)
@@ -110,7 +110,7 @@ export default function NegotiationDetail() {
     setNeg(negData)
     setLifecycle(negData.lifecycle || 'reviewing')
 
-    const sortedDocs = (negData.documents || []).sort((a, b) => b.version_number - a.version_number)
+    const sortedDocs = (negData.documents || []).filter(d => !d.is_deleted).sort((a, b) => b.version_number - a.version_number)
     setDocs(sortedDocs)
 
     if (negData.workspace_id) {
