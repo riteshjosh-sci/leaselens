@@ -70,7 +70,7 @@
   background:var(--card); border-color:var(--hair); border-top:2px solid var(--ink);
   color:var(--ink); font-weight:600; position:relative; z-index:2; margin-bottom:-1px;
 }
-.stageTabNum { font-family:var(--font-mono); font-size:10.5px; letter-spacing:0.05em; color:var(--faint); }
+.stageTabNum { font-family:var(--font); font-size:10.5px; letter-spacing:0.05em; color:var(--faint); }
 .stageTabActive .stageTabNum { color:var(--accent); }
 .stagePanel {
   border:1px solid var(--hair); border-radius:0 0 14px 14px; background:var(--card);
@@ -83,8 +83,8 @@
   display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
 }
 .stageShotFrame { width:40px; height:31px; border:1.5px solid var(--faint); border-radius:5px; }
-.stageShot span { font-family:var(--font-mono); font-size:12px; letter-spacing:0.04em; color:var(--muted); }
-.stageEyebrow { font-family:var(--font-mono); font-size:11px; letter-spacing:0.08em; color:var(--accent); display:block; margin-bottom:12px; }
+.stageShot span { font-family:var(--font); font-size:12px; letter-spacing:0.04em; color:var(--muted); }
+.stageEyebrow { font-family:var(--font); font-size:11px; letter-spacing:0.08em; color:var(--accent); display:block; margin-bottom:12px; }
 .stageCopy h3 { font-family:var(--font-serif); font-weight:600; font-size:26px; line-height:1.15; letter-spacing:-0.01em; }
 .stageCopy p { margin-top:14px; font-size:15.5px; line-height:1.6; color:var(--ink-soft); }
 

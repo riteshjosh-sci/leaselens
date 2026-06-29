@@ -10,7 +10,7 @@ import leaseroomLogoLight from '../assets/leaseroom-logo-light.png'
 
 const STAGES = [
   { n: '01', tab: 'Upload Lease', eyebrow: 'STAGE 01 · UPLOAD LEASE', h: 'Upload Lease',
-    p: 'Upload HOA, Lease, Disclosure Statement or supporting documents.' },
+    p: 'Upload your HOA and Lease.' },
   { n: '02', tab: 'Analyse Risks', eyebrow: 'STAGE 02 · ANALYSE RISKS', h: 'Analyse Risks',
     p: 'LeaseRoom extracts clauses, scores risk, identifies obligations and flags issues.' },
   { n: '03', tab: 'Review Recommendations', eyebrow: 'STAGE 03 · REVIEW RECOMMENDATIONS', h: 'Review Recommendations',
