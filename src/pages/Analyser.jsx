@@ -297,7 +297,7 @@ export default function Analyser() {
       normalizeForMatch(c.premises_address) === address
     )
 
-    if (match) handleMergeIntoExisting(match)
+    if (match) setMatchPrompt(match)
     else setShowPropertyPrompt(true)
   }
 
