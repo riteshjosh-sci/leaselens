@@ -297,16 +297,17 @@ export default function Analyser() {
       normalizeForMatch(c.premises_address) === address
     )
 
-    if (match) setMatchPrompt(match)
+    if (match) handleMergeIntoExisting(match)
     else setShowPropertyPrompt(true)
   }
 
-  const handleMergeIntoExisting = async () => {
-    if (!matchPrompt || !negIdRef.current) return
+  const handleMergeIntoExisting = async (matchOverride) => {
+    const target = matchOverride || matchPrompt
+    if (!target || !negIdRef.current) return
     setMatchLoading(true)
     const throwawayNegId = negIdRef.current
     const throwawayWsId  = wsIdRef.current
-    const targetNegId    = matchPrompt.id
+    const targetNegId    = target.id
 
     const { data: doc } = await supabase
       .from('documents')
