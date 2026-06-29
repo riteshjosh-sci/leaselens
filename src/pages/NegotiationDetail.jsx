@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext'
 import AppSidebar from '../components/AppSidebar'
 import Tour from '../components/Tour'
 import ReviewTab from './ReviewTab'
+import SummaryTab from './SummaryTab'
 import CompareTab from './CompareTab'
 import DocumentsTab from './DocumentsTab'
 import ActivityTab from './ActivityTab'
@@ -13,8 +14,8 @@ import styles from './NegotiationDetail.module.css'
 const TOUR_STEPS = [
   {
     target: 'neg-tabs',
-    title: 'Four ways to work a negotiation',
-    body: 'Compare versions side by side, review clauses one at a time, manage documents, or check the activity history.',
+    title: 'Five ways to work a negotiation',
+    body: 'Compare versions side by side, review clauses one at a time, build a response summary, manage documents, or check the activity history.',
   },
   {
     target: 'neg-status',
@@ -30,6 +31,7 @@ const TOUR_STEPS = [
 
 const TABS_ONE = [
   { key: 'review',    label: 'Review' },
+  { key: 'summary',   label: 'Summary' },
   { key: 'compare',   label: 'Compare' },
   { key: 'documents', label: 'Documents' },
   { key: 'activity',  label: 'Activity' },
@@ -37,6 +39,7 @@ const TABS_ONE = [
 const TABS_MULTI = [
   { key: 'compare',   label: 'Compare' },
   { key: 'review',    label: 'Review' },
+  { key: 'summary',   label: 'Summary' },
   { key: 'documents', label: 'Documents' },
   { key: 'activity',  label: 'Activity' },
 ]
@@ -52,6 +55,16 @@ export default function NegotiationDetail() {
   const [docs,    setDocs]    = useState([])
   const [loading, setLoading] = useState(true)
 
+  // Lifted out of ReviewTab so this state survives switching to the Summary tab and
+  // back — counter edits/selected options aren't persisted to the DB, only `decisions` is.
+  const [decisions, setDecisions]             = useState({})
+  const [counterEdits, setCounterEdits]       = useState({})
+  const [resetKeys, setResetKeys]             = useState({})
+  const [selectedOptions, setSelectedOptions] = useState({})
+  const [activeId, setActiveId]               = useState(null)
+  const [lifecycle, setLifecycle]             = useState('reviewing')
+  const [copied, setCopied]                   = useState(false)
+
   const TABS = docs.length >= 2 ? TABS_MULTI : TABS_ONE
   // Derive active tab from URL hash or default to first tab
   const hashTab = location.hash.replace('#', '')
@@ -64,6 +77,21 @@ export default function NegotiationDetail() {
     window.addEventListener('focus', onFocus)
     return () => window.removeEventListener('focus', onFocus)
   }, [negId, user])
+
+  useEffect(() => {
+    if (!negId) return
+    supabase
+      .from('clause_decisions')
+      .select('clause_key, decision')
+      .eq('negotiation_id', negId)
+      .then(({ data }) => {
+        if (data?.length) {
+          const decMap = {}
+          data.forEach(d => { decMap[d.clause_key] = d.decision })
+          setDecisions(decMap)
+        }
+      })
+  }, [negId])
 
   const fetchAll = async () => {
     const { data: negData, error } = await supabase
@@ -80,6 +108,7 @@ export default function NegotiationDetail() {
 
     if (error || !negData) { navigate('/dashboard'); return }
     setNeg(negData)
+    setLifecycle(negData.lifecycle || 'reviewing')
 
     const sortedDocs = (negData.documents || []).sort((a, b) => b.version_number - a.version_number)
     setDocs(sortedDocs)
@@ -94,6 +123,124 @@ export default function NegotiationDetail() {
     }
 
     setLoading(false)
+  }
+
+  // ── Derived clauses + decision state, lifted from ReviewTab ──────────────
+  const latestReport = docs.find(d => d.reports?.[0]?.report_json)
+  const allClauses = latestReport
+    ? (latestReport.reports[0].report_json.clauses || []).map(c => ({
+        ...c,
+        clauseKey: `${latestReport.id}-${c.name}`,
+        reportId: latestReport.reports[0].id,
+      }))
+    : []
+
+  useEffect(() => {
+    if (allClauses.length > 0 && !activeId) {
+      const firstHigh = allClauses.find(c => c.danger === 'HIGH')
+      setActiveId(firstHigh?.clauseKey || allClauses[0]?.clauseKey)
+    }
+  }, [allClauses.length])
+
+  const getCounterText = (c) => counterEdits[c.clauseKey] ?? c.counter ?? ''
+  const isEdited = (c) => {
+    const edited = counterEdits[c.clauseKey]
+    return edited !== undefined && edited.trim() !== (c.counter || '').trim()
+  }
+
+  const saveDecision = async (clauseKey, clauseName, newDecision) => {
+    if (newDecision === 'open') {
+      await supabase.from('clause_decisions')
+        .delete().eq('negotiation_id', negId).eq('clause_key', clauseKey)
+    } else {
+      await supabase.from('clause_decisions')
+        .upsert({ negotiation_id: negId, clause_key: clauseKey, clause_name: clauseName, decision: newDecision },
+          { onConflict: 'negotiation_id,clause_key' })
+    }
+  }
+
+  const updateLifecycle = async (newStage) => {
+    setLifecycle(newStage)
+    await supabase.from('negotiations').update({ lifecycle: newStage }).eq('id', negId)
+  }
+
+  const toggleDecision = async (clauseKey, action, clauseName) => {
+    const newDecision = decisions[clauseKey] === action ? 'open' : action
+    const newDecisions = { ...decisions, [clauseKey]: newDecision }
+    setDecisions(newDecisions)
+    try {
+      await saveDecision(clauseKey, clauseName, newDecision)
+      const hasCountering = Object.values(newDecisions).some(d => d === 'countering')
+      const autoStage = hasCountering ? 'counter_prepared' : 'reviewing'
+      if (['reviewing', 'counter_prepared'].includes(lifecycle)) {
+        await updateLifecycle(autoStage)
+      }
+    } catch (e) {
+      console.error('Failed to save decision:', e)
+    }
+  }
+
+  // Decide and advance focus to next undecided clause
+  const decideAndAdvance = (clauseKey, action, clauseName) => {
+    toggleDecision(clauseKey, action, clauseName)
+    if (action !== 'open') {
+      const idx = allClauses.findIndex(c => c.clauseKey === clauseKey)
+      const next = allClauses.slice(idx + 1).find(c =>
+        !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open'
+      )
+      if (next) setTimeout(() => setActiveId(next.clauseKey), 240)
+    }
+  }
+
+  const handleCounterEdit = (clauseKey, text) =>
+    setCounterEdits(prev => ({ ...prev, [clauseKey]: text }))
+
+  const handleReset = (clauseKey, suggested) => {
+    setCounterEdits(prev => ({ ...prev, [clauseKey]: suggested }))
+    setResetKeys(prev => ({ ...prev, [clauseKey]: (prev[clauseKey] || 0) + 1 }))
+  }
+
+  // Select a pre-parsed option (radio button) — loads its text into the editable box
+  const handleOptionSelect = (clauseKey, optionText, optionIdx) => {
+    setSelectedOptions(prev => ({ ...prev, [clauseKey]: optionIdx }))
+    setCounterEdits(prev => ({ ...prev, [clauseKey]: optionText }))
+    setResetKeys(prev => ({ ...prev, [clauseKey]: (prev[clauseKey] || 0) + 1 }))
+  }
+
+  // Derived counts
+  const openClauses       = allClauses.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
+  const counteringClauses = allClauses.filter(c => decisions[c.clauseKey] === 'countering')
+  const agreedClauses     = allClauses.filter(c => decisions[c.clauseKey] === 'accepted')
+  const decided           = counteringClauses.length + agreedClauses.length
+
+  // Build copyable plain-text summary
+  const buildSummary = () => {
+    const prop = ws?.name || 'the property'
+    const tenant = ws?.client_name ? ` (${ws.client_name})` : ''
+    const lines = [`Lease review — ${prop}${tenant}`, '']
+    lines.push('AGREED')
+    if (agreedClauses.length) agreedClauses.forEach(c => lines.push(`• ${c.location || c.name} — ${c.name}.`))
+    else lines.push('• None yet.')
+    lines.push('')
+    lines.push('NOT AGREED — PROPOSED CHANGES')
+    if (counteringClauses.length) {
+      counteringClauses.forEach(c => {
+        lines.push(`• ${c.location || c.name} — ${c.name}.`)
+        const ct = getCounterText(c)
+        if (ct) lines.push(`  Proposed: ${ct}`)
+        lines.push('')
+      })
+    } else {
+      lines.push('• None yet.')
+    }
+    return lines.join('\n').trim()
+  }
+
+  const handleCopy = () => {
+    navigator.clipboard?.writeText(buildSummary()).then(() => {
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    })
   }
 
   const setTab = (key) => {
@@ -113,10 +260,11 @@ export default function NegotiationDetail() {
     })
   }
 
-  // Status chip derived from lifecycle
+  // Status chip derived from lifecycle (the lifted state, so it updates immediately
+  // when the user marks a negotiation as sent — not just after the next refetch)
   const getStatusChip = () => {
     if (!neg) return { label: 'Loading', cls: '' }
-    const lc = neg.lifecycle
+    const lc = lifecycle
     if (lc === 'agreed')            return { label: 'Agreed', cls: styles.statusDone }
     if (lc === 'awaiting')          return { label: 'Awaiting landlord', cls: styles.statusWait }
     if (lc === 'sent')              return { label: 'Sent to agent', cls: styles.statusWait }
@@ -185,10 +333,39 @@ export default function NegotiationDetail() {
         {/* TAB CONTENT */}
         {activeTab === 'review' && (
           <ReviewTab
-            negId={negId}
-            neg={neg}
+            allClauses={allClauses}
+            decisions={decisions}
+            activeId={activeId}
+            setActiveId={setActiveId}
+            decideAndAdvance={decideAndAdvance}
+            getCounterText={getCounterText}
+            isEdited={isEdited}
+            counterEdits={counterEdits}
+            resetKeys={resetKeys}
+            selectedOptions={selectedOptions}
+            handleCounterEdit={handleCounterEdit}
+            handleReset={handleReset}
+            handleOptionSelect={handleOptionSelect}
+            decided={decided}
+            onViewSummary={() => setTab('summary')}
+          />
+        )}
+        {activeTab === 'summary' && (
+          <SummaryTab
             ws={ws}
-            docs={docs}
+            allClauses={allClauses}
+            openClauses={openClauses}
+            counteringClauses={counteringClauses}
+            agreedClauses={agreedClauses}
+            getCounterText={getCounterText}
+            isEdited={isEdited}
+            lifecycle={lifecycle}
+            updateLifecycle={updateLifecycle}
+            copied={copied}
+            handleCopy={handleCopy}
+            buildSummary={buildSummary}
+            onEditClause={(clauseKey) => { setActiveId(clauseKey); setTab('review') }}
+            onBackToReview={() => setTab('review')}
           />
         )}
         {activeTab === 'compare' && (

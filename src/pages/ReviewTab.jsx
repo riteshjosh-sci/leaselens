@@ -1,6 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { supabase } from '../lib/supabase'
+import { useEffect, useRef } from 'react'
 import styles from './NegotiationDetail.module.css'
 
 // Parse counter text into labelled options if the AI provided multiple.
@@ -84,152 +82,11 @@ const ResetIcon = () => (
   </svg>
 )
 
-export default function ReviewTab({ negId, neg, ws, docs }) {
-  const navigate = useNavigate()
-  const [decisions, setDecisions]       = useState({})
-  const [counterEdits, setCounterEdits] = useState({}) // user-edited counter text keyed by clauseKey
-  const [resetKeys, setResetKeys]       = useState({})
-  const [selectedOptions, setSelectedOptions] = useState({}) // clauseKey → option index
-  const [subTab, setSubTab]             = useState('clauses') // 'clauses' | 'summary'
-  const [activeId, setActiveId]         = useState(null)
-  const [lifecycle, setLifecycle]       = useState(neg?.lifecycle || 'reviewing')
-  const [copied, setCopied]             = useState(false)
-
-  useEffect(() => {
-    if (!negId) return
-    supabase
-      .from('clause_decisions')
-      .select('clause_key, decision')
-      .eq('negotiation_id', negId)
-      .then(({ data }) => {
-        if (data?.length) {
-          const decMap = {}
-          data.forEach(d => { decMap[d.clause_key] = d.decision })
-          setDecisions(decMap)
-        }
-      })
-  }, [negId])
-
-  const latestReport = docs.find(d => d.reports?.[0]?.report_json)
-  const allClauses = latestReport
-    ? (latestReport.reports[0].report_json.clauses || []).map(c => ({
-        ...c,
-        clauseKey: `${latestReport.id}-${c.name}`,
-        reportId: latestReport.reports[0].id,
-      }))
-    : []
-
-  useEffect(() => {
-    if (allClauses.length > 0 && !activeId) {
-      const firstHigh = allClauses.find(c => c.danger === 'HIGH')
-      setActiveId(firstHigh?.clauseKey || allClauses[0]?.clauseKey)
-    }
-  }, [allClauses.length])
-
-  const getCounterText = (c) => counterEdits[c.clauseKey] ?? c.counter ?? ''
-  const isEdited = (c) => {
-    const edited = counterEdits[c.clauseKey]
-    return edited !== undefined && edited.trim() !== (c.counter || '').trim()
-  }
-
-  const saveDecision = async (clauseKey, clauseName, newDecision) => {
-    if (newDecision === 'open') {
-      await supabase.from('clause_decisions')
-        .delete().eq('negotiation_id', negId).eq('clause_key', clauseKey)
-    } else {
-      await supabase.from('clause_decisions')
-        .upsert({ negotiation_id: negId, clause_key: clauseKey, clause_name: clauseName, decision: newDecision },
-          { onConflict: 'negotiation_id,clause_key' })
-    }
-  }
-
-  const updateLifecycle = async (newStage) => {
-    setLifecycle(newStage)
-    await supabase.from('negotiations').update({ lifecycle: newStage }).eq('id', negId)
-  }
-
-  const toggleDecision = async (clauseKey, action, clauseName) => {
-    const newDecision = decisions[clauseKey] === action ? 'open' : action
-    const newDecisions = { ...decisions, [clauseKey]: newDecision }
-    setDecisions(newDecisions)
-    try {
-      await saveDecision(clauseKey, clauseName, newDecision)
-      const hasCountering = Object.values(newDecisions).some(d => d === 'countering')
-      const autoStage = hasCountering ? 'counter_prepared' : 'reviewing'
-      if (['reviewing', 'counter_prepared'].includes(lifecycle)) {
-        await updateLifecycle(autoStage)
-      }
-    } catch (e) {
-      console.error('Failed to save decision:', e)
-    }
-  }
-
-  // Decide and advance focus to next undecided clause
-  const decideAndAdvance = (clauseKey, action, clauseName) => {
-    toggleDecision(clauseKey, action, clauseName)
-    if (action !== 'open') {
-      const idx = allClauses.findIndex(c => c.clauseKey === clauseKey)
-      const next = allClauses.slice(idx + 1).find(c =>
-        !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open'
-      )
-      if (next) setTimeout(() => setActiveId(next.clauseKey), 240)
-    }
-  }
-
-  const handleCounterEdit = (clauseKey, text) =>
-    setCounterEdits(prev => ({ ...prev, [clauseKey]: text }))
-
-  const handleReset = (clauseKey, suggested) => {
-    setCounterEdits(prev => ({ ...prev, [clauseKey]: suggested }))
-    setResetKeys(prev => ({ ...prev, [clauseKey]: (prev[clauseKey] || 0) + 1 }))
-  }
-
-  // Select a pre-parsed option (radio button) — loads its text into the editable box
-  const handleOptionSelect = (clauseKey, optionText, optionIdx) => {
-    setSelectedOptions(prev => ({ ...prev, [clauseKey]: optionIdx }))
-    setCounterEdits(prev => ({ ...prev, [clauseKey]: optionText }))
-    setResetKeys(prev => ({ ...prev, [clauseKey]: (prev[clauseKey] || 0) + 1 }))
-  }
-
-  // Derived counts
-  const openClauses      = allClauses.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
-  const counteringClauses = allClauses.filter(c => decisions[c.clauseKey] === 'countering')
-  const agreedClauses    = allClauses.filter(c => decisions[c.clauseKey] === 'accepted')
-  const decided          = counteringClauses.length + agreedClauses.length
-
-  const activeIdx = allClauses.findIndex(c => c.clauseKey === activeId)
-  const active    = allClauses[activeIdx]
-
-  // Build copyable plain-text summary
-  const buildSummary = () => {
-    const prop = ws?.name || 'the property'
-    const tenant = ws?.client_name ? ` (${ws.client_name})` : ''
-    const lines = [`Lease review — ${prop}${tenant}`, '']
-    lines.push('AGREED')
-    if (agreedClauses.length) agreedClauses.forEach(c => lines.push(`• ${c.location || c.name} — ${c.name}.`))
-    else lines.push('• None yet.')
-    lines.push('')
-    lines.push('NOT AGREED — PROPOSED CHANGES')
-    if (counteringClauses.length) {
-      counteringClauses.forEach(c => {
-        lines.push(`• ${c.location || c.name} — ${c.name}.`)
-        const ct = getCounterText(c)
-        if (ct) lines.push(`  Proposed: ${ct}`)
-        lines.push('')
-      })
-    } else {
-      lines.push('• None yet.')
-    }
-    return lines.join('\n').trim()
-  }
-
-  const handleCopy = () => {
-    navigator.clipboard?.writeText(buildSummary()).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }
-
+export default function ReviewTab({
+  allClauses, decisions, activeId, setActiveId, decideAndAdvance,
+  getCounterText, isEdited, counterEdits, resetKeys, selectedOptions,
+  handleCounterEdit, handleReset, handleOptionSelect, decided, onViewSummary,
+}) {
   if (!allClauses.length) {
     return (
       <div className={styles.panel} style={{ marginTop: 24 }}>
@@ -239,27 +96,14 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
     )
   }
 
-  // ── Sub-tab + progress bar ──────────────────────────────────────────
+  const openClauses = allClauses.filter(c => !decisions[c.clauseKey] || decisions[c.clauseKey] === 'open')
   const pct = allClauses.length ? (decided / allClauses.length) * 100 : 0
+  const activeIdx = allClauses.findIndex(c => c.clauseKey === activeId)
+  const active    = allClauses[activeIdx]
 
-  const TabBar = () => (
+  // ── Progress bar ─────────────────────────────────────────────────────
+  const Progress = () => (
     <div className={styles.rvTabWrap}>
-      <div className={styles.rvTabs}>
-        <button
-          className={`${styles.rvTab} ${subTab === 'clauses' ? styles.rvTabActive : ''}`}
-          onClick={() => setSubTab('clauses')}>
-          <span className={styles.rvTabIcon}><PencilIcon /></span>
-          Clauses
-          {openClauses.length > 0 && <span className={styles.rvTabBadge}>{openClauses.length}</span>}
-        </button>
-        <button
-          className={`${styles.rvTab} ${styles.rvTabSummary} ${subTab === 'summary' ? styles.rvTabActive : ''}`}
-          onClick={() => setSubTab('summary')}>
-          <span className={styles.rvTabIcon}><CheckIcon s={12} /></span>
-          Summary
-          <span className={styles.rvTabBadge}>{decided}</span>
-        </button>
-      </div>
       <div className={styles.rvProg}>
         <div className={styles.rvProgBar}>
           <i style={{ width: `${pct}%` }} />
@@ -439,7 +283,7 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
           <span className={styles.fcNavPos}>Clause {idx + 1} of {allClauses.length}</span>
           {idx === allClauses.length - 1 && decided === allClauses.length
             ? <button className={`${styles.navBtn} ${styles.navBtnNext} ${styles.navBtnSummary}`}
-                onClick={() => setSubTab('summary')}>
+                onClick={onViewSummary}>
                 View summary <ChevRight />
               </button>
             : <button className={`${styles.navBtn} ${styles.navBtnNext}`}
@@ -453,160 +297,16 @@ export default function ReviewTab({ negId, neg, ws, docs }) {
     )
   }
 
-  // ── Summary tab ─────────────────────────────────────────────────────
-  const SummaryTab = () => (
-    <div className={styles.summaryWrap}>
-      <div className={styles.summaryMain}>
-
-        <div className={styles.brief}>
-          <div className={styles.briefHead}>
-            <div className={styles.briefKicker}>Response brief</div>
-            <h2 className={styles.briefTitle}>
-              Negotiation response — {ws?.name || 'Workspace'}
-            </h2>
-            {ws?.client_name && <div className={styles.briefMeta}>{ws.client_name}</div>}
-          </div>
-
-          {openClauses.length > 0 && (
-            <div className={styles.toDecideNote}>
-              <span className={styles.toDecideIc}>{openClauses.length}</span>
-              <span className={styles.toDecideTx}>
-                <b>{openClauses.length} clause{openClauses.length !== 1 ? 's' : ''}</b> still need{openClauses.length === 1 ? 's' : ''} a decision before this brief is complete.
-              </span>
-              <button className={styles.toDecideGo} onClick={() => setSubTab('clauses')}>
-                Back to review →
-              </button>
-            </div>
-          )}
-
-          <div className={styles.briefSec}>
-            <div className={styles.briefSecHead}>
-              <span className={styles.briefSecTitle}>Clauses we're countering</span>
-              <span className={styles.briefSecCt}>· {counteringClauses.length}</span>
-            </div>
-            {counteringClauses.length ? (
-              <>
-                <p className={styles.briefSintro}>The wording below is what LeaseRoom will package up for the agent. Each entry is either the AI suggestion or your edited version.</p>
-                {counteringClauses.map((c, i) => {
-                  const edited = isEdited(c)
-                  return (
-                    <div key={c.clauseKey} className={styles.counterItem}>
-                      <div className={styles.ciNum}>{i + 1}.</div>
-                      <div className={styles.ciBody}>
-                        <div className={styles.ciTop}>
-                          {c.location && <span className={styles.ciRef}>{c.location}</span>}
-                          <span className={styles.ciName}>{c.name}</span>
-                          <button className={styles.ciEdit}
-                            onClick={() => { setSubTab('clauses'); setActiveId(c.clauseKey) }}>
-                            Edit →
-                          </button>
-                        </div>
-                        <div className={styles.ciText}>"{getCounterText(c)}"</div>
-                        <span className={`${styles.editTag} ${styles.ciTag} ${edited ? styles.editTagEdited : styles.editTagSuggested}`}>
-                          <span className={styles.editTagDot} />
-                          {edited ? 'Your wording' : 'LeaseRoom suggested wording'}
-                        </span>
-                      </div>
-                    </div>
-                  )
-                })}
-              </>
-            ) : (
-              <div className={styles.briefEmpty}>Nothing to counter yet — counter a clause in Review and it lands here.</div>
-            )}
-          </div>
-
-          <div className={styles.briefSec}>
-            <div className={styles.briefSecHead}>
-              <span className={styles.briefSecTitle}>Accepted as drafted</span>
-              <span className={styles.briefSecCt}>· {agreedClauses.length}</span>
-            </div>
-            {agreedClauses.length ? (
-              <div className={styles.agreedList}>
-                {agreedClauses.map(c => (
-                  <div key={c.clauseKey} className={styles.agreedRow}>
-                    <span className={styles.agreedTick}><CheckIcon s={12} /></span>
-                    <div className={styles.agreedBody}>
-                      {c.location && <div className={styles.agreedRef}>{c.location}</div>}
-                      <div className={styles.agreedName}>{c.name}</div>
-                    </div>
-                    <span className={styles.agreedState}>Accepted</span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className={styles.briefEmpty}>No clauses accepted yet.</div>
-            )}
-          </div>
-        </div>
-
-        <div className={styles.copyCard}>
-          <div className={styles.ccHead}>
-            <div>
-              <div className={styles.ccTitle}>Response summary</div>
-              <div className={styles.ccSub}>Plain text, ready to paste into an email</div>
-            </div>
-            <button className={`${styles.ccCopy} ${copied ? styles.ccCopyDone : ''}`} onClick={handleCopy}>
-              {copied ? '✓ Copied' : 'Copy'}
-            </button>
-          </div>
-          <pre className={styles.ccPre}>{buildSummary()}</pre>
-        </div>
-      </div>
-
-      <div className={styles.summarySide}>
-        <div className={styles.sendCard}>
-          <h3 className={styles.sendCardTitle}>Ready to send</h3>
-          <p className={styles.sendCardP}>
-            {openClauses.length
-              ? `Decide the last ${openClauses.length} clause${openClauses.length !== 1 ? 's' : ''} to finish your brief.`
-              : 'Every flagged clause has a decision. Send the brief to the landlord\'s agent or export it for your records.'}
-          </p>
-          <div className={styles.sendCounts}>
-            <div className={styles.sendCount}>
-              <div className={`${styles.sendN} ${styles.sendNCnt}`}>{counteringClauses.length}</div>
-              <div className={styles.sendL}>Countering</div>
-            </div>
-            <div className={styles.sendCount}>
-              <div className={`${styles.sendN} ${styles.sendNAgr}`}>{agreedClauses.length}</div>
-              <div className={styles.sendL}>Agreed</div>
-            </div>
-            <div className={styles.sendCount}>
-              <div className={styles.sendN}>{openClauses.length}</div>
-              <div className={styles.sendL}>To decide</div>
-            </div>
-          </div>
-          <button className={styles.sendExport} onClick={handleCopy}>
-            {copied ? '✓ Copied to clipboard' : 'Copy email to clipboard'}
-          </button>
-          {lifecycle === 'awaiting' || lifecycle === 'sent' ? (
-            <div className={styles.markedDone}><CheckIcon s={12} /> With landlord for review</div>
-          ) : (
-            <button className={styles.markSent} onClick={() => updateLifecycle('awaiting')}>
-              Mark as with landlord for review
-            </button>
-          )}
-        </div>
-        <p className={styles.disclaimer}>LeaseRoom provides informational analysis and does not constitute legal advice.</p>
-      </div>
-    </div>
-  )
-
   return (
     <>
-      {TabBar()}
-
-      {subTab === 'clauses' ? (
-        <div className={styles.reviewGrid}>
-          {Queue()}
-          {active
-            ? FocusCard({ c: active, idx: activeIdx })
-            : <div className={styles.focusCard} style={{ padding: 32, color: 'var(--muted)' }}>Select a clause from the list.</div>
-          }
-        </div>
-      ) : (
-        SummaryTab()
-      )}
+      {Progress()}
+      <div className={styles.reviewGrid}>
+        {Queue()}
+        {active
+          ? FocusCard({ c: active, idx: activeIdx })
+          : <div className={styles.focusCard} style={{ padding: 32, color: 'var(--muted)' }}>Select a clause from the list.</div>
+        }
+      </div>
     </>
   )
 }

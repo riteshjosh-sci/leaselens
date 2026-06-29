@@ -328,36 +328,11 @@
    REVIEW TAB REDESIGN
    ══════════════════════════════════════════════════════ */
 
-/* Sub-tab bar + progress row */
+/* Progress row */
 .rvTabWrap {
   display: flex; align-items: center; justify-content: space-between;
   gap: 20px; margin-top: 22px; flex-wrap: wrap;
 }
-.rvTabs {
-  display: inline-flex; background: var(--paper); border: 1px solid var(--hair);
-  border-radius: 12px; padding: 4px; gap: 3px;
-}
-.rvTab {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-family: var(--font); font-size: 14px; font-weight: 600;
-  color: var(--ink-soft); border: none; background: transparent;
-  padding: 10px 17px; border-radius: 9px; cursor: pointer; transition: all .15s;
-}
-.rvTab:hover { color: var(--ink); }
-.rvTabActive { background: var(--card); color: var(--ink); box-shadow: 0 1px 3px rgba(28,25,22,.1); }
-.rvTabIcon {
-  display: flex; align-items: center; justify-content: center;
-  width: 20px; height: 20px; border-radius: 6px; background: rgba(28,25,22,.07);
-}
-.rvTabActive .rvTabIcon { background: var(--accent); color: #fff; }
-.rvTabSummary.rvTabActive .rvTabIcon { background: var(--risk-l); }
-.rvTabBadge {
-  font-size: 11px; font-weight: 700; min-width: 18px; height: 18px;
-  padding: 0 5px; border-radius: 100px; display: inline-flex; align-items: center;
-  justify-content: center; background: rgba(28,25,22,.08); color: var(--muted);
-}
-.rvTabActive .rvTabBadge { background: var(--accent-soft); color: var(--accent-deep); }
-
 .rvProg { display: flex; align-items: center; gap: 12px; flex: 0 1 280px; min-width: 160px; }
 .rvProgBar {
   flex: 1; height: 6px; border-radius: 100px;
