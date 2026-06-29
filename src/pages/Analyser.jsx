@@ -269,9 +269,19 @@ export default function Analyser() {
   // Check whether the just-analysed document's tenant + address match an
   // existing negotiation, so the user can fold it in rather than ending up
   // with two separate folders for the same deal.
+  // Tenant/address come from a fresh LLM extraction on every upload, so they're
+  // not guaranteed byte-identical between runs even for the same document --
+  // strip punctuation and collapse whitespace before comparing so a stray comma
+  // or "NSW 2121" vs "NSW, 2121" doesn't silently break the match.
+  const normalizeForMatch = (s) => (s || '')
+    .toLowerCase()
+    .replace(/[.,]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
   const checkForExistingMatch = async (reportJson) => {
-    const tenant  = (reportJson?.tenant_name || '').trim().toLowerCase()
-    const address = (reportJson?.premises_address || '').trim().toLowerCase()
+    const tenant  = normalizeForMatch(reportJson?.tenant_name)
+    const address = normalizeForMatch(reportJson?.premises_address)
 
     if (!tenant || !address || !user) { setShowPropertyPrompt(true); return }
 
@@ -283,8 +293,8 @@ export default function Analyser() {
       .neq('id', negIdRef.current)
 
     const match = candidates?.find(c =>
-      (c.tenant_name || '').trim().toLowerCase() === tenant &&
-      (c.premises_address || '').trim().toLowerCase() === address
+      normalizeForMatch(c.tenant_name) === tenant &&
+      normalizeForMatch(c.premises_address) === address
     )
 
     if (match) setMatchPrompt(match)
