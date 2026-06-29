@@ -596,7 +596,7 @@ export default function Analyser() {
                 Add this version to it, or keep it as a separate negotiation?
               </p>
               <div className={styles.propertyRow}>
-                <button className="btn-primary" onClick={handleMergeIntoExisting} disabled={matchLoading}>
+                <button className="btn-primary" onClick={() => handleMergeIntoExisting()} disabled={matchLoading}>
                   {matchLoading ? 'Adding…' : `Add to ${matchPrompt.property_name || 'existing'}`}
                 </button>
                 <button className="btn-outline" onClick={handleKeepSeparate} disabled={matchLoading}>Keep separate</button>
