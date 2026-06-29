@@ -34,6 +34,7 @@ export default function Compare() {
       .from('documents')
       .select('id, filename, version_number, uploaded_at, overall_risk, reports(id, report_json)')
       .eq('negotiation_id', negotiationId)
+      .eq('is_deleted', false)
       .order('version_number', { ascending: true })
 
     setNegotiation(neg)

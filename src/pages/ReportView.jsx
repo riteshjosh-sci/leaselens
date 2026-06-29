@@ -73,6 +73,7 @@ export default function ReportView() {
         .from('documents')
         .select('id, version_number, filename, uploaded_at, overall_risk, reports(id)')
         .eq('negotiation_id', reportData.documents.negotiations.id)
+        .eq('is_deleted', false)
         .order('version_number', { ascending: true })
       setAllVersions(versions || [])
     }
