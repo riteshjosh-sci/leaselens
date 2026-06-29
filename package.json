@@ -13,7 +13,7 @@
     "@stripe/stripe-js": "^9.7.0",
     "@supabase/supabase-js": "^2.106.2",
     "dotenv": "^17.4.2",
-    "html2canvas": "^1.4.1",
+    "html2canvas-pro": "^2.2.0",
     "mammoth": "^1.12.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useLocation } from 'react-router-dom'
-import html2canvas from 'html2canvas'
+import html2canvas from 'html2canvas-pro'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
 import styles from './FeedbackWidget.module.css'
