@@ -98,10 +98,14 @@ export default function CompareTab({ negId, docs }) {
 
   const normaliseName = n => n.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim()
   const keyWords = n => normaliseName(n).split(' ').filter(w => w.length > 3).sort().join(' ')
+  const extractClauseRef = loc => { const m = (loc || '').match(/(\d+(?:\.\d+)*)/); return m ? m[1] : '' }
 
-  const findMatch = (name, mapA) => {
+  const findMatch = (clauseB, mapA, locMapA) => {
+    const name = clauseB.name
     const normB = normaliseName(name), keyB = keyWords(name)
     for (const k of Object.keys(mapA)) if (normaliseName(k) === normB) return k
+    const ref = extractClauseRef(clauseB.location)
+    if (ref && locMapA[ref]) return locMapA[ref]
     let best = null, bestScore = 0
     for (const k of Object.keys(mapA)) {
       const wA = keyWords(k).split(' '), wB = keyB.split(' ')
@@ -117,11 +121,16 @@ export default function CompareTab({ negId, docs }) {
     if (!reportA || !reportB) return null
 
     const clauseMapA = {}
-    ;(reportA.clauses || []).forEach(c => { clauseMapA[c.name] = c })
+    const locationMapA = {}
+    ;(reportA.clauses || []).forEach(c => {
+      clauseMapA[c.name] = c
+      const ref = extractClauseRef(c.location)
+      if (ref) locationMapA[ref] = c.name
+    })
 
     const rows = []
     ;(reportB.clauses || []).forEach(clauseB => {
-      const matchKey = findMatch(clauseB.name, clauseMapA)
+      const matchKey = findMatch(clauseB, clauseMapA, locationMapA)
       const clauseA  = matchKey ? clauseMapA[matchKey] : null
       let change = 'same'
       if (!clauseA) {
