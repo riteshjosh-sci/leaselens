@@ -100,12 +100,13 @@ export default function CompareTab({ negId, docs }) {
   const keyWords = n => normaliseName(n).split(' ').filter(w => w.length > 3).sort().join(' ')
   const extractClauseRef = loc => { const m = (loc || '').match(/(\d+(?:\.\d+)*)/); return m ? m[1] : '' }
 
-  const findMatch = (clauseB, mapA, locMapA) => {
+  const findMatch = (clauseB, mapA, locMapA, typeMapA) => {
     const name = clauseB.name
     const normB = normaliseName(name), keyB = keyWords(name)
     for (const k of Object.keys(mapA)) if (normaliseName(k) === normB) return k
     const ref = extractClauseRef(clauseB.location)
     if (ref && locMapA[ref]) return locMapA[ref]
+    if (clauseB.clause_type && typeMapA[clauseB.clause_type]) return typeMapA[clauseB.clause_type]
     let best = null, bestScore = 0
     for (const k of Object.keys(mapA)) {
       const wA = keyWords(k).split(' '), wB = keyB.split(' ')
@@ -122,15 +123,23 @@ export default function CompareTab({ negId, docs }) {
 
     const clauseMapA = {}
     const locationMapA = {}
+    const typeCountA = {}
+    const typeMapA = {}
     ;(reportA.clauses || []).forEach(c => {
       clauseMapA[c.name] = c
       const ref = extractClauseRef(c.location)
       if (ref) locationMapA[ref] = c.name
+      if (c.clause_type) {
+        typeCountA[c.clause_type] = (typeCountA[c.clause_type] || 0) + 1
+        typeMapA[c.clause_type] = c.name
+      }
     })
+    // Only use type matching when V1 has exactly one clause of that type (no ambiguity)
+    Object.keys(typeCountA).forEach(t => { if (typeCountA[t] > 1) delete typeMapA[t] })
 
     const rows = []
     ;(reportB.clauses || []).forEach(clauseB => {
-      const matchKey = findMatch(clauseB, clauseMapA, locationMapA)
+      const matchKey = findMatch(clauseB, clauseMapA, locationMapA, typeMapA)
       const clauseA  = matchKey ? clauseMapA[matchKey] : null
       let change = 'same'
       if (!clauseA) {
