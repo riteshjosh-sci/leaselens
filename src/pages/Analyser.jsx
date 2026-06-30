@@ -283,7 +283,7 @@ export default function Analyser() {
     const tenant  = normalizeForMatch(reportJson?.tenant_name)
     const address = normalizeForMatch(reportJson?.premises_address)
 
-    if (!tenant || !address || !user) { setShowPropertyPrompt(true); return }
+    if (!tenant || !address || !user) { navigate(`/negotiation/${negIdRef.current}#report`); return }
 
     const { data: candidates } = await supabase
       .from('negotiations')
@@ -298,7 +298,7 @@ export default function Analyser() {
     )
 
     if (match) setMatchPrompt(match)
-    else setShowPropertyPrompt(true)
+    else navigate(`/negotiation/${negIdRef.current}#report`)
   }
 
   const handleMergeIntoExisting = async (matchOverride) => {
