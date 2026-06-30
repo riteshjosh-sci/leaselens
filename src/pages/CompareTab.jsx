@@ -67,6 +67,42 @@ function HighlightedText({ oldText, newText }) {
 }
 
 
+// ── Structured commercial-terms comparison (uses lease_data, not AI report) ────
+
+const MG_LABELS = { base_building: 'Base building condition', fair_wear_and_tear: 'Fair wear and tear', other: 'Tenant fit-out condition' }
+const MG_RANK   = { base_building: 0, other: 1, fair_wear_and_tear: 2 }
+const PG_LABELS = { yes: 'Unlimited', limited: 'Limited', no: 'None' }
+const PG_RANK   = { yes: 0, limited: 1, no: 2 }
+const EX_LABELS = { yes: 'Yes', limited: 'Limited', no: 'None' }
+
+const TERMS_FIELDS = [
+  { key: 'base_rent_annual',     label: 'Base Rent',            fmt: v => v != null ? '$' + Number(v).toLocaleString() + ' p.a.' : null,  dir: 'lower_better' },
+  { key: 'term_years',           label: 'Lease Term',           fmt: v => v != null ? v + ' years' : null,                                dir: 'higher_better' },
+  { key: 'option_terms',         label: 'Options',              fmt: v => v || null,                                                      dir: 'neutral' },
+  { key: 'rent_review_rate',     label: 'Rent Review Rate',     fmt: v => v != null ? v + '% p.a.' : null,                               dir: 'lower_better' },
+  { key: 'outgoings_annual',     label: 'Outgoings (est.)',     fmt: v => v != null ? '$' + Number(v).toLocaleString() + ' p.a.' : null,  dir: 'lower_better' },
+  { key: 'marketing_levy_annual',label: 'Marketing Levy',       fmt: v => v != null ? '$' + Number(v).toLocaleString() + ' p.a.' : null,  dir: 'lower_better' },
+  { key: 'bank_guarantee_months',label: 'Bank Guarantee',       fmt: v => v != null ? v + ' months' : null,                              dir: 'lower_better' },
+  { key: 'fitout_contribution',  label: 'Fit-Out Contribution', fmt: v => v != null ? '$' + Number(v).toLocaleString() : null,            dir: 'higher_better' },
+  { key: 'rent_free_months',     label: 'Rent-Free Period',     fmt: v => v != null ? v + ' months' : null,                              dir: 'higher_better' },
+  { key: 'make_good',            label: 'Make Good',            fmt: v => MG_LABELS[v] || v || null,                                     dir: 'make_good' },
+  { key: 'personal_guarantee',   label: 'Personal Guarantee',   fmt: v => PG_LABELS[v] || v || null,                                     dir: 'personal_guarantee' },
+  { key: 'permitted_use',        label: 'Permitted Use',        fmt: v => v || null,                                                     dir: 'neutral' },
+  { key: 'exclusivity',          label: 'Exclusivity',          fmt: v => EX_LABELS[v] || v || null,                                     dir: 'neutral' },
+]
+
+function getTermDir(field, vA, vB) {
+  if (vA == null && vB == null) return 'same'
+  if (String(vA) === String(vB)) return 'same'
+  if (vA == null) return field.dir === 'higher_better' ? 'imp' : field.dir === 'lower_better' ? 'risk' : 'mod'
+  if (vB == null) return field.dir === 'higher_better' ? 'risk' : field.dir === 'lower_better' ? 'imp' : 'mod'
+  if (field.dir === 'lower_better')        return vB < vA ? 'imp' : vB > vA ? 'risk' : 'same'
+  if (field.dir === 'higher_better')       return vB > vA ? 'imp' : vB < vA ? 'risk' : 'same'
+  if (field.dir === 'make_good')          { const rA = MG_RANK[vA] ?? 1, rB = MG_RANK[vB] ?? 1; return rB > rA ? 'imp' : rB < rA ? 'risk' : 'same' }
+  if (field.dir === 'personal_guarantee') { const rA = PG_RANK[vA] ?? 0, rB = PG_RANK[vB] ?? 0; return rB > rA ? 'imp' : rB < rA ? 'risk' : 'same' }
+  return 'mod'
+}
+
 export default function CompareTab({ negId, docs }) {
   const navigate = useNavigate()
   const sortedDocs = [...docs].sort((a, b) => a.version_number - b.version_number)
@@ -79,6 +115,9 @@ export default function CompareTab({ negId, docs }) {
 
   const leftDoc  = sortedDocs[leftIdx]
   const rightDoc = sortedDocs[rightIdx]
+
+  const ldA = leftDoc?.lease_data?.[0]
+  const ldB = rightDoc?.lease_data?.[0]
 
   const pickerRef = useRef(null)
 
@@ -328,6 +367,51 @@ export default function CompareTab({ negId, docs }) {
         <DocCard side="right" doc={rightDoc} label="Revised version"  labelCls={styles.vtagRev}  active={picker === 'right'} />
       </div>
 
+      {/* 3. COMMERCIAL TERMS — deterministic field-by-field comparison from lease_data */}
+      {(ldA || ldB) && (
+        <div className={styles.termsSection}>
+          <div className={styles.termsSectionHead}>Commercial terms</div>
+          <table className={styles.termsTable}>
+            <thead>
+              <tr>
+                <th className={styles.thLabel}>Term</th>
+                <th className={styles.thVal}>v{leftDoc?.version_number} — Previous</th>
+                <th className={styles.thVal}>v{rightDoc?.version_number} — Revised</th>
+                <th className={styles.thDir}>Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {TERMS_FIELDS.map(f => {
+                const vA  = ldA?.[f.key] ?? null
+                const vB  = ldB?.[f.key] ?? null
+                const dir = getTermDir(f, vA, vB)
+                const fA  = f.fmt(vA)
+                const fB  = f.fmt(vB)
+                if (!fA && !fB) return null
+                return (
+                  <tr key={f.key} className={
+                    dir === 'imp'  ? styles.trmRowImp  :
+                    dir === 'risk' ? styles.trmRowRisk :
+                    dir === 'mod'  ? styles.trmRowMod  :
+                    styles.trmRowSame
+                  }>
+                    <td className={styles.trmLabel}>{f.label}</td>
+                    <td className={styles.trmVal}>{fA ?? <span className={styles.trmNil}>—</span>}</td>
+                    <td className={styles.trmVal}>{fB ?? <span className={styles.trmNil}>—</span>}</td>
+                    <td className={styles.trmDirCell}>
+                      {dir === 'imp'  && <span className={styles.trmDirImp}>Improved</span>}
+                      {dir === 'risk' && <span className={styles.trmDirRisk}>Higher risk</span>}
+                      {dir === 'mod'  && <span className={styles.trmDirMod}>Modified</span>}
+                      {dir === 'same' && <span className={styles.trmDirSame}>Unchanged</span>}
+                    </td>
+                  </tr>
+                )
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {!hasLeftReport && (
         <div className={styles.noReport}>Previous version (v{leftDoc?.version_number}) has no report yet — run an analysis first.</div>
       )}
@@ -335,7 +419,7 @@ export default function CompareTab({ negId, docs }) {
         <div className={styles.noReport}>Revised version (v{rightDoc?.version_number}) has no report yet — run an analysis first.</div>
       )}
 
-      {/* 3. CLAUSE COMPARISON — full width */}
+      {/* 4. CLAUSE COMPARISON — full width */}
       {comparison && (
         <div className={styles.comparePanel}>
           <div className={styles.compareHead}>

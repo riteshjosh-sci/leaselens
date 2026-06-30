@@ -313,6 +313,50 @@
 .kdTagRsk { background: color-mix(in srgb, var(--fav-bad) 18%, transparent); color: var(--fav-bad-deep); }
 .kdTagD { width: 6px; height: 6px; border-radius: 50%; background: currentColor; display: inline-block; }
 
+/* ── COMMERCIAL TERMS TABLE ── */
+.termsSection {
+  background: var(--card); border: 1px solid var(--hair);
+  border-radius: 16px; overflow: hidden;
+}
+.termsSectionHead {
+  padding: 16px 22px 12px;
+  font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--hair-lt);
+}
+.termsTable { width: 100%; border-collapse: collapse; }
+.termsTable th {
+  padding: 9px 18px;
+  font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--faint); text-align: left;
+  background: var(--paper); border-bottom: 1px solid var(--hair-lt);
+}
+.thLabel { width: 22%; }
+.thVal   { width: 30%; }
+.thDir   { width: 18%; }
+.termsTable td { padding: 11px 18px; font-size: 13.5px; vertical-align: middle; border-bottom: 1px solid var(--hair-lt); }
+.termsTable tr:last-child td { border-bottom: none; }
+.trmLabel   { font-size: 13px; font-weight: 600; color: var(--ink-soft); white-space: nowrap; }
+.trmVal     { color: var(--ink); }
+.trmNil     { color: var(--faint); font-style: italic; }
+.trmDirCell { }
+
+/* Row tints */
+.trmRowImp  td { background: color-mix(in srgb, var(--st-agreed) 7%, transparent); }
+.trmRowRisk td { background: color-mix(in srgb, var(--fav-bad)   7%, transparent); }
+.trmRowMod  td { }
+.trmRowSame td { }
+
+/* Direction badges */
+.trmDirImp, .trmDirRisk, .trmDirMod, .trmDirSame {
+  display: inline-flex; align-items: center;
+  font-size: 11px; font-weight: 700; letter-spacing: .03em;
+  padding: 3px 9px; border-radius: 100px; white-space: nowrap;
+}
+.trmDirImp  { background: color-mix(in srgb, var(--st-agreed) 18%, transparent); color: var(--st-agreed-tx); }
+.trmDirRisk { background: var(--fav-bad-bg); color: var(--fav-bad-deep); }
+.trmDirMod  { background: var(--paper-2); color: var(--muted); }
+.trmDirSame { background: transparent; color: var(--faint); font-weight: 500; }
+
 /* ── RESPONSIVE ── */
 @media (max-width: 1100px) {
   .summaryStrip { gap: 8px; }

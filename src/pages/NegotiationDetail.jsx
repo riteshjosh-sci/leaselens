@@ -109,7 +109,8 @@ export default function NegotiationDetail() {
         id, property_name, asset_class, created_at, status, lifecycle, workspace_id,
         documents (
           id, filename, version_number, doc_type, uploaded_at, overall_risk, file_path, is_deleted,
-          reports ( id, report_json, created_at )
+          reports ( id, report_json, created_at ),
+          lease_data ( base_rent_annual, term_years, option_terms, bank_guarantee_months, make_good, marketing_levy_annual, fitout_contribution, rent_free_months, personal_guarantee, permitted_use, exclusivity, relocation_clause, outgoings_annual, rent_review_rate, rent_review_type )
         )
       `)
       .eq('id', negId)
