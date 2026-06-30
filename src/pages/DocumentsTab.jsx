@@ -75,6 +75,7 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
 
     const handleUpload = async () => {
       if (!file) return
+      const wasFirstDoc = docs.length === 0
 
       if (profile) {
         const plan = profile.plan || 'free'
@@ -138,6 +139,7 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
             cleanupPoll()
             setUploading(false); setFile(null); setStageMsg('')
             await refetchDocs()
+            navigate(`/negotiation/${negId}${wasFirstDoc ? '#report' : '#compare'}`)
           } else if (jobData.status === 'failed') {
             cleanupPoll()
             setUploading(false); setStageMsg('')

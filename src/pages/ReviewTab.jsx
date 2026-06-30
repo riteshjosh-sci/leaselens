@@ -307,6 +307,18 @@ export default function ReviewTab({
           : <div className={styles.focusCard} style={{ padding: 32, color: 'var(--muted)' }}>Select a clause from the list.</div>
         }
       </div>
+      <div className={styles.reviewFooter}>
+        {decided === 0 && (
+          <span className={styles.reviewFooterHint}>Agree or counter a clause to continue</span>
+        )}
+        <button
+          className="btn-primary"
+          disabled={decided === 0}
+          onClick={onViewSummary}
+        >
+          View summary <ChevRight />
+        </button>
+      </div>
     </>
   )
 }

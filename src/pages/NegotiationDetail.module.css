@@ -518,6 +518,13 @@
 .navBtnSummary { background: var(--ink); }
 .navBtnSummary:hover:not(:disabled) { background: var(--ink-soft); color: #fff; }
 
+/* Review tab footer */
+.reviewFooter {
+  display: flex; align-items: center; justify-content: flex-end; gap: 14px;
+  padding: 20px 0 8px; margin-top: 16px; border-top: 1px solid var(--hair-lt);
+}
+.reviewFooterHint { font-size: 13px; color: var(--muted); }
+
 /* ── Summary tab ─────────────────────────────────── */
 .summaryWrap {
   margin-top: 22px; display: grid; grid-template-columns: 1fr 270px;

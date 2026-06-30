@@ -344,8 +344,7 @@ export default function Analyser() {
     setMatchLoading(false)
     setMatchPrompt(null)
 
-    if (reportId) navigate(`/report/${reportId}`)
-    else navigate(`/negotiation/${targetNegId}`)
+    navigate(`/negotiation/${targetNegId}#compare`)
   }
 
   const handleKeepSeparate = () => {
@@ -377,14 +376,7 @@ export default function Analyser() {
       .limit(1)
 
     setShowPropertyPrompt(false)
-    const reportId = docs?.[0]?.reports?.[0]?.id
-    if (reportId) {
-      navigate(`/report/${reportId}`)
-    } else if (wsIdRef.current) {
-      navigate(`/workspace/${wsIdRef.current}`)
-    } else {
-      navigate('/dashboard')
-    }
+    navigate(`/negotiation/${negId}#report`)
   }
 
   const riskBadge = (risk) => {

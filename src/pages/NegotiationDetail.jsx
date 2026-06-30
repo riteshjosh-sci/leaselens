@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../context/AuthContext'
 import AppSidebar from '../components/AppSidebar'
 import Tour from '../components/Tour'
+import ReportTab from './ReportTab'
 import ReviewTab from './ReviewTab'
 import SummaryTab from './SummaryTab'
 import CompareTab from './CompareTab'
@@ -29,10 +30,15 @@ const TOUR_STEPS = [
   },
 ]
 
-const TABS_ONE = [
+const TABS_ONE_GUIDED = [
+  { key: 'report',  label: 'Report' },
+  { key: 'review',  label: 'Review' },
+  { key: 'summary', label: 'Summary' },
+]
+const TABS_ONE_FULL = [
+  { key: 'report',    label: 'Report' },
   { key: 'review',    label: 'Review' },
   { key: 'summary',   label: 'Summary' },
-  { key: 'compare',   label: 'Compare' },
   { key: 'documents', label: 'Documents' },
   { key: 'activity',  label: 'Activity' },
 ]
@@ -65,7 +71,10 @@ export default function NegotiationDetail() {
   const [lifecycle, setLifecycle]             = useState('reviewing')
   const [copied, setCopied]                   = useState(false)
 
-  const TABS = docs.length >= 2 ? TABS_MULTI : TABS_ONE
+  const hasDecisions = Object.keys(decisions).length > 0
+  const TABS = docs.length >= 2
+    ? TABS_MULTI
+    : (hasDecisions ? TABS_ONE_FULL : TABS_ONE_GUIDED)
   // Derive active tab from URL hash or default to first tab
   const hashTab = location.hash.replace('#', '')
   const activeTab = TABS.find(t => t.key === hashTab)?.key || TABS[0].key
@@ -331,6 +340,12 @@ export default function NegotiationDetail() {
         </div>
 
         {/* TAB CONTENT */}
+        {activeTab === 'report' && (
+          <ReportTab
+            allClauses={allClauses}
+            onNext={() => setTab('review')}
+          />
+        )}
         {activeTab === 'review' && (
           <ReviewTab
             allClauses={allClauses}
