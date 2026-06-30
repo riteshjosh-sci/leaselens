@@ -30,11 +30,6 @@ const TOUR_STEPS = [
   },
 ]
 
-const TABS_ONE_GUIDED = [
-  { key: 'report',  label: 'Report' },
-  { key: 'review',  label: 'Review' },
-  { key: 'summary', label: 'Summary' },
-]
 const TABS_ONE_FULL = [
   { key: 'report',    label: 'Report' },
   { key: 'review',    label: 'Review' },
@@ -70,11 +65,15 @@ export default function NegotiationDetail() {
   const [activeId, setActiveId]               = useState(null)
   const [lifecycle, setLifecycle]             = useState('reviewing')
   const [copied, setCopied]                   = useState(false)
+  const [guidedStep, setGuidedStep]           = useState(0)
 
-  const hasDecisions = Object.keys(decisions).length > 0
   const TABS = docs.length >= 2
     ? TABS_MULTI
-    : (hasDecisions ? TABS_ONE_FULL : TABS_ONE_GUIDED)
+    : guidedStep >= 2
+      ? TABS_ONE_FULL
+      : guidedStep === 1
+        ? TABS_ONE_FULL.slice(0, 2)
+        : TABS_ONE_FULL.slice(0, 1)
   // Derive active tab from URL hash or default to first tab
   const hashTab = location.hash.replace('#', '')
   const activeTab = TABS.find(t => t.key === hashTab)?.key || TABS[0].key
@@ -98,6 +97,7 @@ export default function NegotiationDetail() {
           const decMap = {}
           data.forEach(d => { decMap[d.clause_key] = d.decision })
           setDecisions(decMap)
+          setGuidedStep(2)
         }
       })
   }, [negId])
@@ -256,6 +256,16 @@ export default function NegotiationDetail() {
     navigate(`${location.pathname}#${key}`, { replace: true })
   }
 
+  const advanceToReview = () => {
+    setGuidedStep(s => Math.max(s, 1))
+    setTab('review')
+  }
+
+  const advanceToSummary = () => {
+    setGuidedStep(s => Math.max(s, 2))
+    setTab('summary')
+  }
+
   const handleAddVersion = (docType = null) => {
     navigate('/analyser', {
       state: {
@@ -343,7 +353,7 @@ export default function NegotiationDetail() {
         {activeTab === 'report' && (
           <ReportTab
             allClauses={allClauses}
-            onNext={() => setTab('review')}
+            onNext={advanceToReview}
           />
         )}
         {activeTab === 'review' && (
@@ -362,7 +372,7 @@ export default function NegotiationDetail() {
             handleReset={handleReset}
             handleOptionSelect={handleOptionSelect}
             decided={decided}
-            onViewSummary={() => setTab('summary')}
+            onViewSummary={advanceToSummary}
           />
         )}
         {activeTab === 'summary' && (
