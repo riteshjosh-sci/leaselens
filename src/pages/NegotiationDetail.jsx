@@ -109,8 +109,7 @@ export default function NegotiationDetail() {
         id, property_name, asset_class, created_at, status, lifecycle, workspace_id,
         documents (
           id, filename, version_number, doc_type, uploaded_at, overall_risk, file_path, is_deleted,
-          reports ( id, report_json, created_at ),
-          lease_data ( base_rent_annual, term_years, option_terms, bank_guarantee_months, make_good, marketing_levy_annual, fitout_contribution, rent_free_months, personal_guarantee, permitted_use, exclusivity, relocation_clause, outgoings_annual, rent_review_rate, rent_review_type )
+          reports ( id, report_json, created_at )
         )
       `)
       .eq('id', negId)
@@ -121,6 +120,21 @@ export default function NegotiationDetail() {
     setLifecycle(negData.lifecycle || 'reviewing')
 
     const sortedDocs = (negData.documents || []).filter(d => !d.is_deleted).sort((a, b) => b.version_number - a.version_number)
+
+    // Fetch lease_data separately — nested select requires a declared FK constraint
+    if (sortedDocs.length > 0) {
+      const docIds = sortedDocs.map(d => d.id)
+      const { data: ldRows } = await supabase
+        .from('lease_data')
+        .select('document_id, base_rent_annual, term_years, option_terms, bank_guarantee_months, make_good, marketing_levy_annual, fitout_contribution, rent_free_months, personal_guarantee, permitted_use, exclusivity, relocation_clause, outgoings_annual, rent_review_rate, rent_review_type')
+        .in('document_id', docIds)
+      if (ldRows) {
+        const ldByDoc = {}
+        ldRows.forEach(ld => { ldByDoc[ld.document_id] = ld })
+        sortedDocs.forEach(d => { d.lease_data = ldByDoc[d.id] ? [ldByDoc[d.id]] : [] })
+      }
+    }
+
     setDocs(sortedDocs)
 
     if (negData.workspace_id) {
