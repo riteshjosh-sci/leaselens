@@ -84,9 +84,45 @@ create policy "Users own reports"
   on reports for all using (auth.uid() = user_id);
 
 create policy "Users own clauses"
-  on clauses for all using (auth.uid() = document_id in (
-    select id from documents where user_id = auth.uid()
-  ));
+  on clauses for all using (
+    document_id in (select id from documents where user_id = auth.uid())
+  );
+
+-- LEASE_DATA
+-- Deterministic regex-extracted commercial terms (no user_id column — access via document FK)
+create table lease_data (
+  id                          uuid primary key default gen_random_uuid(),
+  document_id                 uuid references documents(id) on delete cascade,
+  document_type               text,
+  state                       text,
+  base_rent_annual            numeric,
+  term_years                  numeric,
+  option_terms                numeric,
+  bank_guarantee_months       numeric,
+  make_good                   text,
+  marketing_levy_annual       numeric,
+  fitout_contribution         numeric,
+  rent_free_months            numeric,
+  personal_guarantee          text,
+  permitted_use               text,
+  exclusivity                 text,
+  relocation_clause           boolean,
+  outgoings_annual            numeric,
+  rent_review_rate            numeric,
+  rent_review_type            text,
+  prompt_injection_detected   boolean default false,
+  suspicious_content          boolean default false,
+  security_notes              text,
+  created_at                  timestamptz default now()
+);
+
+alter table lease_data enable row level security;
+
+create policy "Users own lease_data"
+  on lease_data for all
+  using (
+    document_id in (select id from documents where user_id = auth.uid())
+  );
 
 -- ============================================================
 -- STORAGE BUCKET
