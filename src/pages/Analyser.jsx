@@ -218,6 +218,7 @@ export default function Analyser() {
         finalised: docType === 'lease',
         doc_type: docType,
         include_commercials: docType === 'hoa' ? true : includeCommercials,
+        force_refresh: true,
       }).select().single()
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
