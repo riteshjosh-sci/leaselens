@@ -66,6 +66,7 @@
 .docCard {
   width: 100%;
   background: var(--card);
+  color: var(--ink);
   border: 1px solid var(--hair);
   border-radius: 14px;
   padding: 16px 18px;
