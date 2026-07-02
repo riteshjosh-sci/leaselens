@@ -25,13 +25,18 @@ export default function ReportTab({ allClauses, onNext }) {
 
   return (
     <div style={{ paddingTop: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-        {high   > 0 && <span className={`${styles.pill} ${styles.pillHigh}`}>{high} High risk</span>}
-        {medium > 0 && <span className={`${styles.pill} ${styles.pillMed}`}>{medium} Medium</span>}
-        {low    > 0 && <span className={`${styles.pill} ${styles.pillLow}`}>{low} Low</span>}
-        <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 4 }}>
-          {allClauses.length} clauses identified
-        </span>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          {high   > 0 && <span className={`${styles.pill} ${styles.pillHigh}`}>{high} High risk</span>}
+          {medium > 0 && <span className={`${styles.pill} ${styles.pillMed}`}>{medium} Medium</span>}
+          {low    > 0 && <span className={`${styles.pill} ${styles.pillLow}`}>{low} Low</span>}
+          <span style={{ fontSize: 13, color: 'var(--muted)', marginLeft: 4 }}>
+            {allClauses.length} clauses identified
+          </span>
+        </div>
+        <button className="btn-primary" onClick={onNext}>
+          Next: Review clauses <ChevRight />
+        </button>
       </div>
 
       {allClauses.map(c => (

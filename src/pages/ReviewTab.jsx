@@ -110,6 +110,13 @@ export default function ReviewTab({
         </div>
         <span className={styles.rvProgLbl}><b>{decided}</b> of {allClauses.length} reviewed</span>
       </div>
+      <button
+        className="btn-primary"
+        disabled={decided === 0}
+        onClick={onViewSummary}
+      >
+        View summary <ChevRight />
+      </button>
     </div>
   )
 
