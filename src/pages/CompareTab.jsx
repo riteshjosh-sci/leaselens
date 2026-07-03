@@ -144,15 +144,19 @@ export default function CompareTab({ negId, docs }) {
     const normB = normaliseName(name), keyB = keyWords(name)
     // Tier 1: exact normalised name
     for (const k of Object.keys(mapA)) if (normaliseName(k) === normB) return k
-    // Tier 2: clause reference number extracted from location
+    // Tier 2: clause reference number from location (guard: key must still be in mapA)
     const ref = extractClauseRef(clauseB.location)
-    if (ref && locMapA[ref]) return locMapA[ref]
-    // Tier 3: clause_type (only when exactly 1 V1 clause has that type)
-    if (clauseB.clause_type && typeMapA[clauseB.clause_type]) return typeMapA[clauseB.clause_type]
-    // Tier 3.5: keyword match within same type group (when multiple V1 clauses share the type)
-    // Catches renames like "Incentive Repayment" → "Incentive Amortisation and Clawback"
+    if (ref && locMapA[ref] && mapA[locMapA[ref]]) return locMapA[ref]
+    // Tier 3: clause_type — only when exactly 1 V1 clause has that type AND still available
+    // typeMapA entries are deleted when either side has >1 clause of that type
+    const tier3Key = clauseB.clause_type && typeMapA[clauseB.clause_type]
+    if (tier3Key && mapA[tier3Key]) return tier3Key
+    // Tier 3.5: keyword match within same type group when Tier 3 is disabled.
+    // Fires whenever either side has >1 clause of this type — catches renames and
+    // merged/split clauses within the same topic.
     const grp = clauseB.clause_type && typeGroupsA[clauseB.clause_type]
-    if (grp && grp.length > 1) {
+    const tier3Disabled = clauseB.clause_type && !typeMapA[clauseB.clause_type]
+    if (tier3Disabled && grp && grp.length >= 1) {
       let bestGrp = null, bestGrpScore = 0
       const wBsplit = keyB.split(' ').filter(Boolean)
       for (const k of grp) {
@@ -194,8 +198,14 @@ export default function CompareTab({ negId, docs }) {
         typeGroupsA[c.clause_type].push(c.name)
       }
     })
-    // Only use type matching when V1 has exactly one clause of that type (no ambiguity)
-    Object.keys(typeCountA).forEach(t => { if (typeCountA[t] > 1) delete typeMapA[t] })
+    // Pre-compute V2 type counts for symmetric disabling
+    const typeCountB = {}
+    ;(reportB.clauses || []).forEach(c => {
+      if (c.clause_type) typeCountB[c.clause_type] = (typeCountB[c.clause_type] || 0) + 1
+    })
+    // Disable Tier 3 when EITHER side has >1 clause of that type (prevents cascade consumption
+    // where V2 "Non-Monetary Default" wrongly grabs V1 "Insolvency Event Termination" via type match)
+    Object.keys(typeCountA).forEach(t => { if (typeCountA[t] > 1 || (typeCountB[t] || 0) > 1) delete typeMapA[t] })
 
     const rows = []
     ;(reportB.clauses || []).forEach(clauseB => {
