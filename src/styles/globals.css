@@ -270,7 +270,7 @@ a { color: inherit; text-decoration: none; }
   transition: background 0.15s;
   white-space: nowrap;
 }
-.btn-primary:hover { background: var(--ink); }
+.btn-primary:hover { background: var(--ink); color: var(--paper); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-ink {
