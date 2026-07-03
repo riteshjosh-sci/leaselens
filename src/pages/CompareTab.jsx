@@ -139,13 +139,31 @@ export default function CompareTab({ negId, docs }) {
   const keyWords = n => normaliseName(n).split(' ').filter(w => w.length > 3).sort().join(' ')
   const extractClauseRef = loc => { const m = (loc || '').match(/(\d+(?:\.\d+)*)/); return m ? m[1] : '' }
 
-  const findMatch = (clauseB, mapA, locMapA, typeMapA) => {
+  const findMatch = (clauseB, mapA, locMapA, typeMapA, typeGroupsA) => {
     const name = clauseB.name
     const normB = normaliseName(name), keyB = keyWords(name)
+    // Tier 1: exact normalised name
     for (const k of Object.keys(mapA)) if (normaliseName(k) === normB) return k
+    // Tier 2: clause reference number extracted from location
     const ref = extractClauseRef(clauseB.location)
     if (ref && locMapA[ref]) return locMapA[ref]
+    // Tier 3: clause_type (only when exactly 1 V1 clause has that type)
     if (clauseB.clause_type && typeMapA[clauseB.clause_type]) return typeMapA[clauseB.clause_type]
+    // Tier 3.5: keyword match within same type group (when multiple V1 clauses share the type)
+    // Catches renames like "Incentive Repayment" → "Incentive Amortisation and Clawback"
+    const grp = clauseB.clause_type && typeGroupsA[clauseB.clause_type]
+    if (grp && grp.length > 1) {
+      let bestGrp = null, bestGrpScore = 0
+      const wBsplit = keyB.split(' ').filter(Boolean)
+      for (const k of grp) {
+        if (!mapA[k]) continue
+        const wA = keyWords(k).split(' ').filter(Boolean)
+        const score = wA.filter(w => wBsplit.includes(w)).length / Math.max(wA.length, wBsplit.length, 1)
+        if (score > bestGrpScore) { bestGrpScore = score; bestGrp = k }
+      }
+      if (bestGrp && bestGrpScore > 0) return bestGrp
+    }
+    // Tier 4: keyword overlap ≥0.5 against all remaining V1 clauses
     let best = null, bestScore = 0
     for (const k of Object.keys(mapA)) {
       const wA = keyWords(k).split(' '), wB = keyB.split(' ')
@@ -164,6 +182,7 @@ export default function CompareTab({ negId, docs }) {
     const locationMapA = {}
     const typeCountA = {}
     const typeMapA = {}
+    const typeGroupsA = {}
     ;(reportA.clauses || []).forEach(c => {
       clauseMapA[c.name] = c
       const ref = extractClauseRef(c.location)
@@ -171,6 +190,8 @@ export default function CompareTab({ negId, docs }) {
       if (c.clause_type) {
         typeCountA[c.clause_type] = (typeCountA[c.clause_type] || 0) + 1
         typeMapA[c.clause_type] = c.name
+        if (!typeGroupsA[c.clause_type]) typeGroupsA[c.clause_type] = []
+        typeGroupsA[c.clause_type].push(c.name)
       }
     })
     // Only use type matching when V1 has exactly one clause of that type (no ambiguity)
@@ -178,7 +199,7 @@ export default function CompareTab({ negId, docs }) {
 
     const rows = []
     ;(reportB.clauses || []).forEach(clauseB => {
-      const matchKey = findMatch(clauseB, clauseMapA, locationMapA, typeMapA)
+      const matchKey = findMatch(clauseB, clauseMapA, locationMapA, typeMapA, typeGroupsA)
       const clauseA  = matchKey ? clauseMapA[matchKey] : null
       let change = 'same'
       if (!clauseA) {
