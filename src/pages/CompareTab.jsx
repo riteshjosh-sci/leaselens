@@ -137,7 +137,13 @@ export default function CompareTab({ negId, docs }) {
 
   const normaliseName = n => n.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim()
   const keyWords = n => normaliseName(n).split(' ').filter(w => w.length > 3).sort().join(' ')
-  const extractClauseRef = loc => { const m = (loc || '').match(/(\d+(?:\.\d+)*)/); return m ? m[1] : '' }
+  const extractClauseRef = loc => {
+    if (!loc) return ''
+    const sc = loc.match(/^(SC\d+[a-zA-Z]?)\b/)
+    if (sc) return sc[1].toUpperCase()
+    const n = loc.match(/\b(\d+(?:\.\d+)*)\b/)
+    return n ? n[1] : ''
+  }
 
   const findMatch = (clauseB, mapA, locMapA, typeMapA, typeGroupsA) => {
     const name = clauseB.name
