@@ -270,7 +270,7 @@ a { color: inherit; text-decoration: none; }
   transition: background 0.15s;
   white-space: nowrap;
 }
-.btn-primary:hover { background: var(--ink); color: var(--paper); }
+.btn-primary:hover { filter: brightness(0.85); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .btn-ink {
@@ -290,7 +290,7 @@ a { color: inherit; text-decoration: none; }
   transition: background 0.15s;
   white-space: nowrap;
 }
-.btn-ink:hover { background: #000; }
+.btn-ink:hover { filter: brightness(0.85); }
 
 .btn-ghost {
   display: inline-flex;
@@ -325,7 +325,7 @@ a { color: inherit; text-decoration: none; }
   font-family: var(--font);
   transition: box-shadow 0.15s, background 0.15s;
 }
-.btn-outline:hover { box-shadow: inset 0 0 0 1px var(--muted); background: rgba(28,25,22,0.02); }
+.btn-outline:hover { box-shadow: inset 0 0 0 1px var(--muted); background: var(--paper-2); }
 
 .btn-sm { padding: 9px 16px; font-size: 13px; border-radius: 6px; }
 .btn-xs { padding: 7px 13px; font-size: 12.5px; border-radius: 6px; }
@@ -344,6 +344,7 @@ a { color: inherit; text-decoration: none; }
   transition: border-color 0.15s;
 }
 .input:focus { border-color: var(--accent); }
+.input option { background: var(--card); color: var(--ink); }
 
 /* ── Risk badges ── */
 .badge {
