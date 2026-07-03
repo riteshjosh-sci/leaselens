@@ -143,3 +143,71 @@ create policy "Users can read their own documents"
 create policy "Users can delete their own documents"
   on storage.objects for delete
   using (bucket_id = 'documents' and auth.uid()::text = (storage.foldername(name))[1]);
+
+-- ============================================================
+-- GOLDEN OUTPUTS
+-- Expected outputs for known test documents.
+-- Run validation with: python leaselens-worker/validate_golden.py
+-- No RLS — internal tooling table, accessed via service key only.
+-- ============================================================
+
+create table golden_outputs (
+  id                      uuid primary key default gen_random_uuid(),
+  document_name           text not null,
+  filename_pattern        text,                -- ILIKE pattern to find matching document
+
+  -- Report: risk count bounds
+  high_min                integer,
+  high_max                integer,
+  medium_min              integer,
+  medium_max              integer,
+
+  -- Report: clause types that must be present (jsonb array of strings)
+  required_clause_types   jsonb,
+
+  -- Report: clause types that must have at least one HIGH-danger clause
+  required_high_risk      jsonb,
+
+  -- Jurisdiction the classifier must detect
+  legislation_state       text,
+
+  -- Comparison: ILIKE patterns to find V1 and V2 documents
+  comparison_v1_pattern   text,
+  comparison_v2_pattern   text,
+  comparison_modified_min integer,
+  comparison_added_max    integer,
+  comparison_removed_max  integer,
+
+  -- Validation tracking (updated by validate_golden.py)
+  last_validated_at       timestamptz,
+  last_validation_passed  boolean,
+  last_validation_notes   text,
+
+  created_at              timestamptz default now()
+);
+
+-- Seed: HOA Homewares WA test case
+insert into golden_outputs (
+  document_name,
+  filename_pattern,
+  high_min,
+  high_max,
+  required_clause_types,
+  required_high_risk,
+  legislation_state,
+  comparison_v1_pattern,
+  comparison_v2_pattern,
+  comparison_modified_min,
+  comparison_added_max,
+  comparison_removed_max
+) values (
+  'HOA_Homewares_WA_v1',
+  '%HOA_Homewares_WA_v1%',
+  11, 14,
+  '["rent_review","personal_guarantee","make_good","outgoings","assignment","bank_guarantee","fitout_contribution"]',
+  '["rent_review","personal_guarantee","make_good","key_money"]',
+  'WA',
+  '%HOA_Homewares_WA_v1%',
+  '%HOA_Homewares_WA_v2%',
+  8, 2, 2
+);
