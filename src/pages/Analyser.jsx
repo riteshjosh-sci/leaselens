@@ -396,6 +396,28 @@ export default function Analyser() {
           <h1 className={styles.h1}>Know what you're signing <em>before you sign.</em></h1>
           <p className={styles.sub}>Drag and drop your document below, or paste the text. LeaseRoom analyses the terms and provides a clear outline of risk, impact and suggested response.</p>
 
+          {/* EXISTING NEGOTIATION MATCH BANNER — top of page, prominent */}
+          {matchPrompt && report && (
+            <div className={styles.matchBanner}>
+              <div className={styles.matchBannerIcon}>⚠</div>
+              <div className={styles.matchBannerBody}>
+                <div className={styles.matchBannerTitle}>This document matches an existing negotiation</div>
+                <div className={styles.matchBannerText}>
+                  The tenant and address match <strong>{matchPrompt.property_name || 'an existing negotiation'}</strong>
+                  {matchPrompt.tenant_name ? ` (${matchPrompt.tenant_name}` : ''}
+                  {matchPrompt.premises_address ? `, ${matchPrompt.premises_address})` : matchPrompt.tenant_name ? ')' : ''}.
+                  Add this version to it, or keep it as a new separate negotiation?
+                </div>
+                <div className={styles.matchBannerActions}>
+                  <button className="btn-primary" onClick={() => handleMergeIntoExisting()} disabled={matchLoading}>
+                    {matchLoading ? 'Adding…' : `Add to ${matchPrompt.property_name || 'existing negotiation'}`}
+                  </button>
+                  <button className="btn-outline" onClick={handleKeepSeparate} disabled={matchLoading}>Keep separate</button>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className={styles.card}>
             <div
               className={`${styles.zone} ${file ? styles.zoneLoaded : ''}`}
@@ -577,24 +599,6 @@ export default function Analyser() {
             </div>
           )}
 
-          {/* EXISTING NEGOTIATION MATCH PROMPT */}
-          {matchPrompt && report && (
-            <div className={styles.propertyPrompt}>
-              <h3>Looks like an existing negotiation</h3>
-              <p>
-                This document's tenant and address match <strong>{matchPrompt.property_name || 'an existing negotiation'}</strong>
-                {matchPrompt.tenant_name ? ` (${matchPrompt.tenant_name}` : ''}
-                {matchPrompt.premises_address ? `, ${matchPrompt.premises_address})` : matchPrompt.tenant_name ? ')' : ''}.
-                Add this version to it, or keep it as a separate negotiation?
-              </p>
-              <div className={styles.propertyRow}>
-                <button className="btn-primary" onClick={() => handleMergeIntoExisting()} disabled={matchLoading}>
-                  {matchLoading ? 'Adding…' : `Add to ${matchPrompt.property_name || 'existing'}`}
-                </button>
-                <button className="btn-outline" onClick={handleKeepSeparate} disabled={matchLoading}>Keep separate</button>
-              </div>
-            </div>
-          )}
 
           {/* PROPERTY NAME PROMPT */}
           {showPropertyPrompt && report && (

@@ -151,8 +151,15 @@ export default function CompareTab({ negId, docs }) {
     // Tier 1: exact normalised name
     for (const k of Object.keys(mapA)) if (normaliseName(k) === normB) return k
     // Tier 2: clause reference number from location (guard: key must still be in mapA)
+    // Also guard on clause_type compatibility — bare numbers like "1" or "5" appear in many
+    // documents; without a type check they can cross-match a Bank Guarantee with an Options clause.
     const ref = extractClauseRef(clauseB.location)
-    if (ref && locMapA[ref] && mapA[locMapA[ref]]) return locMapA[ref]
+    if (ref && locMapA[ref] && mapA[locMapA[ref]]) {
+      const candA = mapA[locMapA[ref]]
+      const typesCompatible = !clauseB.clause_type || !candA.clause_type
+        || clauseB.clause_type === candA.clause_type
+      if (typesCompatible) return locMapA[ref]
+    }
     // Tier 3: clause_type — only when exactly 1 V1 clause has that type AND still available
     // typeMapA entries are deleted when either side has >1 clause of that type
     const tier3Key = clauseB.clause_type && typeMapA[clauseB.clause_type]
@@ -171,7 +178,7 @@ export default function CompareTab({ negId, docs }) {
         const score = wA.filter(w => wBsplit.includes(w)).length / Math.max(wA.length, wBsplit.length, 1)
         if (score > bestGrpScore) { bestGrpScore = score; bestGrp = k }
       }
-      if (bestGrp && bestGrpScore > 0) return bestGrp
+      if (bestGrp && bestGrpScore >= 0.35) return bestGrp
     }
     // Tier 4: keyword overlap ≥0.5 against all remaining V1 clauses
     let best = null, bestScore = 0
@@ -219,10 +226,9 @@ export default function CompareTab({ negId, docs }) {
       const clauseA  = matchKey ? clauseMapA[matchKey] : null
       let change = 'same'
       if (!clauseA) {
-        // Brand-new clause — classify by its own risk, not a blanket "improved".
-        // A new HIGH/MEDIUM-risk clause favours the landlord (risk); only a
-        // new LOW-risk clause is genuinely favourable to the tenant.
-        change = clauseB.danger === 'LOW' ? 'imp' : 'risk'
+        // Brand-new clause — always flag for attention. A new clause has no
+        // baseline to improve upon; even LOW-danger additions need review.
+        change = 'risk'
       } else {
         const ro = { HIGH: 3, MEDIUM: 2, LOW: 1 }
         const aR = ro[clauseA.danger] || 0, bR = ro[clauseB.danger] || 0
@@ -231,13 +237,18 @@ export default function CompareTab({ negId, docs }) {
       }
       const leftText  = clauseA ? (clauseA.quote || clauseA.risk || '') : ''
       const rightText = clauseB.quote || clauseB.risk || ''
-      const textChanged = clauseA ? leftText.trim() !== rightText.trim() : false
+      const leftRisk  = clauseA ? (clauseA.risk || '') : ''
+      const rightRisk = clauseB.risk || ''
+      const dangerChanged = clauseA ? clauseA.danger !== clauseB.danger : false
+      // Use danger level only — AI risk prose varies between runs for the same clause;
+      // the categorical HIGH/MEDIUM/LOW signal is stable and meaningful.
+      const textChanged = clauseA ? dangerChanged : false
       const rightTag = !clauseA ? 'new' : (textChanged ? 'modified' : 'unchanged')
       rows.push({
         change,
         textChanged,
-        left:  clauseA ? { nm: clauseA.name, text: leftText, tag: null } : null,
-        right: { nm: clauseB.name, text: rightText, tag: rightTag },
+        left:  clauseA ? { nm: clauseA.name, text: leftText, riskText: leftRisk, tag: null } : null,
+        right: { nm: clauseB.name, text: rightText, riskText: rightRisk, tag: rightTag },
         note: clauseB.risk || '',
       })
     })
@@ -488,7 +499,7 @@ export default function CompareTab({ negId, docs }) {
                       <span className={styles.sdot} />
                     </div>
                   ) : (
-                    <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in previous version</div>
+                    <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in previous analysis</div>
                   )}
 
                   {row.right ? (
@@ -502,15 +513,15 @@ export default function CompareTab({ negId, docs }) {
                           {row.right.tag === 'unchanged' && <span className={styles.tagUnchanged}>Unchanged</span>}
                         </div>
                         <p>
-                          {row.left
-                            ? <HighlightedText oldText={row.left.text} newText={row.right.text} />
+                          {row.textChanged && row.left
+                            ? <HighlightedText oldText={row.left.riskText} newText={row.right.riskText} />
                             : row.right.text}
                         </p>
                       </div>
                       <span className={styles.sdot} />
                     </div>
                   ) : (
-                    <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Removed in revised</div>
+                    <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in revised analysis</div>
                   )}
 
                   {row.change === 'same' && !row.textChanged ? (

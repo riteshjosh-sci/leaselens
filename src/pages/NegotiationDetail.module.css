@@ -515,8 +515,8 @@
   color: #fff; background: var(--accent); padding: 10px 18px; border-radius: 10px;
 }
 .navBtnNext:hover:not(:disabled) { background: var(--accent-deep); color: #fff; }
-.navBtnSummary { background: var(--ink); }
-.navBtnSummary:hover:not(:disabled) { background: var(--ink-soft); color: #fff; }
+.navBtnSummary { background: var(--accent-deep); color: #fff; }
+.navBtnSummary:hover:not(:disabled) { filter: brightness(0.85); color: #fff; }
 
 /* Review tab footer */
 .reviewFooter {

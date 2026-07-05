@@ -34,6 +34,20 @@
 .signInNudge { font-size: 13px; color: var(--muted); text-align: center; margin-top: 12px; }
 .signInNudge a { color: var(--accent); }
 
+/* MATCH BANNER — prominent top-of-page alert for existing negotiation match */
+.matchBanner {
+  display: flex; gap: 16px; align-items: flex-start;
+  background: var(--gold-light); border: 1.5px solid var(--gold);
+  border-left: 4px solid var(--gold);
+  border-radius: var(--radius-sm); padding: 20px 24px;
+  margin-bottom: 24px;
+}
+.matchBannerIcon { font-size: 22px; color: var(--gold); flex-shrink: 0; line-height: 1.2; }
+.matchBannerBody { flex: 1; min-width: 0; }
+.matchBannerTitle { font-size: 15px; font-weight: 700; color: var(--ink); margin-bottom: 6px; }
+.matchBannerText { font-size: 13.5px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 16px; }
+.matchBannerActions { display: flex; gap: 10px; flex-wrap: wrap; }
+
 /* PROPERTY PROMPT */
 .propertyPrompt { background: var(--accent-soft); border: 1px solid var(--hair); border-radius: var(--radius-sm); padding: 24px; margin-bottom: 24px; }
 .propertyPrompt h3 { font-size: 16px; font-weight: 500; color: var(--ink); margin-bottom: 8px; }
