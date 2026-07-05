@@ -145,49 +145,26 @@ export default function CompareTab({ negId, docs }) {
     return n ? n[1] : ''
   }
 
-  const findMatch = (clauseB, mapA, locMapA, typeMapA, typeGroupsA) => {
-    const name = clauseB.name
-    const normB = normaliseName(name), keyB = keyWords(name)
-    // Tier 1: exact normalised name
-    for (const k of Object.keys(mapA)) if (normaliseName(k) === normB) return k
-    // Tier 2: clause reference number from location (guard: key must still be in mapA)
-    // Also guard on clause_type compatibility — bare numbers like "1" or "5" appear in many
-    // documents; without a type check they can cross-match a Bank Guarantee with an Options clause.
-    const ref = extractClauseRef(clauseB.location)
-    if (ref && locMapA[ref] && mapA[locMapA[ref]]) {
-      const candA = mapA[locMapA[ref]]
-      const typesCompatible = !clauseB.clause_type || !candA.clause_type
-        || clauseB.clause_type === candA.clause_type
-      if (typesCompatible) return locMapA[ref]
+  const keywordOverlap = (a, b) => {
+    const wA = keyWords(a).split(' ').filter(Boolean)
+    const wB = keyWords(b).split(' ').filter(Boolean)
+    if (!wA.length || !wB.length) return 0
+    return wA.filter(w => wB.includes(w)).length / Math.max(wA.length, wB.length)
+  }
+
+  const scorePair = (cA, cB, typeCountA, typeCountB) => {
+    if (normaliseName(cA.name) === normaliseName(cB.name)) return 100
+    const refA = extractClauseRef(cA.location)
+    const refB = extractClauseRef(cB.location)
+    if (refA && refB && refA === refB) return 80
+    const overlap = keywordOverlap(cA.name, cB.name)
+    if (cA.clause_type && cA.clause_type === cB.clause_type) {
+      const unique = (typeCountA[cA.clause_type] === 1) && (typeCountB[cA.clause_type] === 1)
+      if (unique) return 60 + overlap * 10
+      if (overlap > 0) return 30 + overlap * 20
     }
-    // Tier 3: clause_type — only when exactly 1 V1 clause has that type AND still available
-    // typeMapA entries are deleted when either side has >1 clause of that type
-    const tier3Key = clauseB.clause_type && typeMapA[clauseB.clause_type]
-    if (tier3Key && mapA[tier3Key]) return tier3Key
-    // Tier 3.5: keyword match within same type group when Tier 3 is disabled.
-    // Fires whenever either side has >1 clause of this type — catches renames and
-    // merged/split clauses within the same topic.
-    const grp = clauseB.clause_type && typeGroupsA[clauseB.clause_type]
-    const tier3Disabled = clauseB.clause_type && !typeMapA[clauseB.clause_type]
-    if (tier3Disabled && grp && grp.length >= 1) {
-      let bestGrp = null, bestGrpScore = 0
-      const wBsplit = keyB.split(' ').filter(Boolean)
-      for (const k of grp) {
-        if (!mapA[k]) continue
-        const wA = keyWords(k).split(' ').filter(Boolean)
-        const score = wA.filter(w => wBsplit.includes(w)).length / Math.max(wA.length, wBsplit.length, 1)
-        if (score > bestGrpScore) { bestGrpScore = score; bestGrp = k }
-      }
-      if (bestGrp && bestGrpScore >= 0.35) return bestGrp
-    }
-    // Tier 4: keyword overlap ≥0.5 against all remaining V1 clauses
-    let best = null, bestScore = 0
-    for (const k of Object.keys(mapA)) {
-      const wA = keyWords(k).split(' '), wB = keyB.split(' ')
-      const score = wA.filter(w => wB.includes(w)).length / Math.max(wA.length, wB.length)
-      if (score > bestScore && score >= 0.5) { bestScore = score; best = k }
-    }
-    return best
+    if (overlap >= 0.5) return overlap * 20
+    return 0
   }
 
   const buildComparison = (origDoc, revDoc) => {
@@ -195,53 +172,49 @@ export default function CompareTab({ negId, docs }) {
     const reportB = revDoc?.reports?.[0]?.report_json
     if (!reportA || !reportB) return null
 
-    const clauseMapA = {}
-    const locationMapA = {}
-    const typeCountA = {}
-    const typeMapA = {}
-    const typeGroupsA = {}
-    ;(reportA.clauses || []).forEach(c => {
-      clauseMapA[c.name] = c
-      const ref = extractClauseRef(c.location)
-      if (ref) locationMapA[ref] = c.name
-      if (c.clause_type) {
-        typeCountA[c.clause_type] = (typeCountA[c.clause_type] || 0) + 1
-        typeMapA[c.clause_type] = c.name
-        if (!typeGroupsA[c.clause_type]) typeGroupsA[c.clause_type] = []
-        typeGroupsA[c.clause_type].push(c.name)
-      }
+    const clausesA = reportA.clauses || []
+    const clausesB = reportB.clauses || []
+
+    const typeCountA = {}, typeCountB = {}
+    clausesA.forEach(c => { if (c.clause_type) typeCountA[c.clause_type] = (typeCountA[c.clause_type] || 0) + 1 })
+    clausesB.forEach(c => { if (c.clause_type) typeCountB[c.clause_type] = (typeCountB[c.clause_type] || 0) + 1 })
+
+    // Score all A×B pairs; sort by score descending; assign greedily from strongest match.
+    // Global approach avoids cascade failures caused by greedy per-clause ordering.
+    const candidates = []
+    clausesA.forEach((cA, iA) => {
+      clausesB.forEach((cB, iB) => {
+        const s = scorePair(cA, cB, typeCountA, typeCountB)
+        if (s > 0) candidates.push({ iA, iB, s })
+      })
     })
-    // Pre-compute V2 type counts for symmetric disabling
-    const typeCountB = {}
-    ;(reportB.clauses || []).forEach(c => {
-      if (c.clause_type) typeCountB[c.clause_type] = (typeCountB[c.clause_type] || 0) + 1
-    })
-    // Disable Tier 3 when EITHER side has >1 clause of that type (prevents cascade consumption
-    // where V2 "Non-Monetary Default" wrongly grabs V1 "Insolvency Event Termination" via type match)
-    Object.keys(typeCountA).forEach(t => { if (typeCountA[t] > 1 || (typeCountB[t] || 0) > 1) delete typeMapA[t] })
+    candidates.sort((a, b) => b.s - a.s)
+
+    const assignedA = new Set(), assignedB = new Set()
+    const matchMap = {}
+    for (const { iA, iB } of candidates) {
+      if (assignedA.has(iA) || assignedB.has(iB)) continue
+      matchMap[iB] = iA
+      assignedA.add(iA)
+      assignedB.add(iB)
+    }
 
     const rows = []
-    ;(reportB.clauses || []).forEach(clauseB => {
-      const matchKey = findMatch(clauseB, clauseMapA, locationMapA, typeMapA, typeGroupsA)
-      const clauseA  = matchKey ? clauseMapA[matchKey] : null
+    clausesB.forEach((clauseB, iB) => {
+      const clauseA = matchMap[iB] !== undefined ? clausesA[matchMap[iB]] : null
       let change = 'same'
       if (!clauseA) {
-        // Brand-new clause — always flag for attention. A new clause has no
-        // baseline to improve upon; even LOW-danger additions need review.
         change = 'risk'
       } else {
         const ro = { HIGH: 3, MEDIUM: 2, LOW: 1 }
         const aR = ro[clauseA.danger] || 0, bR = ro[clauseB.danger] || 0
         change = bR < aR ? 'imp' : bR > aR ? 'risk' : 'same'
-        delete clauseMapA[matchKey]
       }
       const leftText  = clauseA ? (clauseA.quote || clauseA.risk || '') : ''
       const rightText = clauseB.quote || clauseB.risk || ''
       const leftRisk  = clauseA ? (clauseA.risk || '') : ''
       const rightRisk = clauseB.risk || ''
       const dangerChanged = clauseA ? clauseA.danger !== clauseB.danger : false
-      // Use danger level only — AI risk prose varies between runs for the same clause;
-      // the categorical HIGH/MEDIUM/LOW signal is stable and meaningful.
       const textChanged = clauseA ? dangerChanged : false
       const rightTag = !clauseA ? 'new' : (textChanged ? 'modified' : 'unchanged')
       rows.push({
@@ -253,7 +226,8 @@ export default function CompareTab({ negId, docs }) {
       })
     })
 
-    Object.values(clauseMapA).forEach(clauseA => {
+    clausesA.forEach((clauseA, iA) => {
+      if (assignedA.has(iA)) return
       rows.push({
         change: 'imp',
         textChanged: false,
