@@ -32,29 +32,46 @@ export const extractClauseRef = loc => {
   return n ? n[1] : ''
 }
 
+// Extract the topic heading after the clause ref (e.g. 'SC12, Outgoings' → 'outgoings').
+const extractHeading = loc => {
+  if (!loc) return ''
+  const m = loc.match(/,\s*(.+)/)
+  return m ? m[1].trim().toLowerCase() : ''
+}
+
 export const scorePair = (cA, cB, typeCountA, typeCountB) => {
   if (normaliseName(cA.name) === normaliseName(cB.name)) return 100
 
   const refA = extractClauseRef(cA.location)
   const refB = extractClauseRef(cB.location)
-  if (refA && refB && refA === refB) {
-    if (!cA.clause_type || !cB.clause_type || cA.clause_type === cB.clause_type) return 80
-  }
+  const refMatch = !!(refA && refB && refA === refB)
 
   const overlap = keywordOverlap(cA.name, cB.name)
+  const qo = quoteOverlap(cA.quote || cA.risk || '', cB.quote || cB.risk || '')
 
   if (cA.clause_type && cA.clause_type === cB.clause_type) {
-    const unique = (typeCountA[cA.clause_type] === 1) && (typeCountB[cA.clause_type] === 1)
-    if (unique) return 60 + overlap * 10
+    const ta = cA.clause_type
+    const unique = (typeCountA[ta] === 1) && (typeCountB[ta] === 1)
 
-    // Non-unique same type: name overlap alone is unreliable when clause is renamed in V2.
-    // Also compute quote keyword overlap (words > 5 chars) as secondary signal.
-    // Combined signal must reach 0.25 to score — prevents boilerplate words (e.g. "tenant")
-    // from creating false matches between genuinely different same-type clauses.
-    const qo = quoteOverlap(cA.quote || cA.risk || '', cB.quote || cB.risk || '')
-    const signal = Math.max(overlap, qo * 0.8)
+    if (unique) {
+      // Unique type: ref match alone is reliable (only one clause of this type per doc).
+      if (refMatch) return 80
+      return 60 + overlap * 10
+    }
+
+    // Non-unique type: ref number alone is unreliable — clause numbers shift between
+    // versions when sections are added or removed. Require heading confirmation too.
+    const headA = extractHeading(cA.location)
+    const headB = extractHeading(cB.location)
+    const headMatch = !!(headA && headB && headA === headB)
+
+    if (refMatch && headMatch) return 80  // same number + same topic heading: strong
+
+    // Without ref+head, score on content signals only.
+    const signal = headMatch ? Math.max(overlap, qo * 0.8, 0.5) : Math.max(overlap, qo * 0.8)
     if (signal >= 0.25) return 30 + signal * 30
     if (overlap > 0) return 30 + overlap * 20
+    return 0
   }
 
   if (overlap >= 0.5) return overlap * 20
