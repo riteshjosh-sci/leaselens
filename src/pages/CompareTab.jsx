@@ -431,8 +431,8 @@ export default function CompareTab({ negId, docs }) {
         <DocCard side="right" doc={rightDoc} label="Revised version"  labelCls={styles.vtagRev}  active={picker === 'right'} />
       </div>
 
-      {/* 3. COMMERCIAL TERMS — deterministic field-by-field comparison from lease_data */}
-      {(ldA || ldB) && (
+      {/* 3. COMMERCIAL TERMS — lease_data when available, summary-text fallback for HOA docs */}
+      {((ldA || ldB) || (comparison?.summaryTermRows?.length > 0 && !sameDocument)) && (
         <div className={styles.termsSection}>
           <div className={styles.termsSectionHead}>Commercial terms</div>
           <table className={styles.termsTable}>
@@ -471,26 +471,7 @@ export default function CompareTab({ negId, docs }) {
                   </tr>
                 )
               })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Summary-based commercial terms (HOA docs where lease_data is absent) */}
-      {comparison && !sameDocument && comparison.summaryTermRows?.length > 0 && !(ldA || ldB) && (
-        <div className={styles.termsSection}>
-          <div className={styles.termsSectionHead}>Commercial terms</div>
-          <table className={styles.termsTable}>
-            <thead>
-              <tr>
-                <th className={styles.thLabel}>Term</th>
-                <th className={styles.thVal}>v{leftDoc?.version_number} — Previous</th>
-                <th className={styles.thVal}>v{rightDoc?.version_number} — Revised</th>
-                <th className={styles.thDir}>Change</th>
-              </tr>
-            </thead>
-            <tbody>
-              {comparison.summaryTermRows.map(({ label, vA, vB }) => (
+              {!ldA && !ldB && comparison?.summaryTermRows?.map(({ label, vA, vB }) => (
                 <tr key={label} className={styles.trmRowMod}>
                   <td className={styles.trmLabel}>{label}</td>
                   <td className={styles.trmVal}>{vA}</td>
