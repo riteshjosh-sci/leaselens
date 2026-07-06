@@ -67,6 +67,54 @@ function HighlightedText({ oldText, newText }) {
   return <>{nodes}</>
 }
 
+// ── Dollar-value change detection for matched UNCHANGED pairs ────────────────
+function dollarAmounts(text) {
+  const raw = (text || '').match(/\$[\d,]+(?:\.\d+)?/g) || []
+  return new Set(raw.map(r => r.replace(/,/g, '')))
+}
+function hasDollarChange(cA, cB) {
+  const dA = dollarAmounts(cA.quote || '')
+  const dB = dollarAmounts(cB.quote || '')
+  if (!dA.size || !dB.size) return false
+  if (dA.size !== dB.size) return true
+  return [...dA].some(v => !dB.has(v))
+}
+
+// ── False-removal suppression ─────────────────────────────────────────────────
+function quoteRepresented(quoteA, matchedClauses) {
+  if (!quoteA || quoteA.length < 30) return false
+  const normA = quoteA.toLowerCase().trim()
+  return matchedClauses.some(cB => {
+    const normB = (cB.quote || '').toLowerCase().trim()
+    return normA.includes(normB) || normB.includes(normA)
+  })
+}
+function duplicateInV1(clauseA, clausesA, assignedA) {
+  const quoteA = (clauseA.quote || '').toLowerCase().trim()
+  if (!quoteA || quoteA.length < 30) return false
+  return clausesA.some((ca, i) => {
+    if (ca === clauseA || !assignedA.has(i)) return false
+    const other = (ca.quote || '').toLowerCase().trim()
+    return quoteA.includes(other) || other.includes(quoteA)
+  })
+}
+
+// ── Summary text parsing (HOA docs where lease_data is absent) ───────────────
+const SUMMARY_PATS = [
+  { label: 'Base rent',           pat: /(?:base|commencing)\s+rent\s+of\s+(\$[\d,]+(?:\.\d+)?\s*p\.?a\.?)/i, fmt: v => v },
+  { label: 'Rent-free period',    pat: /(\d+)[-\s]+months?\s+rent[-\s]free/i,                                 fmt: v => `${v} months` },
+  { label: 'Fitout contribution', pat: /\$([\d,]+(?:\.\d+)?)\s+fitout\s+contribution/i,                       fmt: v => `$${v} (ex GST)` },
+  { label: 'Bank guarantee',      pat: /(\d+)[-\s]+months?\s+bank\s+guarantee/i,                              fmt: v => `${v} months` },
+  { label: 'Lease term',          pat: /(\d+)[-\s]+year\s+(?:initial\s+)?term/i,                              fmt: v => `${v} years` },
+]
+function parseSummaryTerms(summary) {
+  const out = {}
+  for (const { label, pat, fmt } of SUMMARY_PATS) {
+    const m = (summary || '').match(pat)
+    if (m) out[label] = fmt(m[1].trim())
+  }
+  return out
+}
 
 // ── Structured commercial-terms comparison (uses lease_data, not AI report) ────
 
@@ -169,16 +217,23 @@ export default function CompareTab({ negId, docs }) {
       assignedB.add(iB)
     }
 
+    const matchedClausesB = Object.keys(matchMap).map(iB => clausesB[+iB])
+
     const rows = []
     clausesB.forEach((clauseB, iB) => {
       const clauseA = matchMap[iB] !== undefined ? clausesA[matchMap[iB]] : null
       let change = 'same'
+      let valueChanged = false
       if (!clauseA) {
         change = 'risk'
       } else {
         const ro = { HIGH: 3, MEDIUM: 2, LOW: 1 }
         const aR = ro[clauseA.danger] || 0, bR = ro[clauseB.danger] || 0
         change = bR < aR ? 'imp' : bR > aR ? 'risk' : 'same'
+        if (change === 'same' && hasDollarChange(clauseA, clauseB)) {
+          change = 'watch'
+          valueChanged = true
+        }
       }
       const leftText  = clauseA ? (clauseA.quote || clauseA.risk || '') : ''
       const rightText = clauseB.quote || clauseB.risk || ''
@@ -186,10 +241,11 @@ export default function CompareTab({ negId, docs }) {
       const rightRisk = clauseB.risk || ''
       const dangerChanged = clauseA ? clauseA.danger !== clauseB.danger : false
       const textChanged = clauseA ? dangerChanged : false
-      const rightTag = !clauseA ? 'new' : (textChanged ? 'modified' : 'unchanged')
+      const rightTag = !clauseA ? 'new' : (textChanged || valueChanged ? 'modified' : 'unchanged')
       rows.push({
         change,
         textChanged,
+        valueChanged,
         left:  clauseA ? { nm: clauseA.name, text: leftText, riskText: leftRisk, tag: null } : null,
         right: { nm: clauseB.name, text: rightText, riskText: rightRisk, tag: rightTag },
         note: clauseB.risk || '',
@@ -198,14 +254,25 @@ export default function CompareTab({ negId, docs }) {
 
     clausesA.forEach((clauseA, iA) => {
       if (assignedA.has(iA)) return
+      if (quoteRepresented(clauseA.quote || '', matchedClausesB)) return
+      if (duplicateInV1(clauseA, clausesA, assignedA)) return
       rows.push({
         change: 'imp',
         textChanged: false,
+        valueChanged: false,
         left:  { nm: clauseA.name, text: clauseA.risk || clauseA.quote || '', tag: 'removed' },
         right: null,
         note: 'This clause was removed in the revised version.',
       })
     })
+
+    const summaryTermsA = parseSummaryTerms(reportA.summary)
+    const summaryTermsB = parseSummaryTerms(reportB.summary)
+    const summaryTermRows = []
+    for (const { label } of SUMMARY_PATS) {
+      const vA = summaryTermsA[label], vB = summaryTermsB[label]
+      if (vA && vB && vA !== vB) summaryTermRows.push({ label, vA, vB })
+    }
 
     const improved = rows.filter(r => r.change === 'imp' && r.left && r.right).map(r => r.right.nm)
     const flagged  = rows.filter(r => r.change === 'risk').map(r => r.right?.nm || r.left?.nm)
@@ -218,7 +285,7 @@ export default function CompareTab({ negId, docs }) {
       riskLabel: rows.some(r => r.change === 'risk') && rows.some(r => r.change === 'imp') ? 'Mixed'
         : rows.some(r => r.change === 'risk') ? 'Increased' : 'Improved',
     }
-    return { rows, summary, improved, flagged }
+    return { rows, summary, improved, flagged, summaryTermRows }
   }
 
   useEffect(() => {
@@ -409,6 +476,33 @@ export default function CompareTab({ negId, docs }) {
         </div>
       )}
 
+      {/* Summary-based commercial terms (HOA docs where lease_data is absent) */}
+      {comparison && !sameDocument && comparison.summaryTermRows?.length > 0 && !(ldA || ldB) && (
+        <div className={styles.termsSection}>
+          <div className={styles.termsSectionHead}>Commercial terms</div>
+          <table className={styles.termsTable}>
+            <thead>
+              <tr>
+                <th className={styles.thLabel}>Term</th>
+                <th className={styles.thVal}>v{leftDoc?.version_number} — Previous</th>
+                <th className={styles.thVal}>v{rightDoc?.version_number} — Revised</th>
+                <th className={styles.thDir}>Change</th>
+              </tr>
+            </thead>
+            <tbody>
+              {comparison.summaryTermRows.map(({ label, vA, vB }) => (
+                <tr key={label} className={styles.trmRowMod}>
+                  <td className={styles.trmLabel}>{label}</td>
+                  <td className={styles.trmVal}>{vA}</td>
+                  <td className={styles.trmVal}>{vB}</td>
+                  <td className={styles.trmDirCell}><span className={styles.trmDirMod}>Changed</span></td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {!hasLeftReport && (
         <div className={styles.noReport}>Previous version (v{leftDoc?.version_number}) has no report yet — run an analysis first.</div>
       )}
@@ -489,6 +583,7 @@ export default function CompareTab({ negId, docs }) {
                       <span className={styles.noteLead}>
                         {row.change === 'imp' ? '✓ What changed' :
                          row.change === 'risk' ? '⚠ What changed' :
+                         row.valueChanged ? '~ Value changed' :
                          '~ Modified'}
                       </span>
                       {row.note}
