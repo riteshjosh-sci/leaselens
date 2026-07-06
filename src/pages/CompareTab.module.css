@@ -131,8 +131,8 @@
   background: none; border: none; cursor: pointer; transition: background .12s;
 }
 .pickerRow:hover:not(:disabled) { background: var(--paper); }
-.pickerRowActive { background: var(--accent-soft); }
-.pickerRowActive:hover { background: var(--accent-soft); }
+.pickerRowActive { background: var(--accent-soft); color: var(--ink); }
+.pickerRowActive:hover { background: var(--accent-soft); color: var(--ink); }
 .pickerRowDisabled { opacity: .38; cursor: not-allowed; }
 .pickerV {
   width: 34px; height: 34px; border-radius: 9px; background: var(--paper-2);
