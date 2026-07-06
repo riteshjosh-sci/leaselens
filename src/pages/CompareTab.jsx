@@ -294,7 +294,11 @@ export default function CompareTab({ negId, docs }) {
 
   const hasLeftReport  = !!leftDoc?.reports?.[0]?.report_json
   const hasRightReport = !!rightDoc?.reports?.[0]?.report_json
-  const sameDocument   = !!(leftDoc && rightDoc && stripTimestamp(leftDoc.filename) === stripTimestamp(rightDoc.filename))
+  const sameDocument   = !!(leftDoc && rightDoc && (
+    (leftDoc.content_hash && rightDoc.content_hash)
+      ? leftDoc.content_hash === rightDoc.content_hash
+      : stripTimestamp(leftDoc.filename) === stripTimestamp(rightDoc.filename)
+  ))
 
   // ── Version picker dropdown ───────────────────────────────────────
   const VersionPicker = ({ side }) => (
