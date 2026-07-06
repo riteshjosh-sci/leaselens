@@ -156,7 +156,11 @@ export default function CompareTab({ negId, docs }) {
     if (normaliseName(cA.name) === normaliseName(cB.name)) return 100
     const refA = extractClauseRef(cA.location)
     const refB = extractClauseRef(cB.location)
-    if (refA && refB && refA === refB) return 80
+    if (refA && refB && refA === refB) {
+      // Only trust position match when types are compatible — bare numbers ("1", "2") appear
+      // in every document; without this guard, an HOA Bank Guarantee matches a Lease Option.
+      if (!cA.clause_type || !cB.clause_type || cA.clause_type === cB.clause_type) return 80
+    }
     const overlap = keywordOverlap(cA.name, cB.name)
     if (cA.clause_type && cA.clause_type === cB.clause_type) {
       const unique = (typeCountA[cA.clause_type] === 1) && (typeCountB[cA.clause_type] === 1)
