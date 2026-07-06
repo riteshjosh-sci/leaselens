@@ -294,6 +294,7 @@ export default function CompareTab({ negId, docs }) {
 
   const hasLeftReport  = !!leftDoc?.reports?.[0]?.report_json
   const hasRightReport = !!rightDoc?.reports?.[0]?.report_json
+  const sameDocument   = !!(leftDoc && rightDoc && stripTimestamp(leftDoc.filename) === stripTimestamp(rightDoc.filename))
 
   // ── Version picker dropdown ───────────────────────────────────────
   const VersionPicker = ({ side }) => (
@@ -352,7 +353,7 @@ export default function CompareTab({ negId, docs }) {
     <div className={styles.wrap}>
 
       {/* 1. COMPARISON SUMMARY — at the very top, filterable */}
-      {comparison && (
+      {comparison && !sameDocument && (
         <div className={styles.summaryStrip}>
           <span className={styles.summaryLabel}>Comparison summary</span>
           <HelpTip>Each changed clause is colored by who it favours: green when the change benefits you as tenant, rose when it favours the landlord, grey when it's neutral or unchanged.</HelpTip>
@@ -444,9 +445,12 @@ export default function CompareTab({ negId, docs }) {
       {!hasRightReport && (
         <div className={styles.noReport}>Revised version (v{rightDoc?.version_number}) has no report yet — run an analysis first.</div>
       )}
+      {sameDocument && (
+        <div className={styles.noReport}>Same document selected — upload a revised version to compare changes.</div>
+      )}
 
       {/* 4. CLAUSE COMPARISON — full width */}
-      {comparison && (
+      {comparison && !sameDocument && (
         <div className={styles.comparePanel}>
           <div className={styles.compareHead}>
             <div className={styles.chSide}>
@@ -563,7 +567,7 @@ export default function CompareTab({ negId, docs }) {
       )}
 
       {/* 5. KEY DIFFERENCES */}
-      {comparison && (comparison.improved.length > 0 || comparison.flagged.length > 0) && (
+      {comparison && !sameDocument && (comparison.improved.length > 0 || comparison.flagged.length > 0) && (
         <div className={styles.keydiff}>
           <div className={styles.kdHead}>
             <h2 className={styles.kdTitle}>Key differences</h2>
