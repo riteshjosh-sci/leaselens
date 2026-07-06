@@ -536,7 +536,7 @@ export default function CompareTab({ negId, docs }) {
       )}
 
       {/* 4. VERDICT STRIP — no title, just chips + Review clauses button */}
-      {comparison && (comparison.improved.length > 0 || comparison.flagged.length > 0) && (
+      {comparison && !sameDocument && (comparison.improved.length > 0 || comparison.flagged.length > 0) && (
         <div className={styles.verdictStrip}>
           <div className={styles.verdictLeft}>
             {comparison.improved.length > 0 && (
