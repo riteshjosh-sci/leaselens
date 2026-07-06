@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import HelpTip from '../components/HelpTip'
 import styles from './CompareTab.module.css'
+import { normaliseName, keywordOverlap, extractClauseRef, scorePair } from '../lib/compareMatching'
 
 // Tokenise into words + whitespace/punctuation runs, preserving original string
 function tokenise(text) {
@@ -135,41 +136,6 @@ export default function CompareTab({ negId, docs }) {
   const stripTimestamp = f => f?.replace(/^\d+_/, '') || ''
   const fileExt = f => f?.split('.').pop()?.toUpperCase() || 'DOC'
 
-  const normaliseName = n => n.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim()
-  const keyWords = n => normaliseName(n).split(' ').filter(w => w.length > 3).sort().join(' ')
-  const extractClauseRef = loc => {
-    if (!loc) return ''
-    const sc = loc.match(/^(SC\d+[a-zA-Z]?)\b/)
-    if (sc) return sc[1].toUpperCase()
-    const n = loc.match(/\b(\d+(?:\.\d+)*)\b/)
-    return n ? n[1] : ''
-  }
-
-  const keywordOverlap = (a, b) => {
-    const wA = keyWords(a).split(' ').filter(Boolean)
-    const wB = keyWords(b).split(' ').filter(Boolean)
-    if (!wA.length || !wB.length) return 0
-    return wA.filter(w => wB.includes(w)).length / Math.max(wA.length, wB.length)
-  }
-
-  const scorePair = (cA, cB, typeCountA, typeCountB) => {
-    if (normaliseName(cA.name) === normaliseName(cB.name)) return 100
-    const refA = extractClauseRef(cA.location)
-    const refB = extractClauseRef(cB.location)
-    if (refA && refB && refA === refB) {
-      // Only trust position match when types are compatible — bare numbers ("1", "2") appear
-      // in every document; without this guard, an HOA Bank Guarantee matches a Lease Option.
-      if (!cA.clause_type || !cB.clause_type || cA.clause_type === cB.clause_type) return 80
-    }
-    const overlap = keywordOverlap(cA.name, cB.name)
-    if (cA.clause_type && cA.clause_type === cB.clause_type) {
-      const unique = (typeCountA[cA.clause_type] === 1) && (typeCountB[cA.clause_type] === 1)
-      if (unique) return 60 + overlap * 10
-      if (overlap > 0) return 30 + overlap * 20
-    }
-    if (overlap >= 0.5) return overlap * 20
-    return 0
-  }
 
   const buildComparison = (origDoc, revDoc) => {
     const reportA = origDoc?.reports?.[0]?.report_json
