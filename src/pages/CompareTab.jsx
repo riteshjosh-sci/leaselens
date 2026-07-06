@@ -268,10 +268,16 @@ export default function CompareTab({ negId, docs }) {
 
     const summaryTermsA = parseSummaryTerms(reportA.summary)
     const summaryTermsB = parseSummaryTerms(reportB.summary)
-    const summaryTermRows = []
     for (const { label } of SUMMARY_PATS) {
       const vA = summaryTermsA[label], vB = summaryTermsB[label]
-      if (vA && vB && vA !== vB) summaryTermRows.push({ label, vA, vB })
+      if (vA && vB && vA !== vB) rows.push({
+        change: 'watch',
+        textChanged: false,
+        valueChanged: true,
+        left:  { nm: label, text: vA, riskText: '', tag: null },
+        right: { nm: label, text: vB, riskText: '', tag: 'modified' },
+        note: '',
+      })
     }
 
     const improved = rows.filter(r => r.change === 'imp' && r.left && r.right).map(r => r.right.nm)
@@ -285,7 +291,7 @@ export default function CompareTab({ negId, docs }) {
       riskLabel: rows.some(r => r.change === 'risk') && rows.some(r => r.change === 'imp') ? 'Mixed'
         : rows.some(r => r.change === 'risk') ? 'Increased' : 'Improved',
     }
-    return { rows, summary, improved, flagged, summaryTermRows }
+    return { rows, summary, improved, flagged }
   }
 
   useEffect(() => {
@@ -431,8 +437,8 @@ export default function CompareTab({ negId, docs }) {
         <DocCard side="right" doc={rightDoc} label="Revised version"  labelCls={styles.vtagRev}  active={picker === 'right'} />
       </div>
 
-      {/* 3. COMMERCIAL TERMS — lease_data when available, summary-text fallback for HOA docs */}
-      {((ldA || ldB) || (comparison?.summaryTermRows?.length > 0 && !sameDocument)) && (
+      {/* 3. COMMERCIAL TERMS — deterministic field-by-field comparison from lease_data */}
+      {(ldA || ldB) && (
         <div className={styles.termsSection}>
           <div className={styles.termsSectionHead}>Commercial terms</div>
           <table className={styles.termsTable}>
@@ -471,14 +477,6 @@ export default function CompareTab({ negId, docs }) {
                   </tr>
                 )
               })}
-              {!ldA && !ldB && comparison?.summaryTermRows?.map(({ label, vA, vB }) => (
-                <tr key={label} className={styles.trmRowMod}>
-                  <td className={styles.trmLabel}>{label}</td>
-                  <td className={styles.trmVal}>{vA}</td>
-                  <td className={styles.trmVal}>{vB}</td>
-                  <td className={styles.trmDirCell}><span className={styles.trmDirMod}>Changed</span></td>
-                </tr>
-              ))}
             </tbody>
           </table>
         </div>
