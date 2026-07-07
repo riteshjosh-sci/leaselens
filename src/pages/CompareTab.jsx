@@ -135,7 +135,7 @@ export default function CompareTab({ negId, docs }) {
   const [rightIdx, setRightIdx] = useState(sortedDocs.length - 1)
   const [picker,   setPicker]   = useState(null) // 'left' | 'right' | null
   const [comparison, setComparison] = useState(null)
-  const [activeFilter, setActiveFilter] = useState('modified') // 'added'|'modified'|'removed'|null
+  const [activeFilter, setActiveFilter] = useState(null) // 'added'|'modified'|'removed'|null
 
   const leftDoc  = sortedDocs[leftIdx]
   const rightDoc = sortedDocs[rightIdx]
@@ -175,14 +175,19 @@ export default function CompareTab({ negId, docs }) {
 
   // ── Fetch stored comparison from comparisons table ───────────────────────
   useEffect(() => {
-    setActiveFilter('modified')
+    setActiveFilter(null)
     setComparison(null)
     if (!negId) return
+    const leftId  = sortedDocs[leftIdx]?.id
+    const rightId = sortedDocs[rightIdx]?.id
+    if (!leftId || !rightId) return
     ;(async () => {
       const { data } = await supabase
         .from('comparisons')
         .select('id, result_json, matcher_version, created_at, document_id_v1, document_id_v2')
         .eq('negotiation_id', negId)
+        .eq('document_id_v1', leftId)
+        .eq('document_id_v2', rightId)
         .order('created_at', { ascending: false })
         .limit(1)
       if (data?.length) setComparison(data[0])
@@ -386,8 +391,8 @@ export default function CompareTab({ negId, docs }) {
             <tbody>
               {TERMS_FIELDS.map(f => {
                 // prefer block-extracted terms, fall back to lease_data
-                const vA  = (ctA ?? ldA)?.[f.key] ?? null
-                const vB  = (ctB ?? ldB)?.[f.key] ?? null
+                const vA  = ctA?.[f.key] ?? ldA?.[f.key] ?? null
+                const vB  = ctB?.[f.key] ?? ldB?.[f.key] ?? null
                 const dir = getTermDir(f, vA, vB)
                 const fA  = f.fmt(vA)
                 const fB  = f.fmt(vB)
