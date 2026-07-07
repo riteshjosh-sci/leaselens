@@ -30,7 +30,12 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
       .select('id, filename, version_number, doc_type, uploaded_at, overall_risk, file_path, reports ( id, report_json, created_at )')
       .eq('negotiation_id', negId)
       .eq('is_deleted', false)
-    if (data) setDocs([...data].sort((a, b) => b.version_number - a.version_number))
+    if (data) {
+      const sorted = [...data].sort((a, b) => b.version_number - a.version_number)
+      setDocs(sorted)
+      return sorted.some(d => d.reports?.[0]?.report_json)
+    }
+    return false
   }
 
   const formatDate = d => new Date(d).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -137,8 +142,14 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
           if (!jobData) return
           if (jobData.status === 'complete') {
             cleanupPoll()
+            setStageMsg('Preparing report...')
+            let hasReport = false
+            const deadline = Date.now() + 30000
+            while (!hasReport && Date.now() < deadline) {
+              hasReport = await refetchDocs()
+              if (!hasReport) await new Promise(r => setTimeout(r, 2000))
+            }
             setUploading(false); setFile(null); setStageMsg('')
-            await refetchDocs()
             navigate(`/negotiation/${negId}${wasFirstDoc ? '#report' : '#compare'}`)
           } else if (jobData.status === 'failed') {
             cleanupPoll()
