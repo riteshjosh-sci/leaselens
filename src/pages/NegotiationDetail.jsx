@@ -56,6 +56,9 @@ export default function NegotiationDetail() {
   const [docs,    setDocs]    = useState([])
   const [loading, setLoading] = useState(true)
 
+  const pollTimerRef  = useRef(null)
+  const pollCountRef  = useRef(0)
+
   // Lifted out of ReviewTab so this state survives switching to the Summary tab and
   // back — counter edits/selected options aren't persisted to the DB, only `decisions` is.
   const [decisions, setDecisions]             = useState({})
@@ -80,10 +83,15 @@ export default function NegotiationDetail() {
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
+    pollCountRef.current = 0
+    if (pollTimerRef.current) { clearTimeout(pollTimerRef.current); pollTimerRef.current = null }
     fetchAll()
     const onFocus = () => fetchAll()
     window.addEventListener('focus', onFocus)
-    return () => window.removeEventListener('focus', onFocus)
+    return () => {
+      window.removeEventListener('focus', onFocus)
+      if (pollTimerRef.current) { clearTimeout(pollTimerRef.current); pollTimerRef.current = null }
+    }
   }, [negId, user])
 
   useEffect(() => {
@@ -136,6 +144,14 @@ export default function NegotiationDetail() {
     }
 
     setDocs(sortedDocs)
+
+    // Poll until every doc that exists has a report (worker saves asynchronously)
+    const allHaveReports = sortedDocs.length > 0 && sortedDocs.every(d => d.reports?.[0]?.report_json)
+    if (sortedDocs.length > 0 && !allHaveReports && pollCountRef.current < 20) {
+      pollCountRef.current += 1
+      if (pollTimerRef.current) clearTimeout(pollTimerRef.current)
+      pollTimerRef.current = setTimeout(fetchAll, 3000)
+    }
 
     if (negData.workspace_id) {
       const { data: wsData } = await supabase

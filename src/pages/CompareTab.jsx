@@ -126,6 +126,17 @@ function getTermDir(field, vA, vB) {
   return 'mod'
 }
 
+const TRIVIAL_RE = /^[-_=*\s./\\|,~]+$|^\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}$|^(date|sign(?:ature|ed)?|initial[s]?|witness|executed|lessee|lessor)[:\s./_]*$/i
+
+function isTrivialBlock(text) {
+  const t = (text || '').trim()
+  if (!t || t.length < 4) return true
+  if (TRIVIAL_RE.test(t)) return true
+  // Short all-caps labels with no numbers (e.g. "DATE", "SIGNED:", "LESSEE:")
+  if (t.length <= 25 && /^[A-Z][A-Z\s:._/-]*$/.test(t) && !/\d/.test(t) && t.split(/\s+/).length <= 3) return true
+  return false
+}
+
 export default function CompareTab({ negId, docs }) {
   const navigate = useNavigate()
   const sortedDocs = [...docs].sort((a, b) => a.version_number - b.version_number)
@@ -146,7 +157,9 @@ export default function CompareTab({ negId, docs }) {
   const ctA = comparison?.result_json?.commercial_terms_v1 || null
   const ctB = comparison?.result_json?.commercial_terms_v2 || null
 
-  const pickerRef = useRef(null)
+  const pickerRef   = useRef(null)
+  const pollRef     = useRef(null)
+  const pollCountRef = useRef(0)
 
   useEffect(() => {
     if (!picker) return
@@ -173,15 +186,21 @@ export default function CompareTab({ negId, docs }) {
     return acc
   }, [])
 
-  // ── Fetch stored comparison from comparisons table ───────────────────────
+  // ── Fetch stored comparison — poll until found (worker generates it after save_document) ──
   useEffect(() => {
     setActiveFilter(null)
     setComparison(null)
+    pollCountRef.current = 0
+    if (pollRef.current) { clearTimeout(pollRef.current); pollRef.current = null }
     if (!negId) return
     const leftId  = sortedDocs[leftIdx]?.id
     const rightId = sortedDocs[rightIdx]?.id
     if (!leftId || !rightId) return
-    ;(async () => {
+
+    let stopped = false
+
+    const doFetch = async () => {
+      if (stopped) return
       const { data } = await supabase
         .from('comparisons')
         .select('id, result_json, matcher_version, created_at, document_id_v1, document_id_v2')
@@ -190,8 +209,20 @@ export default function CompareTab({ negId, docs }) {
         .eq('document_id_v2', rightId)
         .order('created_at', { ascending: false })
         .limit(1)
-      if (data?.length) setComparison(data[0])
-    })()
+      if (stopped) return
+      if (data?.length) {
+        setComparison(data[0])
+      } else if (pollCountRef.current < 20) {
+        pollCountRef.current += 1
+        pollRef.current = setTimeout(doFetch, 3000)
+      }
+    }
+
+    doFetch()
+    return () => {
+      stopped = true
+      if (pollRef.current) { clearTimeout(pollRef.current); pollRef.current = null }
+    }
   }, [leftIdx, rightIdx, negId, docsKey])
 
   const handlePickVersion = (side, idx) => {
@@ -328,7 +359,11 @@ export default function CompareTab({ negId, docs }) {
       rows.push({ kind: 'added', change_type: null, change_summary: cs, change: 'watch', left: null, right: { text: a.text, tag: 'new' }, textChanged: false, note: cs ? null : 'Added in the revised version.', isMeaningful: true })
     }
 
-    return rows
+    return rows.filter(row => {
+      if (row.change_summary?.summary) return true
+      const text = (row.left?.text || row.right?.text || '').trim()
+      return !isTrivialBlock(text)
+    })
   })()
 
   const stats = comparison?.result_json?.stats
@@ -502,9 +537,9 @@ export default function CompareTab({ negId, docs }) {
                     <span className={styles.noteLead}>
                       {row.change_summary.tenant_impact === 'favourable'   ? '↑ Favourable'   :
                        row.change_summary.tenant_impact === 'unfavourable' ? '↓ Unfavourable' :
-                       '~ Modified'}
+                       row.kind === 'added' ? '+ Added' : row.kind === 'removed' ? '− Removed' : '~ Modified'}
                     </span>
-                    {row.change_summary.summary}
+                    {row.change_summary.label && <><strong>{row.change_summary.label}</strong>{' · '}</>}{row.change_summary.summary}
                     {row.change_summary.significance === 'high' && (
                       <span className={styles.sigHigh}>High impact</span>
                     )}
