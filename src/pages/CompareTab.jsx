@@ -147,6 +147,7 @@ export default function CompareTab({ negId, docs }) {
   const [picker,   setPicker]   = useState(null) // 'left' | 'right' | null
   const [comparison, setComparison] = useState(null)
   const [activeFilter, setActiveFilter] = useState(null) // 'added'|'modified'|'removed'|null
+  const [showUnchanged, setShowUnchanged] = useState(false)
 
   const leftDoc  = sortedDocs[leftIdx]
   const rightDoc = sortedDocs[rightIdx]
@@ -236,8 +237,10 @@ export default function CompareTab({ negId, docs }) {
   }
 
   const getFilteredRows = (rows) => {
-    if (!activeFilter || !rows) return rows
-    return rows.filter(r => {
+    if (!rows) return rows
+    let out = showUnchanged ? rows : rows.filter(r => r.change !== 'same')
+    if (!activeFilter) return out
+    return out.filter(r => {
       if (activeFilter === 'added')    return r.kind === 'added'
       if (activeFilter === 'removed')  return r.kind === 'removed'
       if (activeFilter === 'modified') return r.isMeaningful
@@ -571,6 +574,17 @@ export default function CompareTab({ negId, docs }) {
                 )}
               </div>
             ))}
+
+            {(() => {
+              const unchangedCount = displayRows.filter(r => r.change === 'same').length
+              return unchangedCount > 0 && (
+                <button className={styles.toggleUnchanged} onClick={() => setShowUnchanged(p => !p)}>
+                  {showUnchanged
+                    ? 'Hide unchanged blocks'
+                    : `Show ${unchangedCount} unchanged block${unchangedCount !== 1 ? 's' : ''}`}
+                </button>
+              )
+            })()}
 
             {displayRows.length === 0 && (
               <div className={styles.emptyFilter}>No changes found.</div>
