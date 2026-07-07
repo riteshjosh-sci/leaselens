@@ -141,6 +141,9 @@ export default function CompareTab({ negId, docs }) {
 
   const ldA = leftDoc?.lease_data?.[0]
   const ldB = rightDoc?.lease_data?.[0]
+  // Block-extracted commercial terms (v2.0 pipeline) — preferred over ldA/ldB or summary regex
+  const ctA = comparison?.result_json?.commercial_terms_v1 || null
+  const ctB = comparison?.result_json?.commercial_terms_v2 || null
 
   const pickerRef = useRef(null)
 
@@ -200,7 +203,7 @@ export default function CompareTab({ negId, docs }) {
     return rows.filter(r => {
       if (activeFilter === 'added')    return r.kind === 'added'
       if (activeFilter === 'removed')  return r.kind === 'removed'
-      if (activeFilter === 'modified') return ['modified', 'topic', 'reordered'].includes(r.kind)
+      if (activeFilter === 'modified') return r.isMeaningful
       return true
     })
   }
@@ -284,31 +287,37 @@ export default function CompareTab({ negId, docs }) {
     const rj = comparison.result_json
     const rows = []
 
+    const MEANINGFUL = ['value_changed', 'substantive_change']
+
     // Matched blocks sorted by V2 position
     const sorted = [...(rj.matches || [])].sort((a, b) => a.v2_idx - b.v2_idx)
     for (const m of sorted) {
       const isModified = ['modified', 'topic'].includes(m.kind)
+      const isMeaningful = isModified && MEANINGFUL.includes(m.change_type)
       const absD = Math.abs(m.delta)
       rows.push({
-        kind:        m.kind,
-        change:      isModified ? 'watch' : 'same',
-        left:        { text: m.v1_text },
-        right:       { text: m.v2_text, tag: isModified ? 'modified' : m.kind === 'reordered' ? 'reordered' : 'unchanged' },
-        textChanged: isModified,
-        note:        m.kind === 'reordered'
+        kind:          m.kind,
+        change_type:   m.change_type || null,
+        change_summary: m.change_summary || null,
+        change:        isModified ? 'watch' : 'same',
+        left:          { text: m.v1_text },
+        right:         { text: m.v2_text, tag: isModified ? 'modified' : m.kind === 'reordered' ? 'reordered' : 'unchanged' },
+        textChanged:   isModified,
+        note:          m.kind === 'reordered'
           ? `Block moved ${m.delta > 0 ? 'down' : 'up'} ${absD} position${absD !== 1 ? 's' : ''}`
           : null,
+        isMeaningful,
       })
     }
 
     // Removed (V1 only)
     for (const r of (rj.removed || [])) {
-      rows.push({ kind: 'removed', change: 'watch', left: { text: r.text, tag: 'removed' }, right: null, textChanged: false, note: 'Removed in the revised version.' })
+      rows.push({ kind: 'removed', change_type: null, change_summary: null, change: 'watch', left: { text: r.text, tag: 'removed' }, right: null, textChanged: false, note: 'Removed in the revised version.', isMeaningful: true })
     }
 
     // Added (V2 only)
     for (const a of (rj.added || [])) {
-      rows.push({ kind: 'added', change: 'watch', left: null, right: { text: a.text, tag: 'new' }, textChanged: false, note: 'Added in the revised version.' })
+      rows.push({ kind: 'added', change_type: null, change_summary: null, change: 'watch', left: null, right: { text: a.text, tag: 'new' }, textChanged: false, note: 'Added in the revised version.', isMeaningful: true })
     }
 
     return rows
@@ -328,7 +337,7 @@ export default function CompareTab({ negId, docs }) {
             {[
               { key: 'added',    icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoAdd, label: 'Added',    val: stats?.added    || 0 },
               { key: 'removed',  icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoRem, label: 'Removed',  val: stats?.removed  || 0 },
-              { key: 'modified', icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L5 13.5 2 14l.5-3L11 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>, cls: styles.sumIcoMod, label: 'Modified', val: (stats?.modified || 0) + (stats?.topic || 0) + (stats?.reordered || 0) },
+              { key: 'modified', icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L5 13.5 2 14l.5-3L11 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>, cls: styles.sumIcoMod, label: 'Modified', val: (stats?.value_changed || 0) + (stats?.substantive_change || 0) },
             ].map(r => (
               <button
                 key={r.key}
@@ -360,8 +369,8 @@ export default function CompareTab({ negId, docs }) {
         <DocCard side="right" doc={rightDoc} label="Revised version"  labelCls={styles.vtagRev}  active={picker === 'right'} />
       </div>
 
-      {/* 3. COMMERCIAL TERMS — lease_data when available, summary-text fallback for HOA docs */}
-      {((ldA || ldB) || (summaryTermRows.length > 0 && !sameDocument)) && (
+      {/* 3. COMMERCIAL TERMS — block-extracted (v2), lease_data, or summary-text fallback */}
+      {((ctA || ctB || ldA || ldB) || (summaryTermRows.length > 0 && !sameDocument)) && (
         <div className={styles.termsSection}>
           <div className={styles.termsSectionHead}>Commercial terms</div>
           <table className={styles.termsTable}>
@@ -375,8 +384,9 @@ export default function CompareTab({ negId, docs }) {
             </thead>
             <tbody>
               {TERMS_FIELDS.map(f => {
-                const vA  = ldA?.[f.key] ?? null
-                const vB  = ldB?.[f.key] ?? null
+                // prefer block-extracted terms, fall back to lease_data
+                const vA  = (ctA ?? ldA)?.[f.key] ?? null
+                const vB  = (ctB ?? ldB)?.[f.key] ?? null
                 const dir = getTermDir(f, vA, vB)
                 const fA  = f.fmt(vA)
                 const fB  = f.fmt(vB)
@@ -400,7 +410,7 @@ export default function CompareTab({ negId, docs }) {
                   </tr>
                 )
               })}
-              {!ldA && !ldB && summaryTermRows.map(({ label, vA, vB, changed }) => (
+              {!ctA && !ctB && !ldA && !ldB && summaryTermRows.map(({ label, vA, vB, changed }) => (
                 <tr key={label} className={changed ? styles.trmRowMod : styles.trmRowSame}>
                   <td className={styles.trmLabel}>{label}</td>
                   <td className={styles.trmVal}>{vA ?? <span className={styles.trmNil}>—</span>}</td>
@@ -481,7 +491,19 @@ export default function CompareTab({ negId, docs }) {
                   <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in revised version</div>
                 )}
 
-                {row.note ? (
+                {row.change_summary?.summary ? (
+                  <div className={`${styles.ccNote} ${styles.ccNoteMod}`}>
+                    <span className={styles.noteLead}>
+                      {row.change_summary.tenant_impact === 'favourable'   ? '↑ Favourable'   :
+                       row.change_summary.tenant_impact === 'unfavourable' ? '↓ Unfavourable' :
+                       '~ Modified'}
+                    </span>
+                    {row.change_summary.summary}
+                    {row.change_summary.significance === 'high' && (
+                      <span className={styles.sigHigh}>High impact</span>
+                    )}
+                  </div>
+                ) : row.note ? (
                   <div className={`${styles.ccNote} ${styles.ccNoteMod}`}>
                     <span className={styles.noteLead}>
                       {row.kind === 'added'     ? '+ Added'      :
@@ -500,6 +522,8 @@ export default function CompareTab({ negId, docs }) {
                     <span className={styles.noteLead}>
                       {row.kind === 'added'   ? '+ Added'   :
                        row.kind === 'removed' ? '− Removed' :
+                       row.change_type === 'wording_only'  ? '~ Wording'  :
+                       row.change_type === 'renumbered'    ? '# Renumbered' :
                        '~ Modified'}
                     </span>
                   </div>

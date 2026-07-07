@@ -269,6 +269,13 @@
 
 .emptyFilter { padding: 32px; text-align: center; color: var(--muted); font-size: 14px; }
 
+.sigHigh {
+  display: inline-block; margin-top: 6px;
+  font-size: 10px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase;
+  color: var(--fav-bad-deep); background: color-mix(in srgb, var(--fav-bad-deep) 12%, transparent);
+  padding: 2px 6px; border-radius: 4px;
+}
+
 /* ── 4. VERDICT STRIP — no title, chips + CTA only ── */
 .verdictStrip {
   display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
