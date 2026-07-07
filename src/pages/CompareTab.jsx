@@ -276,7 +276,7 @@ export default function CompareTab({ negId, docs }) {
     const summaryTermRows = []
     for (const { label } of SUMMARY_PATS) {
       const vA = summaryTermsA[label], vB = summaryTermsB[label]
-      if (vA && vB && vA !== vB) summaryTermRows.push({ label, vA, vB })
+      if (vA && vB) summaryTermRows.push({ label, vA, vB, changed: vA !== vB })
     }
 
     const improved = rows.filter(r => r.change === 'imp' && r.left && r.right).map(r => r.right.nm)
@@ -476,12 +476,12 @@ export default function CompareTab({ negId, docs }) {
                   </tr>
                 )
               })}
-              {!ldA && !ldB && comparison?.summaryTermRows?.map(({ label, vA, vB }) => (
-                <tr key={label} className={styles.trmRowMod}>
+              {!ldA && !ldB && comparison?.summaryTermRows?.map(({ label, vA, vB, changed }) => (
+                <tr key={label} className={changed ? styles.trmRowMod : styles.trmRow}>
                   <td className={styles.trmLabel}>{label}</td>
                   <td className={styles.trmVal}>{vA}</td>
                   <td className={styles.trmVal}>{vB}</td>
-                  <td className={styles.trmDirCell}><span className={styles.trmDirMod}>Changed</span></td>
+                  <td className={styles.trmDirCell}>{changed ? <span className={styles.trmDirMod}>Changed</span> : <span className={styles.trmDirSame}>Unchanged</span>}</td>
                 </tr>
               ))}
             </tbody>
