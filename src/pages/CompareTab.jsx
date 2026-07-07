@@ -101,8 +101,8 @@ function duplicateInV1(clauseA, clausesA, assignedA) {
 
 // ── Summary text parsing (HOA docs where lease_data is absent) ───────────────
 const SUMMARY_PATS = [
-  // Base rent: "base rent of $X p.a."  OR  "$X base rent p.a."
-  { label: 'Base rent',           pat: /(?:base|commencing)\s+rent\s+(?:of\s+)?(\$[\d,]+(?:\.\d+)?)\s*p\.?a\.?|(\$[\d,]+(?:\.\d+)?)\s+(?:base|commencing)\s+rent\b/i, fmt: v => `${v} p.a.` },
+  // Base rent: "base rent of $X p.a."  OR  "$X base rent p.a."  OR  "base rent of AUD X p.a."
+  { label: 'Base rent',           pat: /(?:base|commencing)\s+rent\s+(?:of\s+)?((?:\$|AUD\s*)[\d,]+(?:\.\d+)?)\s*p\.?a\.?|(\$[\d,]+(?:\.\d+)?)\s+(?:base|commencing)\s+rent\b/i, fmt: v => `${v} p.a.` },
   { label: 'Rent-free period',    pat: /(\d+)[-\s]+months?\s+(?:rent[-\s]free|incentive)/i,                                                                                  fmt: v => `${v} months` },
   // Fitout / landlord contribution / dollar-amount incentive
   { label: 'Fitout contribution', pat: /\$([\d,]+(?:\.\d+)?)\s+(?:(?:fitout|landlord)\s+contribution|(?:cash\s+)?incentive\b)/i,                                        fmt: v => `$${v} (ex GST)` },
@@ -115,7 +115,7 @@ function parseSummaryTerms(summary) {
     const m = (summary || '').match(pat)
     if (m) {
       const val = m.slice(1).find(g => g !== undefined)
-      if (val) out[label] = fmt(val.trim())
+      if (val) out[label] = fmt(val.trim().replace(/^AUD\s*/i, '$'))
     }
   }
   return out
@@ -276,7 +276,7 @@ export default function CompareTab({ negId, docs }) {
     const summaryTermRows = []
     for (const { label } of SUMMARY_PATS) {
       const vA = summaryTermsA[label], vB = summaryTermsB[label]
-      if (vA && vB) summaryTermRows.push({ label, vA, vB, changed: vA !== vB })
+      if (vA || vB) summaryTermRows.push({ label, vA, vB, changed: vA !== vB })
     }
 
     const improved = rows.filter(r => r.change === 'imp' && r.left && r.right).map(r => r.right.nm)
@@ -477,10 +477,10 @@ export default function CompareTab({ negId, docs }) {
                 )
               })}
               {!ldA && !ldB && comparison?.summaryTermRows?.map(({ label, vA, vB, changed }) => (
-                <tr key={label} className={changed ? styles.trmRowMod : styles.trmRow}>
+                <tr key={label} className={changed ? styles.trmRowMod : styles.trmRowSame}>
                   <td className={styles.trmLabel}>{label}</td>
-                  <td className={styles.trmVal}>{vA}</td>
-                  <td className={styles.trmVal}>{vB}</td>
+                  <td className={styles.trmVal}>{vA ?? <span className={styles.trmNil}>—</span>}</td>
+                  <td className={styles.trmVal}>{vB ?? <span className={styles.trmNil}>—</span>}</td>
                   <td className={styles.trmDirCell}>{changed ? <span className={styles.trmDirMod}>Changed</span> : <span className={styles.trmDirSame}>Unchanged</span>}</td>
                 </tr>
               ))}
