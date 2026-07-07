@@ -134,7 +134,7 @@ export default function CompareTab({ negId, docs }) {
   const [rightIdx, setRightIdx] = useState(sortedDocs.length - 1)
   const [picker,   setPicker]   = useState(null) // 'left' | 'right' | null
   const [comparison, setComparison] = useState(null)
-  const [activeFilter, setActiveFilter] = useState(null) // 'added'|'modified'|'removed'|null
+  const [activeFilter, setActiveFilter] = useState('modified') // 'added'|'modified'|'removed'|null
 
   const leftDoc  = sortedDocs[leftIdx]
   const rightDoc = sortedDocs[rightIdx]
@@ -171,7 +171,7 @@ export default function CompareTab({ negId, docs }) {
 
   // ── Fetch stored comparison from comparisons table ───────────────────────
   useEffect(() => {
-    setActiveFilter(null)
+    setActiveFilter('modified')
     setComparison(null)
     if (!negId) return
     ;(async () => {
