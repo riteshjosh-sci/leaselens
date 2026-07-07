@@ -318,12 +318,14 @@ export default function CompareTab({ negId, docs }) {
 
     // Removed (V1 only)
     for (const r of (rj.removed || [])) {
-      rows.push({ kind: 'removed', change_type: null, change_summary: null, change: 'watch', left: { text: r.text, tag: 'removed' }, right: null, textChanged: false, note: 'Removed in the revised version.', isMeaningful: true })
+      const cs = r.summary ? { label: r.label, summary: r.summary, significance: r.significance, tenant_impact: r.tenant_impact } : null
+      rows.push({ kind: 'removed', change_type: null, change_summary: cs, change: 'watch', left: { text: r.text, tag: 'removed' }, right: null, textChanged: false, note: cs ? null : 'Removed in the revised version.', isMeaningful: true })
     }
 
     // Added (V2 only)
     for (const a of (rj.added || [])) {
-      rows.push({ kind: 'added', change_type: null, change_summary: null, change: 'watch', left: null, right: { text: a.text, tag: 'new' }, textChanged: false, note: 'Added in the revised version.', isMeaningful: true })
+      const cs = a.summary ? { label: a.label, summary: a.summary, significance: a.significance, tenant_impact: a.tenant_impact } : null
+      rows.push({ kind: 'added', change_type: null, change_summary: cs, change: 'watch', left: null, right: { text: a.text, tag: 'new' }, textChanged: false, note: cs ? null : 'Added in the revised version.', isMeaningful: true })
     }
 
     return rows
