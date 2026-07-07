@@ -443,11 +443,9 @@ export default function CompareTab({ negId, docs }) {
           <div className={styles.compareHead}>
             <div className={styles.chSide}>
               <span className={styles.chT}>v{leftDoc?.version_number} — Previous</span>
-              <span className={styles.chCt}>{stats?.v1 || 0} blocks</span>
             </div>
             <div className={styles.chSide}>
               <span className={styles.chT}>v{rightDoc?.version_number} — Revised</span>
-              <span className={styles.chCt}>{stats?.v2 || 0} blocks</span>
             </div>
             <div className={styles.chNote}>What changed</div>
           </div>
