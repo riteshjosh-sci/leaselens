@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import HelpTip from '../components/HelpTip'
 import styles from './CompareTab.module.css'
-import { normaliseName, keywordOverlap, extractClauseRef, scorePair } from '../lib/compareMatching'
+import { supabase } from '../lib/supabase'
 
 // Tokenise into words + whitespace/punctuation runs, preserving original string
 function tokenise(text) {
@@ -65,38 +65,6 @@ function HighlightedText({ oldText, newText }) {
   }
   flush()
   return <>{nodes}</>
-}
-
-// ── Dollar-value change detection for matched UNCHANGED pairs ────────────────
-function dollarAmounts(text) {
-  const raw = (text || '').match(/\$[\d,]+(?:\.\d+)?/g) || []
-  return new Set(raw.map(r => r.replace(/,/g, '')))
-}
-function hasDollarChange(cA, cB) {
-  const dA = dollarAmounts(cA.quote || '')
-  const dB = dollarAmounts(cB.quote || '')
-  if (!dA.size || !dB.size) return false
-  if (dA.size !== dB.size) return true
-  return [...dA].some(v => !dB.has(v))
-}
-
-// ── False-removal suppression ─────────────────────────────────────────────────
-function quoteRepresented(quoteA, matchedClauses) {
-  if (!quoteA || quoteA.length < 30) return false
-  const normA = quoteA.toLowerCase().trim()
-  return matchedClauses.some(cB => {
-    const normB = (cB.quote || '').toLowerCase().trim()
-    return normA.includes(normB) || normB.includes(normA)
-  })
-}
-function duplicateInV1(clauseA, clausesA, assignedA) {
-  const quoteA = (clauseA.quote || '').toLowerCase().trim()
-  if (!quoteA || quoteA.length < 30) return false
-  return clausesA.some((ca, i) => {
-    if (ca === clauseA || !assignedA.has(i)) return false
-    const other = (ca.quote || '').toLowerCase().trim()
-    return quoteA.includes(other) || other.includes(quoteA)
-  })
 }
 
 // ── Summary text parsing (HOA docs where lease_data is absent) ───────────────
@@ -190,114 +158,32 @@ export default function CompareTab({ negId, docs }) {
   const stripTimestamp = f => f?.replace(/^\d+_/, '') || ''
   const fileExt = f => f?.split('.').pop()?.toUpperCase() || 'DOC'
 
+  // ── Summary terms (from AI report text, shown in commercial terms table) ────
+  const leftReport  = leftDoc?.reports?.[0]?.report_json
+  const rightReport = rightDoc?.reports?.[0]?.report_json
+  const summaryTermsA = parseSummaryTerms(leftReport?.summary)
+  const summaryTermsB = parseSummaryTerms(rightReport?.summary)
+  const summaryTermRows = SUMMARY_PATS.reduce((acc, { label }) => {
+    const vA = summaryTermsA[label], vB = summaryTermsB[label]
+    if (vA || vB) acc.push({ label, vA, vB, changed: vA !== vB })
+    return acc
+  }, [])
 
-  const buildComparison = (origDoc, revDoc) => {
-    const reportA = origDoc?.reports?.[0]?.report_json
-    const reportB = revDoc?.reports?.[0]?.report_json
-    if (!reportA || !reportB) return null
-
-    const clausesA = reportA.clauses || []
-    const clausesB = reportB.clauses || []
-
-    const typeCountA = {}, typeCountB = {}
-    clausesA.forEach(c => { if (c.clause_type) typeCountA[c.clause_type] = (typeCountA[c.clause_type] || 0) + 1 })
-    clausesB.forEach(c => { if (c.clause_type) typeCountB[c.clause_type] = (typeCountB[c.clause_type] || 0) + 1 })
-
-    // Score all A×B pairs; sort by score descending; assign greedily from strongest match.
-    // Global approach avoids cascade failures caused by greedy per-clause ordering.
-    const candidates = []
-    clausesA.forEach((cA, iA) => {
-      clausesB.forEach((cB, iB) => {
-        const s = scorePair(cA, cB, typeCountA, typeCountB)
-        if (s > 0) candidates.push({ iA, iB, s })
-      })
-    })
-    candidates.sort((a, b) => b.s - a.s)
-
-    const assignedA = new Set(), assignedB = new Set()
-    const matchMap = {}
-    for (const { iA, iB } of candidates) {
-      if (assignedA.has(iA) || assignedB.has(iB)) continue
-      matchMap[iB] = iA
-      assignedA.add(iA)
-      assignedB.add(iB)
-    }
-
-    const matchedClausesB = Object.keys(matchMap).map(iB => clausesB[+iB])
-
-    const rows = []
-    clausesB.forEach((clauseB, iB) => {
-      const clauseA = matchMap[iB] !== undefined ? clausesA[matchMap[iB]] : null
-      let change = 'same'
-      let valueChanged = false
-      if (!clauseA) {
-        change = 'risk'
-      } else {
-        const ro = { HIGH: 3, MEDIUM: 2, LOW: 1 }
-        const aR = ro[clauseA.danger] || 0, bR = ro[clauseB.danger] || 0
-        change = bR < aR ? 'imp' : bR > aR ? 'risk' : 'same'
-        if (change === 'same' && hasDollarChange(clauseA, clauseB)) {
-          change = 'watch'
-          valueChanged = true
-        }
-      }
-      const leftText  = clauseA ? (clauseA.quote || clauseA.risk || '') : ''
-      const rightText = clauseB.quote || clauseB.risk || ''
-      const leftRisk  = clauseA ? (clauseA.risk || '') : ''
-      const rightRisk = clauseB.risk || ''
-      const dangerChanged = clauseA ? clauseA.danger !== clauseB.danger : false
-      const textChanged = clauseA ? dangerChanged : false
-      const rightTag = !clauseA ? 'new' : (textChanged || valueChanged ? 'modified' : 'unchanged')
-      rows.push({
-        change,
-        textChanged,
-        valueChanged,
-        left:  clauseA ? { nm: clauseA.name, text: leftText, riskText: leftRisk, tag: null } : null,
-        right: { nm: clauseB.name, text: rightText, riskText: rightRisk, tag: rightTag },
-        note: clauseB.risk || '',
-      })
-    })
-
-    clausesA.forEach((clauseA, iA) => {
-      if (assignedA.has(iA)) return
-      if (quoteRepresented(clauseA.quote || '', matchedClausesB)) return
-      if (duplicateInV1(clauseA, clausesA, assignedA)) return
-      rows.push({
-        change: 'imp',
-        textChanged: false,
-        valueChanged: false,
-        left:  { nm: clauseA.name, text: clauseA.risk || clauseA.quote || '', tag: 'removed' },
-        right: null,
-        note: 'This clause was removed in the revised version.',
-      })
-    })
-
-    const summaryTermsA = parseSummaryTerms(reportA.summary)
-    const summaryTermsB = parseSummaryTerms(reportB.summary)
-    const summaryTermRows = []
-    for (const { label } of SUMMARY_PATS) {
-      const vA = summaryTermsA[label], vB = summaryTermsB[label]
-      if (vA || vB) summaryTermRows.push({ label, vA, vB, changed: vA !== vB })
-    }
-
-    const improved = rows.filter(r => r.change === 'imp' && r.left && r.right).map(r => r.right.nm)
-    const flagged  = rows.filter(r => r.change === 'risk').map(r => r.right?.nm || r.left?.nm)
-    const summary = {
-      added:     rows.filter(r => !r.left && r.right).length,
-      modified:  rows.filter(r => r.left && r.right && r.change !== 'same').length,
-      removed:   rows.filter(r => r.left && !r.right).length,
-      riskClass: rows.some(r => r.change === 'risk') && rows.some(r => r.change === 'imp') ? 'Mixed'
-        : rows.some(r => r.change === 'risk') ? 'Up' : 'Down',
-      riskLabel: rows.some(r => r.change === 'risk') && rows.some(r => r.change === 'imp') ? 'Mixed'
-        : rows.some(r => r.change === 'risk') ? 'Increased' : 'Improved',
-    }
-    return { rows, summary, improved, flagged, summaryTermRows }
-  }
-
+  // ── Fetch stored comparison from comparisons table ───────────────────────
   useEffect(() => {
     setActiveFilter(null)
-    setComparison(buildComparison(leftDoc, rightDoc))
-  }, [leftIdx, rightIdx, docs])
+    setComparison(null)
+    if (!negId) return
+    ;(async () => {
+      const { data } = await supabase
+        .from('comparisons')
+        .select('id, result_json, matcher_version, created_at, document_id_v1, document_id_v2')
+        .eq('negotiation_id', negId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+      if (data?.length) setComparison(data[0])
+    })()
+  }, [leftIdx, rightIdx, docs, negId])
 
   const handlePickVersion = (side, idx) => {
     if (side === 'left') { if (idx !== rightIdx) setLeftIdx(idx) }
@@ -312,9 +198,9 @@ export default function CompareTab({ negId, docs }) {
   const getFilteredRows = (rows) => {
     if (!activeFilter || !rows) return rows
     return rows.filter(r => {
-      if (activeFilter === 'added')    return !r.left && r.right
-      if (activeFilter === 'removed')  return r.left && !r.right
-      if (activeFilter === 'modified') return r.left && r.right && r.change !== 'same'
+      if (activeFilter === 'added')    return r.kind === 'added'
+      if (activeFilter === 'removed')  return r.kind === 'removed'
+      if (activeFilter === 'modified') return ['modified', 'topic', 'reordered'].includes(r.kind)
       return true
     })
   }
@@ -392,6 +278,44 @@ export default function CompareTab({ negId, docs }) {
     </div>
   )
 
+  // ── Build display rows from stored result_json ────────────────────
+  const displayRows = (() => {
+    if (!comparison?.result_json || sameDocument) return []
+    const rj = comparison.result_json
+    const rows = []
+
+    // Matched blocks sorted by V2 position
+    const sorted = [...(rj.matches || [])].sort((a, b) => a.v2_idx - b.v2_idx)
+    for (const m of sorted) {
+      const isModified = ['modified', 'topic'].includes(m.kind)
+      const absD = Math.abs(m.delta)
+      rows.push({
+        kind:        m.kind,
+        change:      isModified ? 'watch' : 'same',
+        left:        { text: m.v1_text },
+        right:       { text: m.v2_text, tag: isModified ? 'modified' : m.kind === 'reordered' ? 'reordered' : 'unchanged' },
+        textChanged: isModified,
+        note:        m.kind === 'reordered'
+          ? `Block moved ${m.delta > 0 ? 'down' : 'up'} ${absD} position${absD !== 1 ? 's' : ''}`
+          : null,
+      })
+    }
+
+    // Removed (V1 only)
+    for (const r of (rj.removed || [])) {
+      rows.push({ kind: 'removed', change: 'watch', left: { text: r.text, tag: 'removed' }, right: null, textChanged: false, note: 'Removed in the revised version.' })
+    }
+
+    // Added (V2 only)
+    for (const a of (rj.added || [])) {
+      rows.push({ kind: 'added', change: 'watch', left: null, right: { text: a.text, tag: 'new' }, textChanged: false, note: 'Added in the revised version.' })
+    }
+
+    return rows
+  })()
+
+  const stats = comparison?.result_json?.stats
+
   return (
     <div className={styles.wrap}>
 
@@ -399,12 +323,12 @@ export default function CompareTab({ negId, docs }) {
       {comparison && !sameDocument && (
         <div className={styles.summaryStrip}>
           <span className={styles.summaryLabel}>Comparison summary</span>
-          <HelpTip>Each changed clause is colored by who it favours: green when the change benefits you as tenant, rose when it favours the landlord, grey when it's neutral or unchanged.</HelpTip>
+          <HelpTip>Source-text blocks compared between the two document versions. Modified blocks show word-level highlighting of what changed.</HelpTip>
           <div className={styles.summaryStats}>
             {[
-              { key: 'added',    icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoAdd, label: 'Added',    val: comparison.summary.added },
-              { key: 'removed',  icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoRem, label: 'Removed',  val: comparison.summary.removed },
-              { key: 'modified', icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L5 13.5 2 14l.5-3L11 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>, cls: styles.sumIcoMod, label: 'Modified', val: comparison.summary.modified },
+              { key: 'added',    icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoAdd, label: 'Added',    val: stats?.added    || 0 },
+              { key: 'removed',  icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M3 8h10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/></svg>, cls: styles.sumIcoRem, label: 'Removed',  val: stats?.removed  || 0 },
+              { key: 'modified', icon: <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L5 13.5 2 14l.5-3L11 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>, cls: styles.sumIcoMod, label: 'Modified', val: (stats?.modified || 0) + (stats?.topic || 0) + (stats?.reordered || 0) },
             ].map(r => (
               <button
                 key={r.key}
@@ -423,9 +347,8 @@ export default function CompareTab({ negId, docs }) {
             </button>
           )}
           <div className={styles.legend}>
-            <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendGood}`} />Tenant favourable</span>
-            <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendBad}`} />Landlord favourable</span>
-            <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendSame}`} />Neutral</span>
+            <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendSame}`} />Unchanged</span>
+            <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendBad}`} />Modified / Added / Removed</span>
           </div>
         </div>
       )}
@@ -438,7 +361,7 @@ export default function CompareTab({ negId, docs }) {
       </div>
 
       {/* 3. COMMERCIAL TERMS — lease_data when available, summary-text fallback for HOA docs */}
-      {((ldA || ldB) || (comparison?.summaryTermRows?.length > 0 && !sameDocument)) && (
+      {((ldA || ldB) || (summaryTermRows.length > 0 && !sameDocument)) && (
         <div className={styles.termsSection}>
           <div className={styles.termsSectionHead}>Commercial terms</div>
           <table className={styles.termsTable}>
@@ -477,7 +400,7 @@ export default function CompareTab({ negId, docs }) {
                   </tr>
                 )
               })}
-              {!ldA && !ldB && comparison?.summaryTermRows?.map(({ label, vA, vB, changed }) => (
+              {!ldA && !ldB && summaryTermRows.map(({ label, vA, vB, changed }) => (
                 <tr key={label} className={changed ? styles.trmRowMod : styles.trmRowSame}>
                   <td className={styles.trmLabel}>{label}</td>
                   <td className={styles.trmVal}>{vA ?? <span className={styles.trmNil}>—</span>}</td>
@@ -499,151 +422,89 @@ export default function CompareTab({ negId, docs }) {
       {sameDocument && (
         <div className={styles.noReport}>Same document selected — upload a revised version to compare changes.</div>
       )}
+      {!sameDocument && !comparison && hasLeftReport && hasRightReport && (
+        <div className={styles.noReport}>Comparison will appear once both documents have been analysed.</div>
+      )}
 
-      {/* 4. CLAUSE COMPARISON — full width */}
-      {comparison && !sameDocument && (
+      {/* 4. BLOCK COMPARISON — source-text blocks */}
+      {comparison?.result_json && !sameDocument && (
         <div className={styles.comparePanel}>
           <div className={styles.compareHead}>
             <div className={styles.chSide}>
               <span className={styles.chT}>v{leftDoc?.version_number} — Previous</span>
-              <span className={styles.chCt}>{leftDoc?.reports?.[0]?.report_json?.clauses?.length || 0} clauses</span>
+              <span className={styles.chCt}>{stats?.v1 || 0} blocks</span>
             </div>
             <div className={styles.chSide}>
               <span className={styles.chT}>v{rightDoc?.version_number} — Revised</span>
-              <span className={styles.chCt}>{rightDoc?.reports?.[0]?.report_json?.clauses?.length || 0} clauses</span>
+              <span className={styles.chCt}>{stats?.v2 || 0} blocks</span>
             </div>
             <div className={styles.chNote}>What changed</div>
           </div>
 
           <div className={styles.crows}>
-            {getFilteredRows(comparison.rows).map((row, i) => {
-              return (
-                <div key={i} className={styles.crow}>
-                  {row.left ? (
-                    <div className={`${styles.ccard} ${dotCls[row.change]}`}>
-                      <div className={styles.no}>{i + 1}</div>
-                      <div className={styles.ccTt}>
-                        <div className={styles.nm}>
-                          {row.left.nm}
-                          {row.left.tag === 'removed' && <span className={styles.tagRm}>Removed</span>}
-                        </div>
-                        <p>{row.left.text}</p>
+            {getFilteredRows(displayRows).map((row, i) => (
+              <div key={i} className={styles.crow}>
+                {row.left ? (
+                  <div className={`${styles.ccard} ${dotCls[row.change]}`}>
+                    <div className={styles.no}>{i + 1}</div>
+                    <div className={styles.ccTt}>
+                      {row.left.tag === 'removed' && (
+                        <div className={styles.nm}><span className={styles.tagRm}>Removed</span></div>
+                      )}
+                      <p>{row.left.text}</p>
+                    </div>
+                    <span className={styles.sdot} />
+                  </div>
+                ) : (
+                  <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in previous version</div>
+                )}
+
+                {row.right ? (
+                  <div className={`${styles.ccard} ${tintCls[row.change]}`}>
+                    <div className={styles.no}>{i + 1}</div>
+                    <div className={styles.ccTt}>
+                      <div className={styles.nm}>
+                        {row.right.tag === 'new'        && <span className={styles.tagNew}>Added</span>}
+                        {row.right.tag === 'modified'   && <span className={styles.tagModified}>Modified</span>}
+                        {row.right.tag === 'reordered'  && <span className={styles.tagModified}>Reordered</span>}
+                        {row.right.tag === 'unchanged'  && <span className={styles.tagUnchanged}>Unchanged</span>}
                       </div>
-                      <span className={styles.sdot} />
+                      <p>
+                        {row.textChanged && row.left
+                          ? <HighlightedText oldText={row.left.text} newText={row.right.text} />
+                          : row.right.text}
+                      </p>
                     </div>
-                  ) : (
-                    <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in previous analysis</div>
-                  )}
+                    <span className={styles.sdot} />
+                  </div>
+                ) : (
+                  <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in revised version</div>
+                )}
 
-                  {row.right ? (
-                    <div className={`${styles.ccard} ${tintCls[row.change]}`}>
-                      <div className={styles.no}>{i + 1}</div>
-                      <div className={styles.ccTt}>
-                        <div className={styles.nm}>
-                          {row.right.nm}
-                          {row.right.tag === 'new' && <span className={styles.tagNew}>New</span>}
-                          {row.right.tag === 'modified' && <span className={styles.tagModified}>Modified</span>}
-                          {row.right.tag === 'unchanged' && <span className={styles.tagUnchanged}>Unchanged</span>}
-                        </div>
-                        <p>
-                          {row.textChanged && row.left
-                            ? <HighlightedText oldText={row.left.riskText} newText={row.right.riskText} />
-                            : row.right.text}
-                        </p>
-                      </div>
-                      <span className={styles.sdot} />
-                    </div>
-                  ) : (
-                    <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in revised analysis</div>
-                  )}
-
-                  {row.change === 'same' && !row.textChanged ? (
-                    <div className={`${styles.ccNote} ${styles.ccNoteSame}`}>
-                      <span className={styles.noteLead}>Unchanged</span>
-                    </div>
-                  ) : row.note ? (
-                    <div className={`${styles.ccNote} ${
-                      row.change === 'imp' ? styles.ccNoteImp :
-                      row.change === 'risk' ? styles.ccNoteRsk :
-                      styles.ccNoteMod
-                    }`}>
-                      <span className={styles.noteLead}>
-                        {row.change === 'imp' ? '✓ What changed' :
-                         row.change === 'risk' ? '⚠ What changed' :
-                         row.valueChanged ? '~ Value changed' :
-                         '~ Modified'}
-                      </span>
-                      {row.note}
-                    </div>
-                  ) : null}
-                </div>
-              )
-            })}
-
-            {comparison.rows.length === 0 && (
-              <div className={styles.emptyFilter}>No clauses match this filter.</div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 4. VERDICT STRIP — no title, just chips + Review clauses button */}
-      {comparison && !sameDocument && (comparison.improved.length > 0 || comparison.flagged.length > 0) && (
-        <div className={styles.verdictStrip}>
-          <div className={styles.verdictLeft}>
-            {comparison.improved.length > 0 && (
-              <span className={styles.favVerdict}>
-                <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 1.6l5 2v3.4c0 3-2.1 5-5 5.4-2.9-.4-5-2.4-5-5.4V3.6l5-2z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
-                Revised — on balance
-              </span>
-            )}
-            <div className={styles.verdictClauses}>
-              {comparison.improved.slice(0, 4).map((nm, i) => (
-                <span key={`g${i}`} className={styles.verdictChipGood}>
-                  <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M3 8.2l3.2 3.2L13 4.6" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {nm}
-                </span>
-              ))}
-              {comparison.flagged.slice(0, 4).map((nm, i) => (
-                <span key={`f${i}`} className={styles.verdictChipFlag}>
-                  <svg width="9" height="9" viewBox="0 0 16 16" fill="none"><path d="M8 4v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="8" cy="12" r="1.1" fill="currentColor"/></svg>
-                  {nm}
-                </span>
-              ))}
-            </div>
-          </div>
-          <button className={styles.favCta} onClick={() => navigate(`/negotiation/${negId}#review`)}>
-            Review clauses →
-          </button>
-        </div>
-      )}
-
-      {/* 5. KEY DIFFERENCES */}
-      {comparison && !sameDocument && (comparison.improved.length > 0 || comparison.flagged.length > 0) && (
-        <div className={styles.keydiff}>
-          <div className={styles.kdHead}>
-            <h2 className={styles.kdTitle}>Key differences</h2>
-            <div className={styles.kdSub}>The changes most worth knowing about.</div>
-          </div>
-          <div className={styles.kdGrid}>
-            {comparison.improved.slice(0, 3).map((nm, i) => (
-              <div key={`imp-${i}`} className={`${styles.kdCard} ${styles.kdImp}`}>
-                <div className={`${styles.kt} ${styles.ktImp}`}>
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M3 8.2l3.2 3.2L13 4.6" stroke="currentColor" strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  {nm}
-                </div>
-                <span className={`${styles.kdTag} ${styles.kdTagImp}`}><span className={styles.kdTagD} />Favourable</span>
+                {row.note ? (
+                  <div className={`${styles.ccNote} ${styles.ccNoteMod}`}>
+                    <span className={styles.noteLead}>
+                      {row.kind === 'added'     ? '+ Added'      :
+                       row.kind === 'removed'   ? '− Removed'    :
+                       row.kind === 'reordered' ? '↕ Reordered'  :
+                       '~ Modified'}
+                    </span>
+                    {row.note}
+                  </div>
+                ) : row.change === 'same' ? (
+                  <div className={`${styles.ccNote} ${styles.ccNoteSame}`}>
+                    <span className={styles.noteLead}>Unchanged</span>
+                  </div>
+                ) : null}
               </div>
             ))}
-            {comparison.flagged.slice(0, 3).map((nm, i) => (
-              <div key={`rsk-${i}`} className={`${styles.kdCard} ${styles.kdRsk}`}>
-                <div className={`${styles.kt} ${styles.ktRsk}`}>
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M8 4v5" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="8" cy="12" r="1.1" fill="currentColor"/></svg>
-                  {nm}
-                </div>
-                <span className={`${styles.kdTag} ${styles.kdTagRsk}`}><span className={styles.kdTagD} />Higher risk</span>
-              </div>
-            ))}
+
+            {displayRows.length === 0 && (
+              <div className={styles.emptyFilter}>No changes found.</div>
+            )}
+            {displayRows.length > 0 && getFilteredRows(displayRows).length === 0 && (
+              <div className={styles.emptyFilter}>No blocks match this filter.</div>
+            )}
           </div>
         </div>
       )}
