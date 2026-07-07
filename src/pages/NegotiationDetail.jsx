@@ -152,11 +152,18 @@ export default function NegotiationDetail() {
   // ── Derived clauses + decision state, lifted from ReviewTab ──────────────
   const latestReport = docs.find(d => d.reports?.[0]?.report_json)
   const allClauses = latestReport
-    ? (latestReport.reports[0].report_json.clauses || []).map(c => ({
-        ...c,
-        clauseKey: `${latestReport.id}-${c.name}`,
-        reportId: latestReport.reports[0].id,
-      }))
+    ? (latestReport.reports[0].report_json.clauses || [])
+        .map(c => ({
+          ...c,
+          clauseKey: `${latestReport.id}-${c.name}`,
+          reportId: latestReport.reports[0].id,
+        }))
+        .sort((a, b) => {
+          const scA = /^SC\d/i.test(a.location || '')
+          const scB = /^SC\d/i.test(b.location || '')
+          if (scA !== scB) return scA ? 1 : -1
+          return 0
+        })
     : []
 
   useEffect(() => {
