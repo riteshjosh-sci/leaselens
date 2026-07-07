@@ -26,6 +26,14 @@ function parseOptions(text) {
     }
   }
 
+  // "Alternatively, ..." mid-sentence (older AI output before Option A/B format was enforced)
+  const altMatch = t.match(/^(.+?[.!?])\s+Alternatively[,\s]/is)
+  if (altMatch) {
+    const a = altMatch[1].trim()
+    const b = t.slice(altMatch[0].length).trim()
+    if (a && b) return [{ label: 'Option A', text: a }, { label: 'Option B', text: b }]
+  }
+
   return null
 }
 
