@@ -495,7 +495,15 @@ export default function CompareTab({ negId, docs }) {
                   <div className={`${styles.ccNote} ${styles.ccNoteSame}`}>
                     <span className={styles.noteLead}>Unchanged</span>
                   </div>
-                ) : null}
+                ) : (
+                  <div className={`${styles.ccNote} ${styles.ccNoteMod}`}>
+                    <span className={styles.noteLead}>
+                      {row.kind === 'added'   ? '+ Added'   :
+                       row.kind === 'removed' ? '− Removed' :
+                       '~ Modified'}
+                    </span>
+                  </div>
+                )}
               </div>
             ))}
 
