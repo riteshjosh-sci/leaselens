@@ -101,8 +101,9 @@ function duplicateInV1(clauseA, clausesA, assignedA) {
 
 // ── Summary text parsing (HOA docs where lease_data is absent) ───────────────
 const SUMMARY_PATS = [
-  // Base rent: "base rent of $X p.a."  OR  "$X base rent p.a."  OR  "base rent of AUD X p.a."
-  { label: 'Base rent',           pat: /(?:base|commencing)\s+rent\s+(?:of\s+)?((?:\$|AUD\s*)[\d,]+(?:\.\d+)?)\s*p\.?a\.?|(\$[\d,]+(?:\.\d+)?)\s+(?:base|commencing)\s+rent\b/i, fmt: v => `${v} p.a.` },
+  // Base rent: labelled form, dollar-first form, or bare "at/of $X p.a." fallback
+  // All alternatives handle "per annum" in full as well as "p.a." / "pa"
+  { label: 'Base rent',           pat: /(?:base|commencing)\s+rent\s+(?:of\s+)?((?:\$|AUD\s*)[\d,]+(?:\.\d+)?)\s*p(?:er\s+annum|\.?a\.?|er\s+year)|(\$[\d,]+(?:\.\d+)?)\s+(?:base|commencing)\s+rent\b|(?:at|of)\s+((?:\$|AUD\s*)[\d,]+(?:\.\d+)?)\s+p(?:er\s+annum|\.?a\.?)(?!\s*(?:outgoings|sqm|psm))/i, fmt: v => `${v} p.a.` },
   { label: 'Rent-free period',    pat: /(\d+)[-\s]+months?\s+(?:rent[-\s]free|incentive)/i,                                                                                  fmt: v => `${v} months` },
   // Fitout / landlord contribution / dollar-amount incentive
   { label: 'Fitout contribution', pat: /\$([\d,]+(?:\.\d+)?)\s+(?:(?:fitout|landlord)\s+contribution|(?:cash\s+)?incentive\b)/i,                                        fmt: v => `$${v} (ex GST)` },

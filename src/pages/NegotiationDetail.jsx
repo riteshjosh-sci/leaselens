@@ -159,8 +159,9 @@ export default function NegotiationDetail() {
           reportId: latestReport.reports[0].id,
         }))
         .sort((a, b) => {
-          const scA = /^SC\d/i.test(a.location || '')
-          const scB = /^SC\d/i.test(b.location || '')
+          const isSC = loc => /^(SC\s*\d|Special\s+Condition)/i.test(loc || '')
+          const scA = isSC(a.location)
+          const scB = isSC(b.location)
           if (scA !== scB) return scA ? 1 : -1
           return 0
         })
