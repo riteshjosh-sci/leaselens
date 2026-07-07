@@ -101,17 +101,22 @@ function duplicateInV1(clauseA, clausesA, assignedA) {
 
 // ── Summary text parsing (HOA docs where lease_data is absent) ───────────────
 const SUMMARY_PATS = [
-  { label: 'Base rent',           pat: /(?:base|commencing)\s+rent\s+of\s+(\$[\d,]+(?:\.\d+)?\s*p\.?a\.?)/i, fmt: v => v },
-  { label: 'Rent-free period',    pat: /(\d+)[-\s]+months?\s+rent[-\s]free/i,                                 fmt: v => `${v} months` },
-  { label: 'Fitout contribution', pat: /\$([\d,]+(?:\.\d+)?)\s+fitout\s+contribution/i,                       fmt: v => `$${v} (ex GST)` },
-  { label: 'Bank guarantee',      pat: /(\d+)[-\s]+months?\s+bank\s+guarantee/i,                              fmt: v => `${v} months` },
-  { label: 'Lease term',          pat: /(\d+)[-\s]+year\s+(?:initial\s+)?term/i,                              fmt: v => `${v} years` },
+  // Base rent: "base rent of $X p.a."  OR  "$X base rent p.a."
+  { label: 'Base rent',           pat: /(?:base|commencing)\s+rent\s+(?:of\s+)?(\$[\d,]+(?:\.\d+)?)\s*p\.?a\.?|(\$[\d,]+(?:\.\d+)?)\s+(?:base|commencing)\s+rent\b/i, fmt: v => `${v} p.a.` },
+  { label: 'Rent-free period',    pat: /(\d+)[-\s]+months?\s+rent[-\s]free/i,                                                                                           fmt: v => `${v} months` },
+  // Fitout / landlord contribution
+  { label: 'Fitout contribution', pat: /\$([\d,]+(?:\.\d+)?)\s+(?:fitout|landlord)\s+contribution/i,                                                                    fmt: v => `$${v} (ex GST)` },
+  { label: 'Bank guarantee',      pat: /(\d+)[-\s]+months?\s+bank\s+guarantee/i,                                                                                        fmt: v => `${v} months` },
+  { label: 'Lease term',          pat: /(\d+)[-\s]+year\s+(?:initial\s+)?term/i,                                                                                        fmt: v => `${v} years` },
 ]
 function parseSummaryTerms(summary) {
   const out = {}
   for (const { label, pat, fmt } of SUMMARY_PATS) {
     const m = (summary || '').match(pat)
-    if (m) out[label] = fmt(m[1].trim())
+    if (m) {
+      const val = m.slice(1).find(g => g !== undefined)
+      if (val) out[label] = fmt(val.trim())
+    }
   }
   return out
 }
