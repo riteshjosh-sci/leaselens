@@ -159,11 +159,15 @@ export default function NegotiationDetail() {
           reportId: latestReport.reports[0].id,
         }))
         .sort((a, b) => {
-          const isSC = loc => /^(SC\s*\d|Special\s+Condition)/i.test(loc || '')
+          const isSC = loc => /^(SC[\s\d]|Special\s+Condition)/i.test(loc || '')
           const scA = isSC(a.location)
           const scB = isSC(b.location)
           if (scA !== scB) return scA ? 1 : -1
-          return 0
+          // Within each group sort by numeric reference in location
+          const numRe = /(\d+(?:\.\d+)?)/
+          const numA = parseFloat((a.location || '').match(numRe)?.[1] ?? '9999')
+          const numB = parseFloat((b.location || '').match(numRe)?.[1] ?? '9999')
+          return numA - numB
         })
     : []
 

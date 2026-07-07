@@ -107,13 +107,15 @@ export default function Analyser() {
       completedRef.current = true
       cleanupJob()
       setLoadingStage(LOADING_STAGES.length - 1)
-      setReport(jobData.report_json)
-      setLoading(false)
       if (negotiationId) {
-        // Came from existing negotiation — go to compare tab so user can see what changed
-        setTimeout(() => navigate(`/negotiation/${negotiationId}#compare`), 1500)
-      } else if (negIdRef.current && !negotiationId) {
-        checkForExistingMatch(jobData.report_json)
+        // Navigate immediately — keep loading UI visible until page unmounts
+        navigate(`/negotiation/${negotiationId}#compare`)
+      } else {
+        setReport(jobData.report_json)
+        setLoading(false)
+        if (negIdRef.current) {
+          checkForExistingMatch(jobData.report_json)
+        }
       }
     } else if (jobData.status === 'failed') {
       completedRef.current = true
