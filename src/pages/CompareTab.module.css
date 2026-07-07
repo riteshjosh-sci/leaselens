@@ -35,6 +35,9 @@
   display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   background: var(--paper-2); color: var(--ink-soft);
 }
+.sumIcoAdd { background: color-mix(in srgb, var(--st-agreed) 15%, transparent); color: var(--st-agreed-tx); }
+.sumIcoRem { background: color-mix(in srgb, var(--fav-bad)   15%, transparent); color: var(--fav-bad-deep); }
+.sumIcoMod { background: color-mix(in srgb, var(--gold)       15%, transparent); color: var(--gold); }
 .statN { font-size: 18px; font-weight: 700; letter-spacing: -.02em; color: var(--ink); }
 .statL { font-size: 12px; color: var(--muted); font-weight: 500; }
 

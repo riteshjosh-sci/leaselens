@@ -129,6 +129,7 @@ function getTermDir(field, vA, vB) {
 export default function CompareTab({ negId, docs }) {
   const navigate = useNavigate()
   const sortedDocs = [...docs].sort((a, b) => a.version_number - b.version_number)
+  const docsKey = docs.map(d => d.id).join(',')
 
   const [leftIdx,  setLeftIdx]  = useState(Math.max(0, sortedDocs.length - 2))
   const [rightIdx, setRightIdx] = useState(sortedDocs.length - 1)
@@ -186,7 +187,7 @@ export default function CompareTab({ negId, docs }) {
         .limit(1)
       if (data?.length) setComparison(data[0])
     })()
-  }, [leftIdx, rightIdx, docs, negId])
+  }, [leftIdx, rightIdx, negId, docsKey])
 
   const handlePickVersion = (side, idx) => {
     if (side === 'left') { if (idx !== rightIdx) setLeftIdx(idx) }
