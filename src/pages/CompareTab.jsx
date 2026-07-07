@@ -103,9 +103,9 @@ function duplicateInV1(clauseA, clausesA, assignedA) {
 const SUMMARY_PATS = [
   // Base rent: "base rent of $X p.a."  OR  "$X base rent p.a."
   { label: 'Base rent',           pat: /(?:base|commencing)\s+rent\s+(?:of\s+)?(\$[\d,]+(?:\.\d+)?)\s*p\.?a\.?|(\$[\d,]+(?:\.\d+)?)\s+(?:base|commencing)\s+rent\b/i, fmt: v => `${v} p.a.` },
-  { label: 'Rent-free period',    pat: /(\d+)[-\s]+months?\s+rent[-\s]free/i,                                                                                           fmt: v => `${v} months` },
-  // Fitout / landlord contribution
-  { label: 'Fitout contribution', pat: /\$([\d,]+(?:\.\d+)?)\s+(?:fitout|landlord)\s+contribution/i,                                                                    fmt: v => `$${v} (ex GST)` },
+  { label: 'Rent-free period',    pat: /(\d+)[-\s]+months?\s+(?:rent[-\s]free|incentive)/i,                                                                                  fmt: v => `${v} months` },
+  // Fitout / landlord contribution / dollar-amount incentive
+  { label: 'Fitout contribution', pat: /\$([\d,]+(?:\.\d+)?)\s+(?:(?:fitout|landlord)\s+contribution|(?:cash\s+)?incentive\b)/i,                                        fmt: v => `$${v} (ex GST)` },
   { label: 'Bank guarantee',      pat: /(\d+)[-\s]+months?\s+bank\s+guarantee/i,                                                                                        fmt: v => `${v} months` },
   { label: 'Lease term',          pat: /(\d+)[-\s]+year\s+(?:initial\s+)?term/i,                                                                                        fmt: v => `${v} years` },
 ]
