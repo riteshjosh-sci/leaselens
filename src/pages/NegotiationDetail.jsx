@@ -148,10 +148,10 @@ export default function NegotiationDetail() {
     setDocs(sortedDocs)
 
     // Poll until every doc that exists has a report (worker saves asynchronously).
-    // Also poll when we arrived from an Add Version upload and V2 isn't in the DB yet.
+    // Also poll when no docs yet (upload in progress) or when waiting for V2 to arrive.
     const allHaveReports = sortedDocs.length > 0 && sortedDocs.every(d => d.reports?.[0]?.report_json)
     const awaitingV2 = awaitingVersionRef.current && sortedDocs.length < 2
-    if (sortedDocs.length > 0 && (!allHaveReports || awaitingV2) && pollCountRef.current < 80) {
+    if ((sortedDocs.length === 0 || !allHaveReports || awaitingV2) && pollCountRef.current < 80) {
       pollCountRef.current += 1
       setDocProcessing(true)
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current)
