@@ -117,7 +117,7 @@ export default function NegotiationDetail() {
       .select(`
         id, property_name, asset_class, created_at, status, lifecycle, workspace_id,
         documents (
-          id, filename, version_number, doc_type, uploaded_at, overall_risk, file_path, is_deleted,
+          id, filename, version_number, doc_type, uploaded_at, overall_risk, file_path, is_deleted, content_hash,
           reports ( id, report_json, created_at )
         )
       `)
