@@ -206,14 +206,15 @@ export default function CompareTab({ negId, docs }) {
 
     const doFetch = async () => {
       if (stopped) return
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('comparisons')
-        .select('id, result_json, matcher_version, created_at, document_id_v1, document_id_v2')
+        .select('id, result_json, matcher_version, updated_at, document_id_v1, document_id_v2')
         .eq('negotiation_id', negId)
         .eq('document_id_v1', leftId)
         .eq('document_id_v2', rightId)
-        .order('created_at', { ascending: false })
+        .order('updated_at', { ascending: false })
         .limit(1)
+      if (error) { console.error('comparisons fetch:', error.message); return }
       if (stopped) return
       if (data?.length) {
         setComparison(data[0])
