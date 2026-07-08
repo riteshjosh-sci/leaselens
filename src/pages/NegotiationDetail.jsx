@@ -148,7 +148,7 @@ export default function NegotiationDetail() {
 
     // Poll until every doc that exists has a report (worker saves asynchronously)
     const allHaveReports = sortedDocs.length > 0 && sortedDocs.every(d => d.reports?.[0]?.report_json)
-    if (sortedDocs.length > 0 && !allHaveReports && pollCountRef.current < 20) {
+    if (sortedDocs.length > 0 && !allHaveReports && pollCountRef.current < 80) {
       pollCountRef.current += 1
       setDocProcessing(true)
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current)
