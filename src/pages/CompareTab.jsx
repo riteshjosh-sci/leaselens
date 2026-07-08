@@ -213,7 +213,7 @@ export default function CompareTab({ negId, docs }) {
       if (stopped) return
       if (data?.length) {
         setComparison(data[0])
-      } else if (pollCountRef.current < 20) {
+      } else if (pollCountRef.current < 120) {
         pollCountRef.current += 1
         pollRef.current = setTimeout(doFetch, 3000)
       }
