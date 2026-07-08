@@ -14,13 +14,18 @@ export default function ProtectedRoute({ children }) {
     setBetaChecked(false)
 
     const checkBeta = async (retry = true) => {
-      const { data: profile } = await supabase
+      const { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('beta_validated')
         .eq('id', user.id)
         .maybeSingle()
 
       if (cancelled) return
+
+      if (profileError) {
+        // Column may not exist in this environment — fail open
+        setBetaChecked(true); return
+      }
 
       if (!profile) {
         // Profile row may not exist yet (creation trigger race) -- retry once
