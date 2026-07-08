@@ -56,8 +56,9 @@ export default function NegotiationDetail() {
   const [docs,    setDocs]    = useState([])
   const [loading, setLoading] = useState(true)
 
-  const pollTimerRef  = useRef(null)
-  const pollCountRef  = useRef(0)
+  const pollTimerRef       = useRef(null)
+  const pollCountRef       = useRef(0)
+  const awaitingVersionRef = useRef(location.state?.awaitingVersion === true)
   const [docProcessing, setDocProcessing] = useState(false)
 
   // Lifted out of ReviewTab so this state survives switching to the Summary tab and
@@ -146,9 +147,11 @@ export default function NegotiationDetail() {
 
     setDocs(sortedDocs)
 
-    // Poll until every doc that exists has a report (worker saves asynchronously)
+    // Poll until every doc that exists has a report (worker saves asynchronously).
+    // Also poll when we arrived from an Add Version upload and V2 isn't in the DB yet.
     const allHaveReports = sortedDocs.length > 0 && sortedDocs.every(d => d.reports?.[0]?.report_json)
-    if (sortedDocs.length > 0 && !allHaveReports && pollCountRef.current < 80) {
+    const awaitingV2 = awaitingVersionRef.current && sortedDocs.length < 2
+    if (sortedDocs.length > 0 && (!allHaveReports || awaitingV2) && pollCountRef.current < 80) {
       pollCountRef.current += 1
       setDocProcessing(true)
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current)
