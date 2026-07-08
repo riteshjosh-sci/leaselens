@@ -58,6 +58,7 @@ export default function NegotiationDetail() {
 
   const pollTimerRef  = useRef(null)
   const pollCountRef  = useRef(0)
+  const [docProcessing, setDocProcessing] = useState(false)
 
   // Lifted out of ReviewTab so this state survives switching to the Summary tab and
   // back — counter edits/selected options aren't persisted to the DB, only `decisions` is.
@@ -149,8 +150,11 @@ export default function NegotiationDetail() {
     const allHaveReports = sortedDocs.length > 0 && sortedDocs.every(d => d.reports?.[0]?.report_json)
     if (sortedDocs.length > 0 && !allHaveReports && pollCountRef.current < 20) {
       pollCountRef.current += 1
+      setDocProcessing(true)
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current)
       pollTimerRef.current = setTimeout(fetchAll, 3000)
+    } else {
+      setDocProcessing(false)
     }
 
     if (negData.workspace_id) {
@@ -391,6 +395,15 @@ export default function NegotiationDetail() {
             </button>
           ))}
         </div>
+
+        {docProcessing && (
+          <div className={styles.processingBanner}>
+            <span className={styles.processingSpinner} />
+            {docs.length >= 2
+              ? 'Analysing revised version · Comparison will appear automatically when ready · Usually 3–5 minutes'
+              : 'Analysing your document · This usually takes 2–4 minutes'}
+          </div>
+        )}
 
         {/* TAB CONTENT */}
         {activeTab === 'report' && (

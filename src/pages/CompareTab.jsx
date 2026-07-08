@@ -148,6 +148,8 @@ export default function CompareTab({ negId, docs }) {
   const [comparison, setComparison] = useState(null)
   const [activeFilter, setActiveFilter] = useState(null) // 'added'|'modified'|'removed'|null
   const [showUnchanged, setShowUnchanged] = useState(false)
+  const [compPolling, setCompPolling] = useState(false)
+  const [compTimedOut, setCompTimedOut] = useState(false)
 
   const leftDoc  = sortedDocs[leftIdx]
   const rightDoc = sortedDocs[rightIdx]
@@ -191,6 +193,8 @@ export default function CompareTab({ negId, docs }) {
   useEffect(() => {
     setActiveFilter(null)
     setComparison(null)
+    setCompPolling(false)
+    setCompTimedOut(false)
     pollCountRef.current = 0
     if (pollRef.current) { clearTimeout(pollRef.current); pollRef.current = null }
     if (!negId) return
@@ -213,9 +217,14 @@ export default function CompareTab({ negId, docs }) {
       if (stopped) return
       if (data?.length) {
         setComparison(data[0])
+        setCompPolling(false)
       } else if (pollCountRef.current < 120) {
         pollCountRef.current += 1
+        setCompPolling(true)
         pollRef.current = setTimeout(doFetch, 3000)
+      } else {
+        setCompPolling(false)
+        setCompTimedOut(true)
       }
     }
 
@@ -479,7 +488,19 @@ export default function CompareTab({ negId, docs }) {
         <div className={styles.noReport}>Same document selected — upload a revised version to compare changes.</div>
       )}
       {!sameDocument && !comparison && hasLeftReport && hasRightReport && (
-        <div className={styles.noReport}>Comparison will appear once both documents have been analysed.</div>
+        compTimedOut ? (
+          <div className={styles.noReport}>
+            Taking longer than expected. Try refreshing the page — if this keeps happening, contact support.
+          </div>
+        ) : (
+          <div className={styles.compLoading}>
+            <span className={styles.compSpinner} />
+            <div className={styles.compLoadText}>
+              <span className={styles.compLoadTitle}>Generating comparison</span>
+              <span className={styles.compLoadSub}>Matching clauses between v{leftDoc?.version_number} and v{rightDoc?.version_number} · Usually 1–3 minutes</span>
+            </div>
+          </div>
+        )
       )}
 
       {/* 4. BLOCK COMPARISON — source-text blocks */}
