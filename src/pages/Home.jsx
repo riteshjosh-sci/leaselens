@@ -7,18 +7,23 @@ import styles from './Home.module.css'
 import { useSEO } from '../hooks/useSEO'
 import leaseroomLogoDark from '../assets/leaseroom-logo-dark.png'
 import leaseroomLogoLight from '../assets/leaseroom-logo-light.png'
+import stage01 from '../assets/stage-01-upload.png'
+import stage02 from '../assets/stage-02-analyse.png'
+import stage03 from '../assets/stage-03-review.png'
+import stage04 from '../assets/stage-04-compare.png'
+import stage05 from '../assets/stage-05-download.png'
 
 const STAGES = [
   { n: '01', tab: 'Upload Lease', eyebrow: 'STAGE 01 · UPLOAD LEASE', h: 'Upload Lease',
-    p: 'Upload your HOA and Lease.' },
+    p: 'Upload your HOA and Lease.', img: stage01 },
   { n: '02', tab: 'Analyse Risks', eyebrow: 'STAGE 02 · ANALYSE RISKS', h: 'Analyse Risks',
-    p: 'LeaseRoom extracts clauses, scores risk, identifies obligations and flags issues.' },
+    p: 'LeaseRoom extracts clauses, scores risk, identifies obligations and flags issues.', img: stage02 },
   { n: '03', tab: 'Review Recommendations', eyebrow: 'STAGE 03 · REVIEW RECOMMENDATIONS', h: 'Review Recommendations',
-    p: 'See counter positions, negotiation opportunities and plain-English explanations.' },
+    p: 'See counter positions, negotiation opportunities and plain-English explanations.', img: stage03 },
   { n: '04', tab: 'Compare & Customise', eyebrow: 'STAGE 04 · COMPARE & CUSTOMISE', h: 'Compare & Customise',
-    p: 'Compare versions, adjust report settings and tailor outputs for your use case.' },
+    p: 'Compare versions, adjust report settings and tailor outputs for your use case.', img: stage04 },
   { n: '05', tab: 'Download & Share', eyebrow: 'STAGE 05 · DOWNLOAD & SHARE REPORT', h: 'Download & Share Report',
-    p: 'Generate a professional report with findings, recommendations and executive summary. Counter positions are summarised into a copy/paste-ready format for your landlord email.' },
+    p: 'Generate a professional report with findings, recommendations and executive summary. Counter positions are summarised into a copy/paste-ready format for your landlord email.', img: stage05 },
 ]
 
 const TRUST_POINTS = [
@@ -153,8 +158,7 @@ export default function Home() {
           </div>
           <div className={`${styles.stagePanel} ${styles.reveal}`}>
             <div className={styles.stageShot}>
-              <div className={styles.stageShotFrame} />
-              <span>{stage.tab} screen</span>
+              <img src={stage.img} alt={stage.tab} className={styles.stageShotFrame} />
             </div>
             <div className={styles.stageCopy}>
               <span className={styles.stageEyebrow}>{stage.eyebrow}</span>
