@@ -194,6 +194,13 @@ export default function NegotiationDetail() {
         })
         // Remove duplicates — same clause name in multiple sections; keep first (main section, with legislation)
         .filter((c, idx, arr) => arr.findIndex(x => x.name === c.name) === idx)
+        // Remove semantic duplicates — different clause names but identical counter proposal (AI extracted
+        // the same issue from two places); keep first occurrence (earlier section position)
+        .filter((c, idx, arr) => {
+          const ct = (c.counter || '').trim()
+          if (ct.length < 80) return true  // too short to be a reliable duplicate signal
+          return arr.findIndex(x => (x.counter || '').trim() === ct) === idx
+        })
     : []
 
   useEffect(() => {
