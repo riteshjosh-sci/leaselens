@@ -192,6 +192,8 @@ export default function NegotiationDetail() {
           const numB = parseFloat((b.location || '').match(numRe)?.[1] ?? '9999')
           return numA - numB
         })
+        // Remove duplicates — same clause name in multiple sections; keep first (main section, with legislation)
+        .filter((c, idx, arr) => arr.findIndex(x => x.name === c.name) === idx)
     : []
 
   useEffect(() => {
@@ -286,7 +288,11 @@ export default function NegotiationDetail() {
       counteringClauses.forEach(c => {
         lines.push(`• ${c.location || c.name} — ${c.name}.`)
         const ct = getCounterText(c)
-        if (ct) lines.push(`  Proposed: ${ct}`)
+        if (ct) {
+          const normalized = ct.replace(/\\n/g, '\n').replace(/\*\*/g, '').trim()
+          const indented = normalized.split('\n').map((l, i) => i === 0 ? `  Proposed: ${l}` : `  ${l}`).join('\n')
+          lines.push(indented)
+        }
         lines.push('')
       })
     } else {
