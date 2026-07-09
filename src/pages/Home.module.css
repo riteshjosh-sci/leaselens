@@ -31,8 +31,8 @@
 .btn:active { transform:translateY(1px); }
 .btnInk { background:var(--brand); color:#fff; }
 .btnInk:hover { background:var(--brand-lt); }
-.btnFinalPrimary { background:#fff; color:var(--ink); }
-.btnFinalPrimary:hover { background:var(--accent-lt); }
+.btnFinalPrimary { background:var(--brand); color:#fff; }
+.btnFinalPrimary:hover { background:var(--brand-lt); }
 .btnFinalGhost { background:transparent; color:var(--band-ink); box-shadow:inset 0 0 0 1.5px var(--band-border); }
 
 /* ── EYEBROW ── */
