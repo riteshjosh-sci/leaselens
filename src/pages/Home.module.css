@@ -31,7 +31,7 @@
 .btn:active { transform:translateY(1px); }
 .btnInk { background:var(--brand); color:#fff; }
 .btnInk:hover { background:var(--brand-lt); }
-.btnFinalPrimary { background:var(--brand); color:#fff; }
+.btnFinalPrimary { background:var(--brand); color:#fff; box-shadow:inset 0 0 0 1.5px rgba(255,255,255,0.35); }
 .btnFinalPrimary:hover { background:var(--brand-lt); }
 .btnFinalGhost { background:transparent; color:var(--band-ink); box-shadow:inset 0 0 0 1.5px var(--band-border); }
 
