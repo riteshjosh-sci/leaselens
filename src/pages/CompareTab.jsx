@@ -142,7 +142,7 @@ export default function CompareTab({ negId, docs }) {
   const sortedDocs = [...docs].sort((a, b) => new Date(a.uploaded_at) - new Date(b.uploaded_at))
   const docsKey = docs.map(d => d.id).join(',')
 
-  const [leftIdx,  setLeftIdx]  = useState(0)
+  const [leftIdx,  setLeftIdx]  = useState(Math.max(0, sortedDocs.length - 2))
   const [rightIdx, setRightIdx] = useState(sortedDocs.length - 1)
   const [picker,   setPicker]   = useState(null) // 'left' | 'right' | null
   const [comparison, setComparison] = useState(null)
@@ -163,6 +163,12 @@ export default function CompareTab({ negId, docs }) {
   const pickerRef   = useRef(null)
   const pollRef     = useRef(null)
   const pollCountRef = useRef(0)
+
+  // Reset to second-to-last vs last whenever the doc list changes (new upload arrives)
+  useEffect(() => {
+    setLeftIdx(Math.max(0, sortedDocs.length - 2))
+    setRightIdx(sortedDocs.length - 1)
+  }, [docsKey])
 
   useEffect(() => {
     if (!picker) return

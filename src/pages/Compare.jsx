@@ -41,7 +41,7 @@ export default function Compare() {
     setVersions(docs || [])
 
     if (docs?.length >= 2) {
-      setVersionA(docs[0])
+      setVersionA(docs[docs.length - 2])
       setVersionB(docs[docs.length - 1])
     }
 
