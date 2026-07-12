@@ -139,10 +139,10 @@ function isTrivialBlock(text) {
 
 export default function CompareTab({ negId, docs }) {
   const navigate = useNavigate()
-  const sortedDocs = [...docs].sort((a, b) => a.version_number - b.version_number)
+  const sortedDocs = [...docs].sort((a, b) => new Date(a.uploaded_at) - new Date(b.uploaded_at))
   const docsKey = docs.map(d => d.id).join(',')
 
-  const [leftIdx,  setLeftIdx]  = useState(Math.max(0, sortedDocs.length - 2))
+  const [leftIdx,  setLeftIdx]  = useState(0)
   const [rightIdx, setRightIdx] = useState(sortedDocs.length - 1)
   const [picker,   setPicker]   = useState(null) // 'left' | 'right' | null
   const [comparison, setComparison] = useState(null)

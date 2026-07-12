@@ -35,13 +35,13 @@ export default function Compare() {
       .select('id, filename, version_number, uploaded_at, overall_risk, content_hash, reports(id, report_json)')
       .eq('negotiation_id', negotiationId)
       .eq('is_deleted', false)
-      .order('version_number', { ascending: true })
+      .order('uploaded_at', { ascending: true })
 
     setNegotiation(neg)
     setVersions(docs || [])
 
     if (docs?.length >= 2) {
-      setVersionA(docs[docs.length - 2])
+      setVersionA(docs[0])
       setVersionB(docs[docs.length - 1])
     }
 
