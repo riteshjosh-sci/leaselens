@@ -200,25 +200,49 @@ export default function ReportView() {
   }
 
   const handleShare = async () => {
-    if (!workspace?.id) return
+    if (!user || !report?.id) return
     let token = null
-    const { data: existing } = await supabase
-      .from('share_tokens')
-      .select('token')
-      .eq('workspace_id', workspace.id)
-      .order('created_at', { ascending: false })
-      .limit(1)
-      .maybeSingle()
 
-    if (existing?.token) {
-      token = existing.token
-    } else {
-      const { data: created, error: err } = await supabase
+    if (workspace?.id) {
+      // Workspace-level share: one link covers all reports in the workspace
+      const { data: existing } = await supabase
         .from('share_tokens')
-        .insert({ user_id: user.id, workspace_id: workspace.id, label: `Shared ${new Date().toLocaleDateString('en-AU')}` })
-        .select('token').single()
-      if (err) return
-      token = created.token
+        .select('token')
+        .eq('workspace_id', workspace.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (existing?.token) {
+        token = existing.token
+      } else {
+        const { data: created, error: err } = await supabase
+          .from('share_tokens')
+          .insert({ user_id: user.id, workspace_id: workspace.id, label: `Shared ${new Date().toLocaleDateString('en-AU')}` })
+          .select('token').single()
+        if (err) return
+        token = created.token
+      }
+    } else {
+      // Report-level share: no workspace linked, share just this report
+      const { data: existing } = await supabase
+        .from('share_tokens')
+        .select('token')
+        .eq('report_id', report.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (existing?.token) {
+        token = existing.token
+      } else {
+        const { data: created, error: err } = await supabase
+          .from('share_tokens')
+          .insert({ user_id: user.id, report_id: report.id, label: `Shared ${new Date().toLocaleDateString('en-AU')}` })
+          .select('token').single()
+        if (err) return
+        token = created.token
+      }
     }
 
     const url = `${window.location.origin}/shared/${token}`
