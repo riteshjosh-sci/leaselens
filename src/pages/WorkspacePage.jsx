@@ -77,7 +77,7 @@ export default function WorkspacePage() {
       const isClause = v => !v || v.length > 150 || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
       const tenant  = !isClause(t) ? t : null
       const address = !isClause(a) ? a : null
-      const friendly = [tenant, address].filter(Boolean).join(' — ')
+      const friendly = tenant || address
       if (friendly) {
         supabase.from('workspaces').update({ name: friendly }).eq('id', id)
         wsData = { ...wsData, name: friendly }
@@ -177,8 +177,8 @@ export default function WorkspacePage() {
     const hoaDocs   = allDocs.filter(d => d.filename?.toLowerCase().includes('hoa'))
     const leaseDocs = allDocs.filter(d => !d.filename?.toLowerCase().includes('hoa'))
     return [
-      { label: 'Heads of agreement', count: hoaDocs.length },
-      { label: 'Lease versions', count: leaseDocs.length },
+      { label: 'HOA', count: hoaDocs.length },
+      { label: 'Lease', count: leaseDocs.length },
     ]
   }
 

@@ -123,7 +123,7 @@ export default function Analyser() {
           }).eq('id', negIdRef.current)
           if (wsIdRef.current) {
             // Only update auto-created workspaces (still named 'New workspace')
-            supabase.from('workspaces').update({ name: extractedAddress || friendly })
+            supabase.from('workspaces').update({ name: extractedTenant || extractedAddress })
               .eq('id', wsIdRef.current).eq('name', 'New workspace')
           }
           setPropertyName(friendly)
