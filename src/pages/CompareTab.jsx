@@ -358,7 +358,9 @@ export default function CompareTab({ negId, docs }) {
       const isMeaningful = isModified && MEANINGFUL.includes(m.change_type)
       const absD = Math.abs(m.delta)
       const maxLen = Math.max((m.v1_text || '').length, (m.v2_text || '').length)
+      const isLabelledTerm = t => !!t && (t.includes(' | ') || /^\w[\w\s]+:\s/.test(t))
       const isShortClause = isModified && maxLen > 0 && maxLen < 120
+        && !isLabelledTerm(m.v1_text) && !isLabelledTerm(m.v2_text)
       rows.push({
         kind:          m.kind,
         change_type:   m.change_type || null,
