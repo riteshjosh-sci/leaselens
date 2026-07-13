@@ -102,6 +102,7 @@ const TERMS_FIELDS = [
   { key: 'base_rent_annual',     label: 'Base Rent',            fmt: v => v != null ? '$' + Number(v).toLocaleString() + ' p.a.' : null,  dir: 'lower_better' },
   { key: 'term_years',           label: 'Lease Term',           fmt: v => v != null ? v + ' years' : null,                                dir: 'higher_better' },
   { key: 'option_terms',         label: 'Options',              fmt: v => v || null,                                                      dir: 'neutral' },
+  { key: 'rent_review_type',     label: 'Rent Review Type',     fmt: v => v || null,                                                      dir: 'neutral' },
   { key: 'rent_review_rate',     label: 'Rent Review Rate',     fmt: v => v != null ? v + '% p.a.' : null,                               dir: 'lower_better' },
   { key: 'outgoings_annual',     label: 'Outgoings (est.)',     fmt: v => v != null ? '$' + Number(v).toLocaleString() + ' p.a.' : null,  dir: 'lower_better' },
   { key: 'marketing_levy_annual',label: 'Marketing Levy',       fmt: v => v != null ? '$' + Number(v).toLocaleString() + ' p.a.' : null,  dir: 'lower_better' },
@@ -117,8 +118,7 @@ const TERMS_FIELDS = [
 function getTermDir(field, vA, vB) {
   if (vA == null && vB == null) return 'same'
   if (String(vA) === String(vB)) return 'same'
-  if (vA == null) return field.dir === 'higher_better' ? 'imp' : field.dir === 'lower_better' ? 'risk' : 'mod'
-  if (vB == null) return field.dir === 'higher_better' ? 'risk' : field.dir === 'lower_better' ? 'imp' : 'mod'
+  if (vA == null || vB == null) return 'na'
   if (field.dir === 'lower_better')        return vB < vA ? 'imp' : vB > vA ? 'risk' : 'same'
   if (field.dir === 'higher_better')       return vB > vA ? 'imp' : vB < vA ? 'risk' : 'same'
   if (field.dir === 'make_good')          { const rA = MG_RANK[vA] ?? 1, rB = MG_RANK[vB] ?? 1; return rB > rA ? 'imp' : rB < rA ? 'risk' : 'same' }
@@ -468,6 +468,7 @@ export default function CompareTab({ negId, docs }) {
                       {dir === 'risk' && <span className={styles.trmDirRisk}>Higher risk</span>}
                       {dir === 'mod'  && <span className={styles.trmDirMod}>Modified</span>}
                       {dir === 'same' && <span className={styles.trmDirSame}>Unchanged</span>}
+                      {dir === 'na'   && <span className={styles.trmDirNa}>Not extracted</span>}
                     </td>
                   </tr>
                 )

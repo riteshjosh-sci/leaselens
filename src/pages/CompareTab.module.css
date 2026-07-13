@@ -367,7 +367,7 @@
 .trmRowSame td { }
 
 /* Direction badges */
-.trmDirImp, .trmDirRisk, .trmDirMod, .trmDirSame {
+.trmDirImp, .trmDirRisk, .trmDirMod, .trmDirSame, .trmDirNa {
   display: inline-flex; align-items: center;
   font-size: 11px; font-weight: 700; letter-spacing: .03em;
   padding: 3px 9px; border-radius: 100px; white-space: nowrap;
@@ -376,6 +376,7 @@
 .trmDirRisk { background: var(--fav-bad-bg); color: var(--fav-bad-deep); }
 .trmDirMod  { background: var(--paper-2); color: var(--muted); }
 .trmDirSame { background: transparent; color: var(--faint); font-weight: 500; }
+.trmDirNa   { background: transparent; color: var(--faint); font-weight: 500; font-style: italic; }
 
 /* ── RESPONSIVE ── */
 @media (max-width: 1100px) {
