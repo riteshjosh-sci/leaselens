@@ -204,46 +204,25 @@ export default function ReportView() {
     let token = null
     const label = `Shared ${new Date().toLocaleDateString('en-AU')}`
 
-    if (workspace?.id) {
-      const { data: existing } = await supabase
-        .from('share_tokens')
-        .select('token')
-        .eq('workspace_id', workspace.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+    // Always share the individual report — workspace-level sharing belongs elsewhere
+    const { data: existing } = await supabase
+      .from('share_tokens')
+      .select('token')
+      .eq('report_id', report.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle()
 
-      if (existing?.token) {
-        token = existing.token
-      } else {
-        const newToken = crypto.randomUUID()
-        const { data: created, error: err } = await supabase
-          .from('share_tokens')
-          .insert({ token: newToken, user_id: user.id, workspace_id: workspace.id, label })
-          .select('token').single()
-        if (err) return
-        token = created.token
-      }
+    if (existing?.token) {
+      token = existing.token
     } else {
-      const { data: existing } = await supabase
+      const newToken = crypto.randomUUID()
+      const { data: created, error: err } = await supabase
         .from('share_tokens')
-        .select('token')
-        .eq('report_id', report.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      if (existing?.token) {
-        token = existing.token
-      } else {
-        const newToken = crypto.randomUUID()
-        const { data: created, error: err } = await supabase
-          .from('share_tokens')
-          .insert({ token: newToken, user_id: user.id, report_id: report.id, label })
-          .select('token').single()
-        if (err) return
-        token = created.token
-      }
+        .insert({ token: newToken, user_id: user.id, report_id: report.id, label })
+        .select('token').single()
+      if (err) return
+      token = created.token
     }
 
     const url = `${window.location.origin}/shared/${token}`
