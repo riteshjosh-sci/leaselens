@@ -64,9 +64,26 @@ export default function WorkspacePage() {
     ])
 
     if (wsRes.error || !wsRes.data) { navigate('/dashboard'); return }
-    setWs(wsRes.data)
     const negs = negsRes.data || []
     setNeg(negs)
+
+    // Auto-rename "New workspace" from extracted negotiation data
+    let wsData = wsRes.data
+    if (wsData.name === 'New workspace') {
+      const negWithData = negs.find(n => n.tenant_name || n.premises_address)
+      const t = negWithData?.tenant_name
+      const a = negWithData?.premises_address
+      const CLAUSE_WORDS = ['takes a lease', 'landlord', 'herein', 'pursuant', 'thereof', 'together with', 'non-exclusive', 'the term']
+      const isClause = v => !v || v.length > 150 || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
+      const tenant  = !isClause(t) ? t : null
+      const address = !isClause(a) ? a : null
+      const friendly = [tenant, address].filter(Boolean).join(' — ')
+      if (friendly) {
+        supabase.from('workspaces').update({ name: friendly }).eq('id', id)
+        wsData = { ...wsData, name: friendly }
+      }
+    }
+    setWs(wsData)
 
     // Key dates — pull lease_data for the most recently uploaded document
     const allDocs = negs.flatMap(n => n.documents || [])
@@ -287,6 +304,20 @@ export default function WorkspacePage() {
                   )}
                 </>
               )}
+            </div>
+
+            {/* DOCUMENTS */}
+            <div className={styles.panel} data-tour="documents-panel">
+              <div className={styles.panelHead}>
+                <span className={styles.panelBar} />
+                <span className={styles.panelTitle}>Documents</span>
+              </div>
+              {docTypeSummary().map(({ label, count }) => (
+                <div key={label} className={styles.docRow}>
+                  <span className={styles.docLbl}>{label}</span>
+                  <span className={styles.docVal}>{count} version{count !== 1 ? 's' : ''}</span>
+                </div>
+              ))}
             </div>
 
           </div>
