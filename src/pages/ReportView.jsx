@@ -202,9 +202,9 @@ export default function ReportView() {
   const handleShare = async () => {
     if (!user || !report?.id) return
     let token = null
+    const label = `Shared ${new Date().toLocaleDateString('en-AU')}`
 
     if (workspace?.id) {
-      // Workspace-level share: one link covers all reports in the workspace
       const { data: existing } = await supabase
         .from('share_tokens')
         .select('token')
@@ -216,15 +216,15 @@ export default function ReportView() {
       if (existing?.token) {
         token = existing.token
       } else {
+        const newToken = crypto.randomUUID()
         const { data: created, error: err } = await supabase
           .from('share_tokens')
-          .insert({ user_id: user.id, workspace_id: workspace.id, label: `Shared ${new Date().toLocaleDateString('en-AU')}` })
+          .insert({ token: newToken, user_id: user.id, workspace_id: workspace.id, label })
           .select('token').single()
         if (err) return
         token = created.token
       }
     } else {
-      // Report-level share: no workspace linked, share just this report
       const { data: existing } = await supabase
         .from('share_tokens')
         .select('token')
@@ -236,9 +236,10 @@ export default function ReportView() {
       if (existing?.token) {
         token = existing.token
       } else {
+        const newToken = crypto.randomUUID()
         const { data: created, error: err } = await supabase
           .from('share_tokens')
-          .insert({ user_id: user.id, report_id: report.id, label: `Shared ${new Date().toLocaleDateString('en-AU')}` })
+          .insert({ token: newToken, user_id: user.id, report_id: report.id, label })
           .select('token').single()
         if (err) return
         token = created.token
