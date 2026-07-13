@@ -120,7 +120,7 @@ export default function NegotiationDetail() {
     const { data: negData, error } = await supabase
       .from('negotiations')
       .select(`
-        id, property_name, asset_class, created_at, status, lifecycle, workspace_id,
+        id, property_name, tenant_name, premises_address, asset_class, created_at, status, lifecycle, workspace_id,
         documents (
           id, filename, version_number, doc_type, uploaded_at, overall_risk, file_path, is_deleted, content_hash,
           reports ( id, report_json, created_at )
@@ -170,7 +170,19 @@ export default function NegotiationDetail() {
         .select('id, name, client_name, logo_path, created_at')
         .eq('id', negData.workspace_id)
         .single()
-      setWs(wsData)
+      let resolvedWs = wsData
+      if (wsData?.name === 'New workspace') {
+        const CLAUSE_WORDS = ['takes a lease', 'landlord', 'herein', 'pursuant', 'thereof', 'together with', 'non-exclusive', 'the term']
+        const isClause = v => !v || v.length > 150 || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
+        const tenant  = !isClause(negData.tenant_name)       ? negData.tenant_name       : null
+        const address = !isClause(negData.premises_address)  ? negData.premises_address  : null
+        const friendly = tenant || address
+        if (friendly) {
+          supabase.from('workspaces').update({ name: friendly }).eq('id', wsData.id)
+          resolvedWs = { ...wsData, name: friendly }
+        }
+      }
+      setWs(resolvedWs)
     }
 
     setLoading(false)
