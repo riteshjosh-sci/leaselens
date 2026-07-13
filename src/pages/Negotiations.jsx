@@ -19,12 +19,30 @@ export default function Negotiations() {
       .select(`
         id, name, client_name,
         negotiations (
-          id, status, lifecycle, property_name, created_at,
+          id, status, lifecycle, property_name, created_at, tenant_name, premises_address,
           documents ( id, uploaded_at )
         )
       `)
       .eq('user_id', user.id)
       .eq('is_deleted', false)
+
+    const CLAUSE_WORDS = ['takes a lease', 'landlord', 'herein', 'pursuant', 'thereof', 'together with', 'non-exclusive', 'the term']
+    const isClause = v => !v || v.length > 150 || CLAUSE_WORDS.some(w => v.toLowerCase().includes(w))
+
+    const renameUpdates = []
+    for (const ws of (data || [])) {
+      if ((ws.client_name || ws.name) !== 'New workspace') continue
+      const negWithData = (ws.negotiations || []).find(n => n.tenant_name || n.premises_address)
+      if (!negWithData) continue
+      const tenant  = !isClause(negWithData.tenant_name)      ? negWithData.tenant_name      : null
+      const address = !isClause(negWithData.premises_address) ? negWithData.premises_address : null
+      const friendly = tenant || address
+      if (friendly) {
+        ws.name = friendly
+        renameUpdates.push(supabase.from('workspaces').update({ name: friendly }).eq('id', ws.id))
+      }
+    }
+    if (renameUpdates.length) await Promise.all(renameUpdates)
 
     const flat = (data || []).flatMap(ws =>
       (ws.negotiations || []).map(n => ({
