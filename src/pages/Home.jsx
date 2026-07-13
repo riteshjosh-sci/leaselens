@@ -49,8 +49,16 @@ export default function Home() {
   const [waitlistEmail, setWaitlistEmail] = useState('')
   const [waitlistSubmitted, setWaitlistSubmitted] = useState(false)
   const [waitlistError, setWaitlistError] = useState('')
+  const [lightbox, setLightbox] = useState(null) // { src, alt }
 
   useSEO({ title: 'Retail Lease & HOA Analysis for Australian Tenants', path: '/' })
+
+  useEffect(() => {
+    if (!lightbox) return
+    const onKey = (e) => { if (e.key === 'Escape') setLightbox(null) }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [lightbox])
 
   // Google OAuth round-trips through accounts.google.com and back to whatever
   // URL Supabase's project settings land it on -- if that's "/" instead of
@@ -157,8 +165,12 @@ export default function Home() {
             ))}
           </div>
           <div className={`${styles.stagePanel} ${styles.reveal}`}>
-            <div className={styles.stageShot}>
+            <div className={styles.stageShot} onClick={() => setLightbox({ src: stage.img, alt: stage.tab })} role="button" tabIndex={0} onKeyDown={e => e.key === 'Enter' && setLightbox({ src: stage.img, alt: stage.tab })} aria-label={`Enlarge ${stage.tab} screenshot`}>
               <img src={stage.img} alt={stage.tab} className={styles.stageShotFrame} />
+              <div className={styles.stageShotHint}>
+                <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="5.5" stroke="currentColor" strokeWidth="1.8"/><path d="M13.5 13.5L17 17" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round"/><path d="M9 6.5v5M6.5 9h5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                Enlarge
+              </div>
             </div>
             <div className={styles.stageCopy}>
               <span className={styles.stageEyebrow}>{stage.eyebrow}</span>
@@ -242,6 +254,14 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* LIGHTBOX */}
+      {lightbox && (
+        <div className={styles.lightboxBackdrop} onClick={() => setLightbox(null)} role="dialog" aria-modal="true" aria-label="Screenshot enlarged">
+          <button className={styles.lightboxClose} onClick={() => setLightbox(null)} aria-label="Close">✕</button>
+          <img src={lightbox.src} alt={lightbox.alt} className={styles.lightboxImg} onClick={e => e.stopPropagation()} />
+        </div>
+      )}
 
       {/* FOOTER */}
       <footer className={styles.footer}>
