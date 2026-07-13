@@ -39,6 +39,7 @@ const TABS_ONE_FULL = [
 ]
 const TABS_MULTI = [
   { key: 'compare',   label: 'Compare' },
+  { key: 'report',    label: 'Report' },
   { key: 'review',    label: 'Review' },
   { key: 'summary',   label: 'Summary' },
   { key: 'documents', label: 'Documents' },
@@ -71,6 +72,9 @@ export default function NegotiationDetail() {
   const [lifecycle, setLifecycle]             = useState('reviewing')
   const [copied, setCopied]                   = useState(false)
   const [guidedStep, setGuidedStep]           = useState(0)
+  const [reviewDocId, setReviewDocId]         = useState(null)
+  const [negEditing, setNegEditing]           = useState(false)
+  const [negEditName, setNegEditName]         = useState('')
 
   const TABS = docs.length >= 2
     ? TABS_MULTI
@@ -173,13 +177,17 @@ export default function NegotiationDetail() {
   }
 
   // ── Derived clauses + decision state, lifted from ReviewTab ──────────────
-  const latestReport = docs.find(d => d.reports?.[0]?.report_json)
-  const allClauses = latestReport
-    ? (latestReport.reports[0].report_json.clauses || [])
+  const reviewDoc = (reviewDocId ? docs.find(d => d.id === reviewDocId && d.reports?.[0]?.report_json) : null)
+    || docs.find(d => d.reports?.[0]?.report_json)
+    || null
+  const docsWithReports = docs.filter(d => d.reports?.[0]?.report_json)
+
+  const allClauses = reviewDoc
+    ? (reviewDoc.reports[0].report_json.clauses || [])
         .map(c => ({
           ...c,
-          clauseKey: `${latestReport.id}-${c.name}`,
-          reportId: latestReport.reports[0].id,
+          clauseKey: `${reviewDoc.id}-${c.name}`,
+          reportId: reviewDoc.reports[0].id,
         }))
         .sort((a, b) => {
           const isSC = loc => /^(SC[\s\d]|Special\s+Condition)/i.test(loc || '')
@@ -204,11 +212,10 @@ export default function NegotiationDetail() {
     : []
 
   useEffect(() => {
-    if (allClauses.length > 0 && !activeId) {
-      const firstHigh = allClauses.find(c => c.danger === 'HIGH')
-      setActiveId(firstHigh?.clauseKey || allClauses[0]?.clauseKey)
+    if (allClauses.length > 0) {
+      setActiveId(allClauses[0]?.clauseKey)
     }
-  }, [allClauses.length])
+  }, [reviewDoc?.id])
 
   const getCounterText = (c) => counterEdits[c.clauseKey] ?? c.counter ?? ''
   const isEdited = (c) => {
@@ -273,6 +280,20 @@ export default function NegotiationDetail() {
     setSelectedOptions(prev => ({ ...prev, [clauseKey]: optionIdx }))
     setCounterEdits(prev => ({ ...prev, [clauseKey]: optionText }))
     setResetKeys(prev => ({ ...prev, [clauseKey]: (prev[clauseKey] || 0) + 1 }))
+  }
+
+  const handleSwitchReviewDoc = (docId) => {
+    setReviewDocId(docId)
+    setActiveId(null)
+  }
+
+  const handleRenameNeg = async () => {
+    const name = negEditName.trim()
+    if (name && name !== neg.property_name) {
+      await supabase.from('negotiations').update({ property_name: name }).eq('id', negId)
+      setNeg(prev => ({ ...prev, property_name: name }))
+    }
+    setNegEditing(false)
   }
 
   // Derived counts
@@ -382,7 +403,27 @@ export default function NegotiationDetail() {
             <div className={styles.wsBadge}>{(neg.property_name || 'N')[0]?.toUpperCase()}</div>
             <div className={styles.wsNameWrap}>
               <div className={styles.wsKicker}>Negotiation</div>
-              <h1 className={styles.wsName}>{neg.property_name || 'Unnamed negotiation'}</h1>
+              {negEditing ? (
+                <input
+                  className={`input ${styles.negRenameInput}`}
+                  value={negEditName}
+                  onChange={e => setNegEditName(e.target.value)}
+                  onBlur={handleRenameNeg}
+                  onKeyDown={e => { if (e.key === 'Enter') handleRenameNeg(); if (e.key === 'Escape') setNegEditing(false) }}
+                  autoFocus
+                />
+              ) : (
+                <div className={styles.wsNameRow}>
+                  <h1 className={styles.wsName}>{neg.property_name || 'Unnamed negotiation'}</h1>
+                  <button
+                    className={styles.wsRenameBtn}
+                    onClick={() => { setNegEditName(neg.property_name || ''); setNegEditing(true) }}
+                    title="Rename negotiation"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L5 13.5 2 14l.5-3L11 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>
+                  </button>
+                </div>
+              )}
               {ws?.client_name && <div className={styles.wsSub}>{ws.client_name}</div>}
             </div>
           </div>
@@ -445,6 +486,9 @@ export default function NegotiationDetail() {
             handleOptionSelect={handleOptionSelect}
             decided={decided}
             onViewSummary={advanceToSummary}
+            reviewDoc={reviewDoc}
+            docsWithReports={docsWithReports}
+            onSwitchDoc={handleSwitchReviewDoc}
           />
         )}
         {activeTab === 'summary' && (

@@ -17,6 +17,15 @@
 .sub strong { color:var(--ink); font-weight:600; }
 .headActions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 
+.h1row { display:flex; align-items:center; gap:8px; }
+.renameBtn {
+  background:none; border:none; color:var(--faint); cursor:pointer; padding:4px;
+  border-radius:6px; display:flex; align-items:center; justify-content:center;
+  transition:color .15s, background .15s; flex-shrink:0;
+}
+.renameBtn:hover { color:var(--ink); background:var(--paper); }
+.renameInput { font-size:24px; font-weight:700; letter-spacing:-0.02em; width:320px; }
+
 /* TWO COLUMN LAYOUT */
 .twoCol { display:grid; grid-template-columns:1.6fr 1fr; gap:16px; align-items:start; }
 .sideCol { display:flex; flex-direction:column; gap:16px; }

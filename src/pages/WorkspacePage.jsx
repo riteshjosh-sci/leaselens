@@ -34,6 +34,8 @@ export default function WorkspacePage() {
   const [negotiations, setNeg] = useState([])
   const [keyDates, setKeyDates] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [wsEditing, setWsEditing] = useState(false)
+  const [wsEditName, setWsEditName] = useState('')
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -79,6 +81,15 @@ export default function WorkspacePage() {
     }
 
     setLoading(false)
+  }
+
+  const handleRenameWs = async () => {
+    const name = wsEditName.trim()
+    if (name && name !== ws.name) {
+      await supabase.from('workspaces').update({ name }).eq('id', id)
+      setWs(prev => ({ ...prev, name }))
+    }
+    setWsEditing(false)
   }
 
   const handleDeleteNeg = async (negId, e) => {
@@ -173,7 +184,27 @@ export default function WorkspacePage() {
           <div className={styles.headLeft}>
             <div className={styles.wsBadge}>{ws.name[0]?.toUpperCase()}</div>
             <div>
-              <h1 className={styles.h1}>{ws.name}</h1>
+              {wsEditing ? (
+                <input
+                  className={`input ${styles.renameInput}`}
+                  value={wsEditName}
+                  onChange={e => setWsEditName(e.target.value)}
+                  onBlur={handleRenameWs}
+                  onKeyDown={e => { if (e.key === 'Enter') handleRenameWs(); if (e.key === 'Escape') setWsEditing(false) }}
+                  autoFocus
+                />
+              ) : (
+                <div className={styles.h1row}>
+                  <h1 className={styles.h1}>{ws.name}</h1>
+                  <button
+                    className={styles.renameBtn}
+                    onClick={() => { setWsEditName(ws.name); setWsEditing(true) }}
+                    title="Rename workspace"
+                  >
+                    <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M11 2.5l2.5 2.5L5 13.5 2 14l.5-3L11 2.5z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/></svg>
+                  </button>
+                </div>
+              )}
               <div className={styles.sub}>
                 {extractedAddress || ws.name}
                 {(extractedTenant || ws.client_name) && <> · Tenant: <strong>{extractedTenant || ws.client_name}</strong></>}
@@ -258,19 +289,6 @@ export default function WorkspacePage() {
               )}
             </div>
 
-            {/* DOCUMENTS */}
-            <div className={styles.panel} data-tour="documents-panel">
-              <div className={styles.panelHead}>
-                <span className={styles.panelBar} />
-                <span className={styles.panelTitle}>Documents</span>
-              </div>
-              {docTypeSummary().map(d => (
-                <div key={d.label} className={styles.docRow}>
-                  <span className={styles.docLbl}>{d.label}</span>
-                  <span className={styles.docVal}>{d.count}{d.label === 'Heads of agreement' && d.count > 0 ? ` version${d.count !== 1 ? 's' : ''}` : ''}</span>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
 

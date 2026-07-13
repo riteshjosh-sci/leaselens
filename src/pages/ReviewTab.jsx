@@ -94,6 +94,7 @@ export default function ReviewTab({
   allClauses, decisions, activeId, setActiveId, decideAndAdvance,
   getCounterText, isEdited, counterEdits, resetKeys, selectedOptions,
   handleCounterEdit, handleReset, handleOptionSelect, decided, onViewSummary,
+  reviewDoc, docsWithReports, onSwitchDoc,
 }) {
   if (!allClauses.length) {
     return (
@@ -218,7 +219,7 @@ export default function ReviewTab({
           const selIdx  = selectedOptions[c.clauseKey] ?? 0
 
           return (
-            <div className={`${styles.fcCounter} ${c.danger === 'LOW' ? styles.fcCounterFav : ''}`}>
+            <div className={styles.fcCounter}>
               <div className={styles.fcCounterHead}>
                 <span className={styles.fcCounterLabel}>Suggested counter</span>
                 <span className={`${styles.editTag} ${edited ? styles.editTagEdited : styles.editTagSuggested}`}>
@@ -312,8 +313,31 @@ export default function ReviewTab({
     )
   }
 
+  const stripTimestamp = f => f?.replace(/^\d+_/, '') || ''
+
   return (
     <>
+      {/* Document indicator — shows which doc is being reviewed, with picker for multi-doc */}
+      {reviewDoc && (
+        <div className={styles.reviewDocBar}>
+          <span className={styles.reviewDocLabel}>Reviewing:</span>
+          {docsWithReports?.length > 1 ? (
+            docsWithReports.map(d => (
+              <button
+                key={d.id}
+                className={`${styles.reviewDocBtn} ${d.id === reviewDoc.id ? styles.reviewDocBtnActive : ''}`}
+                onClick={() => onSwitchDoc?.(d.id)}
+              >
+                v{d.version_number} — {stripTimestamp(d.filename)}
+              </button>
+            ))
+          ) : (
+            <span className={styles.reviewDocName}>
+              v{reviewDoc.version_number} — {stripTimestamp(reviewDoc.filename)}
+            </span>
+          )}
+        </div>
+      )}
       {Progress()}
       <div className={styles.reviewGrid}>
         {Queue()}

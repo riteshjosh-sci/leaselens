@@ -107,6 +107,29 @@ export default function Analyser() {
       completedRef.current = true
       cleanupJob()
       setLoadingStage(LOADING_STAGES.length - 1)
+
+      // Update negotiation/workspace name from extracted data (only for new uploads, not re-uploads)
+      if (!negotiationId && negIdRef.current) {
+        const rj = jobData.report_json
+        const isClauseText = v => !v || v.length > 150 || ['takes a lease', 'landlord', 'herein', 'thereof'].some(w => v?.toLowerCase().includes(w))
+        const extractedTenant  = !isClauseText(rj?.tenant_name)  ? rj.tenant_name  : null
+        const extractedAddress = !isClauseText(rj?.premises_address) ? rj.premises_address : null
+        if (extractedTenant || extractedAddress) {
+          const friendly = [extractedTenant, extractedAddress].filter(Boolean).join(' — ')
+          supabase.from('negotiations').update({
+            property_name: friendly,
+            tenant_name: extractedTenant || null,
+            premises_address: extractedAddress || null,
+          }).eq('id', negIdRef.current)
+          if (wsIdRef.current) {
+            // Only update auto-created workspaces (still named 'New workspace')
+            supabase.from('workspaces').update({ name: extractedAddress || friendly })
+              .eq('id', wsIdRef.current).eq('name', 'New workspace')
+          }
+          setPropertyName(friendly)
+        }
+      }
+
       if (negotiationId) {
         // Navigate immediately — keep loading UI visible until page unmounts
         navigate(`/negotiation/${negotiationId}#compare`)
@@ -528,7 +551,11 @@ export default function Analyser() {
             <div className={styles.leaseSummaryCard}>
               <div className={styles.leaseSummaryHeader}>
                 <div className={styles.leaseSummaryKicker}>
-                  {leaseData.security_clear !== false ? '✓ Document processed' : '⚠ Security flag detected'}
+                  {leaseData.security_clear === false
+                    ? '⚠ Security flag detected'
+                    : loading
+                      ? '◉ Extraction complete — analysis running'
+                      : '✓ Document processed'}
                 </div>
                 <div className={styles.leaseSummaryTitle}>
                   {leaseData.document_type || 'Lease'} — Commercial Terms Identified

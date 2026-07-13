@@ -16,7 +16,15 @@
 .wsBadge { width:48px; height:48px; border-radius:12px; background:var(--ink); color:var(--paper); font-size:22px; font-weight:700; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .wsKicker { font-size:11px; font-weight:700; letter-spacing:0.14em; text-transform:uppercase; color:var(--accent); margin-bottom:5px; }
 .wsNameWrap { min-width:0; flex:1; }
+.wsNameRow { display:flex; align-items:center; gap:8px; }
 .wsName { font-size:32px; font-weight:600; letter-spacing:-0.025em; color:var(--ink); line-height:1.1; overflow-wrap:break-word; word-break:break-word; }
+.wsRenameBtn {
+  background:none; border:none; color:var(--faint); cursor:pointer; padding:4px;
+  border-radius:6px; display:flex; align-items:center; justify-content:center;
+  transition:color .15s, background .15s; flex-shrink:0; margin-top:2px;
+}
+.wsRenameBtn:hover { color:var(--ink); background:var(--paper); }
+.negRenameInput { font-size:26px; font-weight:600; letter-spacing:-0.025em; width:100%; max-width:480px; }
 .wsSub { font-size:14px; color:var(--muted); margin-top:4px; overflow-wrap:break-word; word-break:break-word; }
 .wsActions { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 .statusChip { display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:600; padding:6px 14px; border-radius:100px; background:var(--paper-2); border:1px solid var(--hair); color:var(--ink-soft); }
@@ -343,6 +351,33 @@
 /* ══════════════════════════════════════════════════════
    REVIEW TAB REDESIGN
    ══════════════════════════════════════════════════════ */
+
+/* Review — active document indicator */
+.reviewDocBar {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  margin-top: 16px; padding: 10px 14px;
+  background: var(--paper); border: 1px solid var(--hair);
+  border-radius: var(--radius-sm);
+}
+.reviewDocLabel {
+  font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--muted); margin-right: 4px; white-space: nowrap;
+}
+.reviewDocName {
+  font-size: 13px; font-weight: 500; color: var(--ink-soft);
+}
+.reviewDocBtn {
+  font-size: 12px; font-weight: 600; padding: 4px 12px;
+  border-radius: 100px; border: 1.5px solid var(--hair);
+  background: var(--card); color: var(--ink-soft);
+  cursor: pointer; font-family: var(--font);
+  transition: border-color .12s, background .12s;
+}
+.reviewDocBtn:hover { border-color: var(--accent); color: var(--ink); }
+.reviewDocBtnActive {
+  border-color: var(--accent); background: var(--accent-soft);
+  color: var(--accent-deep);
+}
 
 /* Progress row */
 .rvTabWrap {

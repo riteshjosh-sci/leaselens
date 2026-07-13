@@ -427,8 +427,8 @@ export default function CompareTab({ negId, docs }) {
       {/* 2. DOC SELECTOR — sits directly above clause columns */}
       <div className={styles.docSelect}>
         <DocCard side="left"  doc={leftDoc}  label="Previous version" labelCls={styles.vtagOrig} active={picker === 'left'} />
-        <div className={styles.vsBadge}>VS</div>
         <DocCard side="right" doc={rightDoc} label="Revised version"  labelCls={styles.vtagRev}  active={picker === 'right'} />
+        <div className={styles.vsBadge}>VS</div>
       </div>
 
       {/* 3. COMMERCIAL TERMS — block-extracted (v2), lease_data, or summary-text fallback */}
