@@ -345,12 +345,20 @@ export default function CompareTab({ negId, docs }) {
 
     const MEANINGFUL = ['value_changed', 'substantive_change']
 
-    // Matched blocks sorted by V2 position
-    const sorted = [...(rj.matches || [])].sort((a, b) => a.v2_idx - b.v2_idx)
+    // Schedule lines are short commercial-terms summary rows (e.g. "Incentive | 4 months")
+    // already rendered in the Commercial Terms table above — skip them in the clause diff.
+    const isScheduleLine = t => !!t && t.trim().length < 120 && t.includes(' | ') && !/^[\d"]/.test(t.trim())
+
+    // Matched blocks sorted by V2 position, commercial-term duplicates removed
+    const sorted = [...(rj.matches || [])]
+      .filter(m => !(isScheduleLine(m.v1_text) && isScheduleLine(m.v2_text)))
+      .sort((a, b) => a.v2_idx - b.v2_idx)
     for (const m of sorted) {
       const isModified = ['modified', 'topic'].includes(m.kind)
       const isMeaningful = isModified && MEANINGFUL.includes(m.change_type)
       const absD = Math.abs(m.delta)
+      const maxLen = Math.max((m.v1_text || '').length, (m.v2_text || '').length)
+      const isShortClause = isModified && maxLen > 0 && maxLen < 120
       rows.push({
         kind:          m.kind,
         change_type:   m.change_type || null,
@@ -361,6 +369,7 @@ export default function CompareTab({ negId, docs }) {
         textChanged:   isModified,
         note:          m.kind === 'reordered'
           ? `Block moved ${m.delta > 0 ? 'down' : 'up'} ${absD} position${absD !== 1 ? 's' : ''}`
+          : isShortClause ? 'Short clause — this is the complete text as it appears in the document.'
           : null,
         isMeaningful,
       })

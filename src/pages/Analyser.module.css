@@ -5,7 +5,7 @@
 .back:hover { background: var(--brand); color: var(--band-ink); border-color: var(--brand); }
 
 .h1 { font-family: var(--font-serif); font-size: 40px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; margin-bottom: 12px; line-height: 1.1; }
-.h1 em { font-style: normal; color: var(--accent); }
+.h1 em { font-style: normal; color: var(--ink); text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 5px; text-decoration-thickness: 2px; }
 .sub { font-size: 16px; color: var(--ink-soft); line-height: 1.75; margin-bottom: 32px; max-width: 620px; font-weight: 400; }
 
 .card { background: var(--card); border: 1px solid var(--hair); border-radius: var(--radius-sm); padding: 32px; margin-bottom: 24px; }

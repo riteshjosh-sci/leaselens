@@ -580,7 +580,7 @@ export default function Analyser() {
                     <span className={styles.leaseSummaryValue}>${leaseData.outgoings_annual.toLocaleString()} pa</span>
                   </div>
                 )}
-                {leaseData.total_annual_deal_value && (
+                {leaseData.total_annual_deal_value && leaseData.base_rent_annual && (
                   <div className={styles.leaseSummaryItem}>
                     <span className={styles.leaseSummaryLabel}>Total deal value</span>
                     <span className={styles.leaseSummaryValue}>${leaseData.total_annual_deal_value.toLocaleString()} pa</span>
