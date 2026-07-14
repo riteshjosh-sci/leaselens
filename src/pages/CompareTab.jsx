@@ -156,9 +156,6 @@ export default function CompareTab({ negId, docs }) {
 
   const ldA = leftDoc?.lease_data?.[0]
   const ldB = rightDoc?.lease_data?.[0]
-  // Block-extracted commercial terms (v2.0 pipeline) — preferred over ldA/ldB or summary regex
-  const ctA = comparison?.result_json?.commercial_terms_v1 || null
-  const ctB = comparison?.result_json?.commercial_terms_v2 || null
 
   const pickerRef   = useRef(null)
   const pollRef     = useRef(null)
@@ -457,9 +454,8 @@ export default function CompareTab({ negId, docs }) {
             </thead>
             <tbody>
               {TERMS_FIELDS.map(f => {
-                // prefer block-extracted terms, fall back to lease_data
-                const vA  = ctA?.[f.key] ?? ldA?.[f.key] ?? null
-                const vB  = ctB?.[f.key] ?? ldB?.[f.key] ?? null
+                const vA  = ldA?.[f.key] ?? null
+                const vB  = ldB?.[f.key] ?? null
                 const dir = getTermDir(f, vA, vB)
                 const fA  = f.fmt(vA)
                 const fB  = f.fmt(vB)
@@ -484,7 +480,7 @@ export default function CompareTab({ negId, docs }) {
                   </tr>
                 )
               })}
-              {!ctA && !ctB && !ldA && !ldB && summaryTermRows.map(({ label, vA, vB, changed }) => (
+              {!ldA && !ldB && summaryTermRows.map(({ label, vA, vB, changed }) => (
                 <tr key={label} className={changed ? styles.trmRowMod : styles.trmRowSame}>
                   <td className={styles.trmLabel}>{label}</td>
                   <td className={styles.trmVal}>{vA ?? <span className={styles.trmNil}>—</span>}</td>
