@@ -523,9 +523,9 @@ export default function NegotiationDetail() {
         )}
         {activeTab === 'compare' && (
           <CompareTab
+            key={docs.map(d => d.id).join(',')}
             negId={negId}
             docs={docs}
-            docsLoading={docProcessing}
           />
         )}
         {activeTab === 'documents' && (

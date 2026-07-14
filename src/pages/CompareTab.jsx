@@ -137,7 +137,7 @@ function isTrivialBlock(text) {
   return false
 }
 
-export default function CompareTab({ negId, docs, docsLoading }) {
+export default function CompareTab({ negId, docs }) {
   const navigate = useNavigate()
   const sortedDocs = [...docs].sort((a, b) => new Date(a.uploaded_at) - new Date(b.uploaded_at))
   const docsKey = docs.map(d => d.id).join(',')
@@ -406,18 +406,6 @@ export default function CompareTab({ negId, docs, docsLoading }) {
   })()
 
   const stats = comparison?.result_json?.stats
-
-  if (docsLoading) {
-    return (
-      <div className={styles.compLoading}>
-        <span className={styles.compSpinner} />
-        <div className={styles.compLoadText}>
-          <span className={styles.compLoadTitle}>Preparing comparison</span>
-          <span className={styles.compLoadSub}>Analysing the latest version · This usually takes 2–4 minutes</span>
-        </div>
-      </div>
-    )
-  }
 
   return (
     <div className={styles.wrap}>
