@@ -525,6 +525,7 @@ export default function NegotiationDetail() {
           <CompareTab
             negId={negId}
             docs={docs}
+            docsLoading={docProcessing}
           />
         )}
         {activeTab === 'documents' && (
