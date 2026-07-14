@@ -148,6 +148,7 @@ export default function CompareTab({ negId, docs }) {
   const [comparison, setComparison] = useState(null)
   const [activeFilter, setActiveFilter] = useState(null) // 'added'|'modified'|'removed'|null
   const [showUnchanged, setShowUnchanged] = useState(false)
+  const [addedGroupExpanded, setAddedGroupExpanded] = useState(false)
   const [compPolling, setCompPolling] = useState(false)
   const [compTimedOut, setCompTimedOut] = useState(false)
 
@@ -254,7 +255,7 @@ export default function CompareTab({ negId, docs }) {
     let out = showUnchanged ? rows : rows.filter(r => r.change !== 'same')
     if (!activeFilter) return out
     return out.filter(r => {
-      if (activeFilter === 'added')    return r.kind === 'added'
+      if (activeFilter === 'added')    return r.kind === 'added' || r.kind === 'added-group'
       if (activeFilter === 'removed')  return r.kind === 'removed'
       if (activeFilter === 'modified') return r.isMeaningful
       return true
@@ -380,13 +381,24 @@ export default function CompareTab({ negId, docs }) {
       rows.push({ kind: 'removed', change_type: null, change_summary: cs, change: 'watch', left: { text: r.text, tag: 'removed' }, right: null, textChanged: false, note: cs ? null : 'Removed in the revised version.', isMeaningful: true })
     }
 
-    // Added (V2 only)
+    // Added (V2 only) — high-significance items shown individually; everything
+    // else collapsed into a single expandable group so 500+ unmatched lease
+    // clauses don't flood the comparison view.
+    const addedBulkTexts = []
     for (const a of (rj.added || [])) {
-      const cs = a.summary ? { label: a.label, summary: a.summary, significance: a.significance, tenant_impact: a.tenant_impact } : null
-      rows.push({ kind: 'added', change_type: null, change_summary: cs, change: 'watch', left: null, right: { text: a.text, tag: 'new' }, textChanged: false, note: cs ? null : 'Added in the revised version.', isMeaningful: true })
+      if (a.significance === 'high') {
+        const cs = a.summary ? { label: a.label, summary: a.summary, significance: a.significance, tenant_impact: a.tenant_impact } : null
+        rows.push({ kind: 'added', change_type: null, change_summary: cs, change: 'watch', left: null, right: { text: a.text, tag: 'new' }, textChanged: false, note: null, isMeaningful: true })
+      } else {
+        addedBulkTexts.push(a.text)
+      }
+    }
+    if (addedBulkTexts.length > 0) {
+      rows.push({ kind: 'added-group', count: addedBulkTexts.length, items: addedBulkTexts, change: 'watch', isMeaningful: true })
     }
 
     return rows.filter(row => {
+      if (row.kind === 'added-group') return true
       if (row.change_summary?.summary) return true
       const text = (row.left?.text || row.right?.text || '').trim()
       return !isTrivialBlock(text)
@@ -532,7 +544,29 @@ export default function CompareTab({ negId, docs }) {
           </div>
 
           <div className={styles.crows}>
-            {getFilteredRows(displayRows).map((row, i) => (
+            {getFilteredRows(displayRows).map((row, i) => row.kind === 'added-group' ? (
+              <div key={i} className={styles.addedGroup}>
+                <div className={styles.addedGroupHeader}>
+                  <span className={styles.tagNew}>Added</span>
+                  <span className={styles.addedGroupLabel}>
+                    {row.count} additional unmatched clause{row.count !== 1 ? 's' : ''} — present in the revised version with no counterpart in the previous version
+                  </span>
+                  <button className={styles.addedGroupToggle} onClick={() => setAddedGroupExpanded(p => !p)}>
+                    {addedGroupExpanded ? 'Hide list ▴' : 'Show list ▾'}
+                  </button>
+                </div>
+                {addedGroupExpanded && (
+                  <div className={styles.addedGroupList}>
+                    {row.items.map((text, idx) => (
+                      <div key={idx} className={styles.addedGroupItem}>
+                        <span className={styles.addedGroupN}>{idx + 1}</span>
+                        <span>{text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
               <div key={i} className={styles.crow}>
                 {row.left ? (
                   <div className={`${styles.ccard} ${dotCls[row.change]}`}>
@@ -612,7 +646,7 @@ export default function CompareTab({ negId, docs }) {
             ))}
 
             {(() => {
-              const unchangedCount = displayRows.filter(r => r.change === 'same').length
+              const unchangedCount = displayRows.filter(r => r.change === 'same' && r.kind !== 'added-group').length
               return unchangedCount > 0 && (
                 <button className={styles.toggleUnchanged} onClick={() => setShowUnchanged(p => !p)}>
                   {showUnchanged
