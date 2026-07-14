@@ -440,7 +440,7 @@ export default function CompareTab({ negId, docs }) {
       </div>
 
       {/* 3. COMMERCIAL TERMS — block-extracted (v2), lease_data, or summary-text fallback */}
-      {((ctA || ctB || ldA || ldB) || (summaryTermRows.length > 0 && !sameDocument)) && (
+      {((ldA || ldB) || (summaryTermRows.length > 0 && !sameDocument)) && (
         <div className={styles.termsSection}>
           <div className={styles.termsSectionHead}>Commercial terms</div>
           <table className={styles.termsTable}>
