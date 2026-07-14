@@ -134,6 +134,10 @@ function isTrivialBlock(text) {
   if (TRIVIAL_RE.test(t)) return true
   // Short all-caps labels with no numbers (e.g. "DATE", "SIGNED:", "LESSEE:")
   if (t.length <= 25 && /^[A-Z][A-Z\s:._/-]*$/.test(t) && !/\d/.test(t) && t.split(/\s+/).length <= 3) return true
+  // Signing/execution lines: "Signed for the Tenant: .... Date: ...." or "Signed by [name] as ..."
+  if (/^(?:signed?|executed)\s+(?:as\s+a\s+deed\s+)?(?:for\s+(?:the\s+)?(?:tenant|landlord|guarantor|lessee|lessor)|by\s+\w)/i.test(t)) return true
+  // Witness attestation: "...in the presence of a witness"
+  if (/\bin\s+the\s+presence\s+of\s+(?:a\s+)?witness\b/i.test(t)) return true
   return false
 }
 
