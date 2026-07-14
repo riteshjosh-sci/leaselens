@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import HelpTip from '../components/HelpTip'
 import styles from './CompareTab.module.css'
 import { supabase } from '../lib/supabase'
+import { useAuth } from '../context/AuthContext'
 
 // Tokenise into words + whitespace/punctuation runs, preserving original string
 function tokenise(text) {
@@ -162,9 +163,12 @@ export default function CompareTab({ negId, docs }) {
   const ldA = leftDoc?.lease_data?.[0]
   const ldB = rightDoc?.lease_data?.[0]
 
-  const pickerRef   = useRef(null)
-  const pollRef     = useRef(null)
-  const pollCountRef = useRef(0)
+  const { user } = useAuth()
+
+  const pickerRef       = useRef(null)
+  const pollRef         = useRef(null)
+  const pollCountRef    = useRef(0)
+  const jobEnqueuedRef  = useRef(null) // 'v1id-v2id' of last enqueued on-demand pair
 
   // Reset to second-to-last vs last whenever the doc list changes (new upload arrives)
   useEffect(() => {
@@ -228,6 +232,21 @@ export default function CompareTab({ negId, docs }) {
         setComparison(data[0])
         setCompPolling(false)
       } else if (pollCountRef.current < 120) {
+        if (pollCountRef.current === 0 && user) {
+          const pairKey = `${leftId}-${rightId}`
+          if (jobEnqueuedRef.current !== pairKey) {
+            jobEnqueuedRef.current = pairKey
+            supabase.from('jobs').insert({
+              user_id: user.id,
+              negotiation_id: negId,
+              doc_type: 'comparison',
+              paste_text: JSON.stringify({ v1: leftId, v2: rightId }),
+              status: 'pending',
+            }).then(({ error: je }) => {
+              if (je) console.error('Failed to enqueue comparison job:', je)
+            })
+          }
+        }
         pollCountRef.current += 1
         setCompPolling(true)
         pollRef.current = setTimeout(doFetch, 3000)
