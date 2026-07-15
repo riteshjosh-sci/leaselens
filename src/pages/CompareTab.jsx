@@ -156,6 +156,7 @@ export default function CompareTab({ negId, docs }) {
   const [addedGroupExpanded, setAddedGroupExpanded] = useState(false)
   const [compPolling, setCompPolling] = useState(false)
   const [compTimedOut, setCompTimedOut] = useState(false)
+  const [rerunKey, setRerunKey] = useState(0)
 
   const leftDoc  = sortedDocs[leftIdx]
   const rightDoc = sortedDocs[rightIdx]
@@ -261,7 +262,14 @@ export default function CompareTab({ negId, docs }) {
       stopped = true
       if (pollRef.current) { clearTimeout(pollRef.current); pollRef.current = null }
     }
-  }, [leftIdx, rightIdx, negId, docsKey])
+  }, [leftIdx, rightIdx, negId, docsKey, rerunKey])
+
+  const handleRerun = async () => {
+    if (!comparison?.id) return
+    await supabase.from('comparisons').delete().eq('id', comparison.id)
+    jobEnqueuedRef.current = null
+    setRerunKey(k => k + 1)
+  }
 
   const handlePickVersion = (side, idx) => {
     if (side === 'left') { if (idx !== rightIdx) setLeftIdx(idx) }
@@ -466,6 +474,9 @@ export default function CompareTab({ negId, docs }) {
             <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendSame}`} />Unchanged</span>
             <span className={styles.legendItem}><span className={`${styles.legendDot} ${styles.legendBad}`} />Modified / Added / Removed</span>
           </div>
+          <button className={styles.rerunBtn} onClick={handleRerun} title="Re-run comparison with latest analysis">
+            ↻ Re-run
+          </button>
         </div>
       )}
 
