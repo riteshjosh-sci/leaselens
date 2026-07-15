@@ -376,6 +376,8 @@ export default function CompareTab({ negId, docs }) {
       .sort((a, b) => a.v2_idx - b.v2_idx)
     for (const m of sorted) {
       const isModified = ['modified', 'topic'].includes(m.kind)
+          && m.change_type !== 'formatting_only'
+          && m.change_summary?.significance !== 'trivial'
       const isMeaningful = isModified && MEANINGFUL.includes(m.change_type)
       const absD = Math.abs(m.delta)
       const maxLen = Math.max((m.v1_text || '').length, (m.v2_text || '').length)
@@ -628,7 +630,7 @@ export default function CompareTab({ negId, docs }) {
                   <div className={`${styles.ccard} ${styles.ccardEmpty}`}>Not in revised version</div>
                 )}
 
-                {row.change_summary?.summary ? (
+                {row.change_summary?.summary && row.change_summary.significance !== 'trivial' ? (
                   <div className={`${styles.ccNote} ${styles.ccNoteMod}`}>
                     <span className={styles.noteLead}>
                       {row.change_summary.tenant_impact === 'favourable'   ? '↑ Favourable'   :
