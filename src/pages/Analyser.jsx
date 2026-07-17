@@ -250,7 +250,7 @@ export default function Analyser() {
       // For V2 uploads, redirect immediately so NegotiationDetail handles the wait.
       // The subscription below is intentionally skipped — Analyser is no longer relevant.
       if (negotiationId) {
-        navigate(`/negotiation/${negotiationId}#compare`, { state: { awaitingVersion: true } })
+        navigate(`/negotiation/${negotiationId}#documents`, { state: { awaitingVersion: true } })
         return
       }
 

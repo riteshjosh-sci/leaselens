@@ -60,7 +60,7 @@ export default function NegotiationDetail() {
   const pollTimerRef       = useRef(null)
   const pollCountRef       = useRef(0)
   const awaitingVersionRef = useRef(location.state?.awaitingVersion === true)
-  const [docProcessing, setDocProcessing] = useState(false)
+  const [docProcessing, setDocProcessing] = useState(location.state?.awaitingVersion === true)
 
   // Lifted out of ReviewTab so this state survives switching to the Summary tab and
   // back — counter edits/selected options aren't persisted to the DB, only `decisions` is.
