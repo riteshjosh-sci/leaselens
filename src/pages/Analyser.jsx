@@ -247,13 +247,6 @@ export default function Analyser() {
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
 
-      // Hand off to NegotiationDetail for the full processing wait — consistent for
-      // both new uploads and re-uploads. NegotiationDetail drives polling from here.
-      if (user && negId) {
-        navigate(`/negotiation/${negId}`, { state: { awaitingVersion: true } })
-        return
-      }
-
       const subscription = supabase
         .channel(`job-${job.id}`)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jobs', filter: `id=eq.${job.id}` },
