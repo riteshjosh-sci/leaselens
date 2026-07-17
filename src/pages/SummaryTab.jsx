@@ -9,13 +9,16 @@ const CheckIcon = ({ s = 12 }) => (
 export default function SummaryTab({
   ws, allClauses, openClauses, counteringClauses, agreedClauses,
   getCounterText, isEdited, lifecycle, updateLifecycle, copied, handleCopy,
-  buildSummary, onEditClause, onBackToReview,
+  buildSummary, onEditClause, onBackToReview, isProcessing,
 }) {
   if (!allClauses.length) {
     return (
       <div className={styles.panel} style={{ marginTop: 24 }}>
         <div className={styles.panelHead}><h2>Summary</h2></div>
-        <div className={styles.empty}>No report yet — analyse a document to see a summary here.</div>
+        {isProcessing
+          ? <div className={styles.processingBanner}><span className={styles.processingSpinner} />Analysing your document · Usually 2–4 minutes</div>
+          : <div className={styles.empty}>No report yet — analyse a document to see a summary here.</div>
+        }
       </div>
     )
   }

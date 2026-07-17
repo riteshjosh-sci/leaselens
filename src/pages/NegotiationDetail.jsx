@@ -59,7 +59,6 @@ export default function NegotiationDetail() {
 
   const pollTimerRef       = useRef(null)
   const pollCountRef       = useRef(0)
-  const awaitingVersionRef = useRef(location.state?.awaitingVersion === true)
   const [docProcessing, setDocProcessing] = useState(location.state?.awaitingVersion === true)
 
   // Lifted out of ReviewTab so this state survives switching to the Summary tab and
@@ -76,9 +75,9 @@ export default function NegotiationDetail() {
   const [negEditing, setNegEditing]           = useState(false)
   const [negEditName, setNegEditName]         = useState('')
 
-  const TABS = docs.length >= 2
+  const TABS = (docs.length >= 2 || (docProcessing && docs.length >= 1))
     ? TABS_MULTI
-    : guidedStep >= 2
+    : (docProcessing || guidedStep >= 2)
       ? TABS_ONE_FULL
       : guidedStep === 1
         ? TABS_ONE_FULL.slice(0, 2)
@@ -151,11 +150,8 @@ export default function NegotiationDetail() {
 
     setDocs(sortedDocs)
 
-    // Poll until every doc that exists has a report (worker saves asynchronously).
-    // Also poll when no docs yet, or when returning from the analyser (any version upload).
     const allHaveReports = sortedDocs.length > 0 && sortedDocs.every(d => d.reports?.[0]?.report_json)
-    const awaitingNewDoc = awaitingVersionRef.current && pollCountRef.current < 10
-    if ((sortedDocs.length === 0 || !allHaveReports || awaitingNewDoc) && pollCountRef.current < 80) {
+    if (!allHaveReports && pollCountRef.current < 80) {
       pollCountRef.current += 1
       setDocProcessing(true)
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current)
@@ -465,20 +461,12 @@ export default function NegotiationDetail() {
           ))}
         </div>
 
-        {docProcessing && (
-          <div className={styles.processingBanner}>
-            <span className={styles.processingSpinner} />
-            {docs.length >= 2
-              ? 'Analysing revised version · Comparison will appear automatically when ready · Usually 3–5 minutes'
-              : 'Analysing your document · This usually takes 2–4 minutes'}
-          </div>
-        )}
-
         {/* TAB CONTENT */}
         {activeTab === 'report' && (
           <ReportTab
             allClauses={allClauses}
             onNext={advanceToReview}
+            isProcessing={docProcessing}
           />
         )}
         {activeTab === 'review' && (
@@ -501,6 +489,7 @@ export default function NegotiationDetail() {
             reviewDoc={reviewDoc}
             docsWithReports={docsWithReports}
             onSwitchDoc={handleSwitchReviewDoc}
+            isProcessing={docProcessing}
           />
         )}
         {activeTab === 'summary' && (
@@ -519,12 +508,14 @@ export default function NegotiationDetail() {
             buildSummary={buildSummary}
             onEditClause={(clauseKey) => { setActiveId(clauseKey); setTab('review') }}
             onBackToReview={() => setTab('review')}
+            isProcessing={docProcessing}
           />
         )}
         {activeTab === 'compare' && (
           <CompareTab
             negId={negId}
             docs={docs}
+            isProcessing={docProcessing}
           />
         )}
         {activeTab === 'documents' && (

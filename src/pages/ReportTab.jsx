@@ -9,12 +9,15 @@ const ChevRight = () => (
   </svg>
 )
 
-export default function ReportTab({ allClauses, onNext }) {
+export default function ReportTab({ allClauses, onNext, isProcessing }) {
   if (!allClauses.length) {
     return (
       <div className={styles.panel} style={{ marginTop: 24 }}>
         <div className={styles.panelHead}><h2>Report</h2></div>
-        <div className={styles.empty}>No report available yet — analyse a document to see findings here.</div>
+        {isProcessing
+          ? <div className={styles.processingBanner}><span className={styles.processingSpinner} />Analysing your document · Usually 2–4 minutes</div>
+          : <div className={styles.empty}>No report available yet — analyse a document to see findings here.</div>
+        }
       </div>
     )
   }

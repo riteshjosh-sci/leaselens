@@ -247,10 +247,10 @@ export default function Analyser() {
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
 
-      // For V2 uploads, redirect immediately so NegotiationDetail handles the wait.
-      // The subscription below is intentionally skipped — Analyser is no longer relevant.
-      if (negotiationId) {
-        navigate(`/negotiation/${negotiationId}#documents`, { state: { awaitingVersion: true } })
+      // Hand off to NegotiationDetail for the full processing wait — consistent for
+      // both new uploads and re-uploads. NegotiationDetail drives polling from here.
+      if (user && negId) {
+        navigate(`/negotiation/${negId}`, { state: { awaitingVersion: true } })
         return
       }
 
