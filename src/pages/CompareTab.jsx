@@ -142,7 +142,7 @@ function isTrivialBlock(text) {
   return false
 }
 
-export default function CompareTab({ negId, docs, isProcessing }) {
+export default function CompareTab({ negId, docs }) {
   const navigate = useNavigate()
   const sortedDocs = [...docs].sort((a, b) => new Date(a.uploaded_at) - new Date(b.uploaded_at))
   const docsKey = docs.map(d => d.id).join(',')
@@ -297,24 +297,12 @@ export default function CompareTab({ negId, docs, isProcessing }) {
   const dotCls  = { imp: styles.dotImp,  risk: styles.dotRsk,  same: styles.dotSame, watch: styles.dotWatch }
 
   if (docs.length < 2) {
-    return isProcessing
-      ? (
-        <div className={styles.empty}>
-          <div style={{ display:'flex', alignItems:'center', gap:10, justifyContent:'center', flexDirection:'column' }}>
-            <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-              <span style={{ width:14, height:14, borderRadius:'50%', border:'2px solid color-mix(in srgb, var(--accent) 30%, transparent)', borderTopColor:'var(--accent)', animation:'ll-spin 0.8s linear infinite', flexShrink:0, display:'inline-block' }} />
-              <span>Analysing revised version · Comparison will appear here when both reports are ready</span>
-            </div>
-            <span style={{ fontSize:12, color:'var(--muted)' }}>Usually 3–5 minutes</span>
-          </div>
-        </div>
-      )
-      : (
-        <div className={styles.empty}>
-          <p>You need at least two document versions to compare.</p>
-          <p style={{ marginTop: 6, fontSize: 13 }}>Upload a new version via "+ Add version" to unlock this tab.</p>
-        </div>
-      )
+    return (
+      <div className={styles.empty}>
+        <p>You need at least two document versions to compare.</p>
+        <p style={{ marginTop: 6, fontSize: 13 }}>Upload a new version via "+ Add version" to unlock this tab.</p>
+      </div>
+    )
   }
 
   const hasLeftReport  = !!leftDoc?.reports?.[0]?.report_json

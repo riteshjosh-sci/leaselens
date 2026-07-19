@@ -247,6 +247,13 @@ export default function Analyser() {
 
       if (jobError) throw new Error('Failed to create job: ' + jobError.message)
 
+      // For V2 uploads, redirect immediately so NegotiationDetail handles the wait.
+      // The subscription below is intentionally skipped — Analyser is no longer relevant.
+      if (negotiationId) {
+        navigate(`/negotiation/${negotiationId}#compare`, { state: { awaitingVersion: true } })
+        return
+      }
+
       const subscription = supabase
         .channel(`job-${job.id}`)
         .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'jobs', filter: `id=eq.${job.id}` },

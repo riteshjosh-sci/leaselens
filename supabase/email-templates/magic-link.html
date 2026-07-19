@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+</head>
+<body style="margin:0;padding:0;background-color:#F8F9FB;-webkit-font-smoothing:antialiased;">
+<table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color:#F8F9FB;">
+  <tr>
+    <td align="center" style="padding:48px 16px 56px;">
+      <table width="560" cellpadding="0" cellspacing="0" role="presentation" style="max-width:560px;width:100%;">
+
+        <!-- HEADER -->
+        <tr>
+          <td style="background-color:#0E1830;padding:20px 36px;border-radius:8px 8px 0 0;">
+            <img src="https://leaseroom.com.au/leaseroom-logo-light.png" alt="LeaseRoom" width="140" height="auto" style="display:block;border:0;max-width:140px;">
+          </td>
+        </tr>
+
+        <!-- ACCENT RULE -->
+        <tr>
+          <td style="background-color:#7FA0D6;height:2px;line-height:2px;font-size:2px;mso-line-height-rule:exactly;">&nbsp;</td>
+        </tr>
+
+        <!-- BODY -->
+        <tr>
+          <td style="background-color:#FFFFFF;padding:40px 36px 36px;border-radius:0 0 8px 8px;border-left:1px solid rgba(14,24,48,0.08);border-right:1px solid rgba(14,24,48,0.08);border-bottom:1px solid rgba(14,24,48,0.08);">
+
+            <h1 style="margin:0 0 12px;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:22px;font-weight:700;color:#0E1830;letter-spacing:-0.025em;line-height:1.3;">Your sign-in link</h1>
+
+            <p style="margin:0 0 32px;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:15px;color:#56627A;line-height:1.65;">Click the button below to sign in to your LeaseRoom account. This link can only be used once.</p>
+
+            <!-- CTA BUTTON -->
+            <table cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:28px;">
+              <tr>
+                <td style="background-color:#1E3A66;border-radius:6px;">
+                  <a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:13px 28px;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:14px;font-weight:600;color:#FFFFFF;text-decoration:none;letter-spacing:-0.01em;mso-padding-alt:13px 28px;">Sign in to LeaseRoom</a>
+                </td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 20px;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:13px;color:#8A93A4;line-height:1.6;">This link expires in 1 hour. If you didn't request this, you can safely ignore it — your account is secure.</p>
+
+            <!-- DIVIDER -->
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="margin-bottom:20px;">
+              <tr>
+                <td style="border-top:1px solid rgba(14,24,48,0.08);font-size:0;line-height:0;">&nbsp;</td>
+              </tr>
+            </table>
+
+            <p style="margin:0 0 8px;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;color:#8A93A4;line-height:1.6;">If the button doesn't work, copy and paste this URL into your browser:</p>
+            <p style="margin:0;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;color:#7FA0D6;word-break:break-all;line-height:1.6;">{{ .ConfirmationURL }}</p>
+
+          </td>
+        </tr>
+
+        <!-- FOOTER -->
+        <tr>
+          <td style="padding:22px 36px 0;text-align:center;">
+            <p style="margin:0;font-family:'IBM Plex Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;font-size:12px;color:#8A93A4;line-height:1.7;">LeaseRoom &middot; Lease analysis for retail tenants<br>If you didn't request this sign-in link, no action is needed.</p>
+          </td>
+        </tr>
+
+      </table>
+    </td>
+  </tr>
+</table>
+</body>
+</html>

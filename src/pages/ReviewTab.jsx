@@ -94,16 +94,13 @@ export default function ReviewTab({
   allClauses, decisions, activeId, setActiveId, decideAndAdvance,
   getCounterText, isEdited, counterEdits, resetKeys, selectedOptions,
   handleCounterEdit, handleReset, handleOptionSelect, decided, onViewSummary,
-  reviewDoc, docsWithReports, onSwitchDoc, isProcessing,
+  reviewDoc, docsWithReports, onSwitchDoc,
 }) {
   if (!allClauses.length) {
     return (
       <div className={styles.panel} style={{ marginTop: 24 }}>
         <div className={styles.panelHead}><h2>Clauses</h2></div>
-        {isProcessing
-          ? <div className={styles.processingBanner}><span className={styles.processingSpinner} />Analysing your document · Usually 2–4 minutes</div>
-          : <div className={styles.empty}>No report yet — analyse a document to see clauses here.</div>
-        }
+        <div className={styles.empty}>No report yet — analyse a document to see clauses here.</div>
       </div>
     )
   }

@@ -1,3 +1,5 @@
+import { useState } from 'react'
+import { supabase } from '../lib/supabase'
 import styles from './NegotiationDetail.module.css'
 
 const CheckIcon = ({ s = 12 }) => (
@@ -7,18 +9,69 @@ const CheckIcon = ({ s = 12 }) => (
 )
 
 export default function SummaryTab({
+  negId,
   ws, allClauses, openClauses, counteringClauses, agreedClauses,
   getCounterText, isEdited, lifecycle, updateLifecycle, copied, handleCopy,
-  buildSummary, onEditClause, onBackToReview, isProcessing,
+  buildSummary, onEditClause, onBackToReview,
 }) {
+  const [emailOpen, setEmailOpen] = useState(false)
+  const [toEmail,   setToEmail]   = useState('')
+  const [toName,    setToName]    = useState('')
+  const [message,   setMessage]   = useState('')
+  const [sending,   setSending]   = useState(false)
+  const [sent,      setSent]      = useState(false)
+  const [sendError, setSendError] = useState(null)
+
+  const handleSendEmail = async (e) => {
+    e.preventDefault()
+    setSending(true)
+    setSendError(null)
+    try {
+      const { error } = await supabase.functions.invoke('send-report', {
+        body: {
+          to_email:         toEmail.trim(),
+          to_name:          toName.trim() || undefined,
+          personal_message: message.trim() || undefined,
+          property_name:    ws?.name || 'Property',
+          client_name:      ws?.client_name || undefined,
+          from_name:        ws?.client_name || undefined,
+          neg_id:           negId,
+          countering: counteringClauses.map(c => ({
+            location: c.location,
+            name:     c.name,
+            counter:  getCounterText(c) || '',
+          })),
+          agreed: agreedClauses.map(c => ({
+            location: c.location,
+            name:     c.name,
+          })),
+        },
+      })
+      if (error) throw new Error(error.message)
+      setSent(true)
+      if (!['awaiting', 'sent', 'agreed'].includes(lifecycle)) {
+        updateLifecycle('awaiting')
+      }
+    } catch (err) {
+      setSendError(err.message || 'Failed to send. Please try again.')
+    } finally {
+      setSending(false)
+    }
+  }
+
+  const resetEmailForm = () => {
+    setSent(false)
+    setToEmail('')
+    setToName('')
+    setMessage('')
+    setSendError(null)
+  }
+
   if (!allClauses.length) {
     return (
       <div className={styles.panel} style={{ marginTop: 24 }}>
         <div className={styles.panelHead}><h2>Summary</h2></div>
-        {isProcessing
-          ? <div className={styles.processingBanner}><span className={styles.processingSpinner} />Analysing your document · Usually 2–4 minutes</div>
-          : <div className={styles.empty}>No report yet — analyse a document to see a summary here.</div>
-        }
+        <div className={styles.empty}>No report yet — analyse a document to see a summary here.</div>
       </div>
     )
   }
@@ -144,14 +197,91 @@ export default function SummaryTab({
               <div className={styles.sendL}>To decide</div>
             </div>
           </div>
-          <button className={styles.sendExport} onClick={handleCopy}>
-            {copied ? '✓ Copied to clipboard' : 'Copy email to clipboard'}
-          </button>
-          {lifecycle === 'awaiting' || lifecycle === 'sent' ? (
-            <div className={styles.markedDone}><CheckIcon s={12} /> With landlord for review</div>
+
+          {/* ── Email form ── */}
+          {emailOpen ? (
+            sent ? (
+              <div style={{ textAlign: 'center', padding: '14px 4px 6px' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--st-agreed-tx)', marginBottom: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+                  <CheckIcon s={13} /> Report sent
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--muted)', marginBottom: 12 }}>{toEmail}</div>
+                <button
+                  onClick={resetEmailForm}
+                  style={{ background: 'none', border: 'none', fontSize: 12, fontWeight: 600, color: 'var(--accent)', cursor: 'pointer', fontFamily: 'var(--font)' }}
+                >
+                  Send to another →
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSendEmail} style={{ display: 'flex', flexDirection: 'column', gap: 8, paddingTop: 4 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--muted)' }}>Email report</span>
+                  <button
+                    type="button"
+                    onClick={() => { setEmailOpen(false); setSendError(null) }}
+                    style={{ background: 'none', border: 'none', color: 'var(--muted)', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px', fontFamily: 'var(--font)' }}
+                  >
+                    ×
+                  </button>
+                </div>
+                <input
+                  type="email"
+                  required
+                  placeholder="Recipient email"
+                  value={toEmail}
+                  onChange={e => setToEmail(e.target.value)}
+                  className="input"
+                  style={{ width: '100%', fontSize: 13 }}
+                />
+                <input
+                  type="text"
+                  placeholder="Name (optional)"
+                  value={toName}
+                  onChange={e => setToName(e.target.value)}
+                  className="input"
+                  style={{ width: '100%', fontSize: 13 }}
+                />
+                <textarea
+                  placeholder="Personal message (optional)"
+                  value={message}
+                  onChange={e => setMessage(e.target.value)}
+                  className="input"
+                  rows={3}
+                  style={{ width: '100%', fontSize: 13, resize: 'vertical', fontFamily: 'var(--font)' }}
+                />
+                {sendError && (
+                  <div style={{ fontSize: 12, color: 'var(--risk-h)', lineHeight: 1.4 }}>{sendError}</div>
+                )}
+                <button
+                  type="submit"
+                  disabled={sending || !toEmail.trim()}
+                  className={styles.markSent}
+                  style={{ marginTop: 2 }}
+                >
+                  {sending ? 'Sending…' : 'Send report'}
+                </button>
+              </form>
+            )
           ) : (
-            <button className={styles.markSent} onClick={() => updateLifecycle('awaiting')}>
-              Mark as with landlord for review
+            <button
+              className={styles.markSent}
+              onClick={() => setEmailOpen(true)}
+              style={{ marginBottom: 8 }}
+            >
+              Email to agent ↗
+            </button>
+          )}
+
+          <button className={styles.sendExport} onClick={handleCopy}>
+            {copied ? '✓ Copied to clipboard' : 'Copy to clipboard'}
+          </button>
+
+          {lifecycle === 'awaiting' || lifecycle === 'sent' ? (
+            <div className={styles.markedDone} style={{ marginTop: 8 }}><CheckIcon s={12} /> With landlord for review</div>
+          ) : (
+            <button className={styles.markSent} style={{ background: 'var(--paper)', border: '1px solid var(--hair)', color: 'var(--ink-soft)', marginTop: 8 }} onClick={() => updateLifecycle('awaiting')}>
+              Mark as with landlord
             </button>
           )}
         </div>
