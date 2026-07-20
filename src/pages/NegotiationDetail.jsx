@@ -322,7 +322,7 @@ export default function NegotiationDetail() {
     lines.push('AGREED AS DRAFTED:')
     if (agreedClauses.length) {
       agreedClauses.forEach(c => {
-        const label = c.location ? `${c.location} — ${c.name}` : c.name
+        const label = c.location ? `${c.location}: ${c.name}` : c.name
         lines.push(`• ${label}`)
       })
     } else {
@@ -334,8 +334,8 @@ export default function NegotiationDetail() {
       counteringClauses.forEach(c => {
         const ct = getCounterText(c)
         const normalized = ct ? ct.replace(/\\n/g, ' ').replace(/\*\*/g, '').replace(/\n+/g, ' ').trim() : ''
-        const label = c.location ? `${c.location} — ${c.name}` : c.name
-        lines.push(`• ${label}${normalized ? `: ${normalized}` : ''}`)
+        const label = c.location ? `${c.location}: ${c.name}` : c.name
+        lines.push(`• ${label}${normalized ? ` — ${normalized}` : ''}`)
       })
     } else {
       lines.push('• None yet.')

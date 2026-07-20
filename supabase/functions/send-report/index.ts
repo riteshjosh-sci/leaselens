@@ -40,13 +40,13 @@ function buildHtml(p: SendReportPayload): string {
   const viewUrl = p.neg_id ? `${appUrl}/negotiation/${p.neg_id}` : appUrl
 
   const counterItems = p.countering.map(c => {
-    const label = c.location ? `${esc(c.location)} — ${esc(c.name)}` : esc(c.name)
-    const counter = c.counter ? `: ${esc(c.counter).replace(/\n/g, ' ')}` : ''
+    const label = c.location ? `${esc(c.location)}: ${esc(c.name)}` : esc(c.name)
+    const counter = c.counter ? ` — ${esc(c.counter).replace(/\n/g, ' ')}` : ''
     return `<div style="font-family:${font};font-size:14px;color:#56627A;line-height:1.7;margin-bottom:10px;">&bull;&nbsp;${label}${counter}</div>`
   }).join('')
 
   const agreedItems = p.agreed.map(c => {
-    const label = c.location ? `${esc(c.location)} — ${esc(c.name)}` : esc(c.name)
+    const label = c.location ? `${esc(c.location)}: ${esc(c.name)}` : esc(c.name)
     return `<div style="font-family:${font};font-size:14px;color:#56627A;line-height:1.7;margin-bottom:4px;">&bull;&nbsp;${label}</div>`
   }).join('')
 
