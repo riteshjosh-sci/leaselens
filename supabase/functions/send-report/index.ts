@@ -41,18 +41,16 @@ function buildHtml(p: SendReportPayload): string {
 
   const counterRows = p.countering.map(c => `
     <tr>
-      <td style="padding:14px 0 10px;border-bottom:1px solid rgba(14,24,48,0.06);">
+      <td style="padding:12px 0;border-bottom:1px solid rgba(14,24,48,0.06);">
         <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
           <tr>
             ${c.location ? `<td style="width:56px;vertical-align:top;padding-top:2px;"><span style="font-family:${font};font-size:9.5px;font-weight:700;color:#8A93A4;text-transform:uppercase;letter-spacing:0.06em;">${esc(c.location)}</span></td>` : ''}
-            <td><span style="font-family:${font};font-size:14px;font-weight:600;color:#0E1830;">${esc(c.name)}</span></td>
+            <td>
+              <div style="font-family:${font};font-size:14px;font-weight:600;color:#0E1830;margin-bottom:${c.counter ? '5px' : '0'};">${esc(c.name)}</div>
+              ${c.counter ? `<div style="font-family:${font};font-size:13px;color:#56627A;line-height:1.65;">${esc(c.counter).replace(/\n/g, '<br>')}</div>` : ''}
+            </td>
           </tr>
         </table>
-        ${c.counter ? `
-        <div style="margin-top:10px;background:#F8F9FB;border-left:3px solid #7FA0D6;padding:12px 14px;border-radius:0 4px 4px 0;">
-          <div style="font-family:${font};font-size:9.5px;font-weight:700;color:#7FA0D6;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:6px;">Proposed wording</div>
-          <div style="font-family:${font};font-size:13px;color:#56627A;line-height:1.65;">${esc(c.counter).replace(/\n/g, '<br>')}</div>
-        </div>` : ''}
       </td>
     </tr>`).join('')
 
