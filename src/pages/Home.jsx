@@ -223,7 +223,7 @@ export default function Home() {
           <div className={`${styles.waitlistCard} ${styles.reveal}`}>
             <span className={styles.eyebrow}>Early access</span>
             <h2>Join the LeaseRoom waitlist.</h2>
-            <p>Be first to analyse a lease when we launch. No spam — just your invite and the occasional product update.</p>
+            <p>Be first to analyse a lease when we launch. No spam, just your invitation and the occasional product update.</p>
             {waitlistSubmitted ? (
               <div className={styles.waitlistDone}>
                 <span className={styles.waitlistCheck}>✓</span>
