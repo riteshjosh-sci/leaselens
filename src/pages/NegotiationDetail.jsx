@@ -83,9 +83,10 @@ export default function NegotiationDetail() {
       : guidedStep === 1
         ? TABS_ONE_FULL.slice(0, 2)
         : TABS_ONE_FULL.slice(0, 1)
-  // Derive active tab from URL hash or default to first tab
+  // Derive active tab from URL hash; for completed negotiations default to summary
   const hashTab = location.hash.replace('#', '')
-  const activeTab = TABS.find(t => t.key === hashTab)?.key || TABS[0].key
+  const defaultTab = ['awaiting', 'sent', 'agreed'].includes(lifecycle) ? 'summary' : TABS[0].key
+  const activeTab = TABS.find(t => t.key === hashTab)?.key || defaultTab
 
   useEffect(() => {
     if (!user) { navigate('/login'); return }
@@ -131,7 +132,11 @@ export default function NegotiationDetail() {
 
     if (!negData) { navigate('/dashboard'); return }
     setNeg(negData)
-    setLifecycle(negData.lifecycle || 'reviewing')
+    const lc = negData.lifecycle || 'reviewing'
+    setLifecycle(lc)
+    if (['awaiting', 'sent', 'agreed', 'counter_prepared'].includes(lc)) {
+      setGuidedStep(s => Math.max(s, 2))
+    }
 
     const sortedDocs = (negData.documents || []).filter(d => !d.is_deleted).sort((a, b) => b.version_number - a.version_number)
 
