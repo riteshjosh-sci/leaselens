@@ -319,21 +319,23 @@ export default function NegotiationDetail() {
     const prop = ws?.name || 'the property'
     const tenant = ws?.client_name ? ` (${ws.client_name})` : ''
     const lines = [`Lease review — ${prop}${tenant}`, '']
-    lines.push('AGREED')
-    if (agreedClauses.length) agreedClauses.forEach(c => lines.push(`• ${c.location || c.name} — ${c.name}.`))
-    else lines.push('• None yet.')
+    lines.push('AGREED AS DRAFTED:')
+    if (agreedClauses.length) {
+      agreedClauses.forEach(c => {
+        const label = c.location ? `${c.location} — ${c.name}` : c.name
+        lines.push(`• ${label}`)
+      })
+    } else {
+      lines.push('• None yet.')
+    }
     lines.push('')
-    lines.push('NOT AGREED — PROPOSED CHANGES')
+    lines.push('PROPOSED CHANGES:')
     if (counteringClauses.length) {
       counteringClauses.forEach(c => {
-        lines.push(`• ${c.location || c.name} — ${c.name}.`)
         const ct = getCounterText(c)
-        if (ct) {
-          const normalized = ct.replace(/\\n/g, '\n').replace(/\*\*/g, '').trim()
-          const indented = normalized.split('\n').map((l, i) => i === 0 ? `  Proposed: ${l}` : `  ${l}`).join('\n')
-          lines.push(indented)
-        }
-        lines.push('')
+        const normalized = ct ? ct.replace(/\\n/g, ' ').replace(/\*\*/g, '').replace(/\n+/g, ' ').trim() : ''
+        const label = c.location ? `${c.location} — ${c.name}` : c.name
+        lines.push(`• ${label}${normalized ? `: ${normalized}` : ''}`)
       })
     } else {
       lines.push('• None yet.')
