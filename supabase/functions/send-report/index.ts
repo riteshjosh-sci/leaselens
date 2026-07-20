@@ -39,32 +39,16 @@ function buildHtml(p: SendReportPayload): string {
   const appUrl = Deno.env.get('APP_URL') ?? 'https://leaseroom.com.au'
   const viewUrl = p.neg_id ? `${appUrl}/negotiation/${p.neg_id}` : appUrl
 
-  const counterRows = p.countering.map(c => `
-    <tr>
-      <td style="padding:12px 0;border-bottom:1px solid rgba(14,24,48,0.06);">
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-          <tr>
-            ${c.location ? `<td style="width:56px;vertical-align:top;padding-top:2px;"><span style="font-family:${font};font-size:9.5px;font-weight:700;color:#8A93A4;text-transform:uppercase;letter-spacing:0.06em;">${esc(c.location)}</span></td>` : ''}
-            <td>
-              <div style="font-family:${font};font-size:14px;font-weight:600;color:#0E1830;margin-bottom:${c.counter ? '5px' : '0'};">${esc(c.name)}</div>
-              ${c.counter ? `<div style="font-family:${font};font-size:13px;color:#56627A;line-height:1.65;">${esc(c.counter).replace(/\n/g, '<br>')}</div>` : ''}
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>`).join('')
+  const counterItems = p.countering.map(c => {
+    const label = c.location ? `${esc(c.location)} — ${esc(c.name)}` : esc(c.name)
+    const counter = c.counter ? `: ${esc(c.counter).replace(/\n/g, ' ')}` : ''
+    return `<div style="font-family:${font};font-size:14px;color:#56627A;line-height:1.7;margin-bottom:10px;">&bull;&nbsp;${label}${counter}</div>`
+  }).join('')
 
-  const agreedRows = p.agreed.map(c => `
-    <tr>
-      <td style="padding:9px 0;border-bottom:1px solid rgba(14,24,48,0.05);">
-        <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-          <tr>
-            ${c.location ? `<td style="width:56px;"><span style="font-family:${font};font-size:9.5px;font-weight:700;color:#8A93A4;text-transform:uppercase;letter-spacing:0.06em;">${esc(c.location)}</span></td>` : ''}
-            <td><span style="font-family:${font};font-size:13px;color:#56627A;">${esc(c.name)}</span></td>
-          </tr>
-        </table>
-      </td>
-    </tr>`).join('')
+  const agreedItems = p.agreed.map(c => {
+    const label = c.location ? `${esc(c.location)} — ${esc(c.name)}` : esc(c.name)
+    return `<div style="font-family:${font};font-size:14px;color:#56627A;line-height:1.7;margin-bottom:4px;">&bull;&nbsp;${label}</div>`
+  }).join('')
 
   return `<!DOCTYPE html>
 <html>
@@ -110,14 +94,14 @@ function buildHtml(p: SendReportPayload): string {
 
             ${p.countering.length ? `
             <div style="margin-bottom:${p.agreed.length ? '28px' : '32px'};">
-              <div style="font-family:${font};font-size:11px;font-weight:700;color:#0E1830;text-transform:uppercase;letter-spacing:0.07em;padding-bottom:12px;border-bottom:2px solid #0E1830;">Proposed changes &middot; ${p.countering.length}</div>
-              <table width="100%" cellpadding="0" cellspacing="0" role="presentation">${counterRows}</table>
+              <div style="font-family:${font};font-size:11px;font-weight:700;color:#0E1830;text-transform:uppercase;letter-spacing:0.07em;padding-bottom:12px;border-bottom:2px solid #0E1830;margin-bottom:14px;">Proposed changes &middot; ${p.countering.length}</div>
+              ${counterItems}
             </div>` : ''}
 
             ${p.agreed.length ? `
             <div style="margin-bottom:32px;">
-              <div style="font-family:${font};font-size:11px;font-weight:700;color:#0E1830;text-transform:uppercase;letter-spacing:0.07em;padding-bottom:12px;border-bottom:1px solid rgba(14,24,48,0.12);">Accepted as drafted &middot; ${p.agreed.length}</div>
-              <table width="100%" cellpadding="0" cellspacing="0" role="presentation">${agreedRows}</table>
+              <div style="font-family:${font};font-size:11px;font-weight:700;color:#0E1830;text-transform:uppercase;letter-spacing:0.07em;padding-bottom:12px;border-bottom:1px solid rgba(14,24,48,0.12);margin-bottom:10px;">Accepted as drafted &middot; ${p.agreed.length}</div>
+              ${agreedItems}
             </div>` : ''}
 
             <!-- CTA -->
