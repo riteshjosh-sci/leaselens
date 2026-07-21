@@ -268,7 +268,12 @@ export default function CompareTab({ negId, docs }) {
       stopped = true
       if (pollRef.current) { clearTimeout(pollRef.current); pollRef.current = null }
     }
-  }, [leftIdx, rightIdx, negId, docsKey, rerunKey])
+  // docsKey intentionally excluded: the docsKey effect updates leftIdx/rightIdx,
+  // which triggers this effect with correct indexes. Including docsKey directly
+  // causes a double-fire — first with stale indexes (loading wrong comparison),
+  // then again with correct indexes.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [leftIdx, rightIdx, negId, rerunKey])
 
   const handleRerun = async () => {
     if (!comparison?.id) return
@@ -503,14 +508,14 @@ export default function CompareTab({ negId, docs }) {
           <span className={styles.compSpinner} />
           <div className={styles.compLoadText}>
             <span className={styles.compLoadTitle}>
-              {!hasLeftReport || !hasRightReport
-                ? 'Analysing revised document'
+              {hasLeftReport && hasRightReport
+                ? 'Generating comparison'
                 : 'Analysing revised comparison'}
             </span>
             <span className={styles.compLoadSub}>
-              {!hasLeftReport || !hasRightReport
-                ? 'Waiting for document analysis to complete before generating comparison'
-                : `Matching clauses between ${docLabel(leftDoc)} and ${docLabel(rightDoc)} · Usually 1–3 minutes`}
+              {hasLeftReport && hasRightReport
+                ? `Matching clauses between ${docLabel(leftDoc)} and ${docLabel(rightDoc)} · Usually 1–3 minutes`
+                : 'Waiting for document analysis to complete'}
             </span>
           </div>
         </div>
