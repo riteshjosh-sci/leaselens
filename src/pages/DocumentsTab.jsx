@@ -255,7 +255,7 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
                   <div className={dStyles.fic}>{doc.filename?.split('.').pop()?.toUpperCase() || 'DOC'}</div>
                   <div className={dStyles.dm}>
                     <div className={dStyles.docRole}>
-                      V{list.length - i} · {i === 0 ? 'current' : 'superseded'}
+                      V{list.length - i} {type === 'hoa' ? 'HOA' : 'Lease'} · {i === 0 ? 'current' : 'superseded'}
                     </div>
                     <div className={dStyles.docFn}>{stripTimestamp(doc.filename)}</div>
                     <div className={dStyles.docMeta}>{formatDate(doc.uploaded_at)}</div>
