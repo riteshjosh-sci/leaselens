@@ -156,23 +156,18 @@ export default function NegotiationDetail() {
 
     setDocs(sortedDocs)
 
-    // The worker saves reports and lease_data as two separate DB writes.
-    // We need to poll until BOTH are present so the commercial table can update
-    // from lease_data independently of the comparison (which has its own polling
-    // in CompareTab). The docProcessing banner only requires reports — once reports
-    // are ready the banner drops and lease_data polling continues silently in the
-    // background, giving CompareTab a chance to show "Generating comparison..."
-    // between the commercial table appearing and the comparison arriving.
+    // Poll until every doc that exists has a report (worker saves asynchronously).
+    // Also poll when no docs yet, or when returning from the analyser (any version upload).
     const allHaveReports = sortedDocs.length > 0 && sortedDocs.every(d => d.reports?.[0]?.report_json)
-    const leaseDocs = sortedDocs.filter(d => d.doc_type === 'lease')
-    const allLeaseDocsHaveData = leaseDocs.length === 0 || leaseDocs.every(d => d.lease_data?.[0])
     const awaitingNewDoc = awaitingVersionRef.current && pollCountRef.current < 10
-    if ((!allHaveReports || !allLeaseDocsHaveData || awaitingNewDoc) && pollCountRef.current < 80) {
+    if ((sortedDocs.length === 0 || !allHaveReports || awaitingNewDoc) && pollCountRef.current < 80) {
       pollCountRef.current += 1
+      setDocProcessing(true)
       if (pollTimerRef.current) clearTimeout(pollTimerRef.current)
       pollTimerRef.current = setTimeout(fetchAll, 3000)
+    } else {
+      setDocProcessing(false)
     }
-    setDocProcessing(!allHaveReports || awaitingNewDoc)
 
     if (negData.workspace_id) {
       const { data: wsData } = await supabase
