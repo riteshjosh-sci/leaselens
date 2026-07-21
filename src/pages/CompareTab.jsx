@@ -405,6 +405,7 @@ export default function CompareTab({ negId, docs }) {
         change:        isModified ? 'watch' : 'same',
         left:          { text: m.v1_text },
         right:         { text: m.v2_text, tag: isModified ? 'modified' : m.kind === 'reordered' ? 'reordered' : 'unchanged' },
+        extraRight:    m.extra_v2 || [],
         textChanged:   isModified,
         note:          m.kind === 'reordered'
           ? `Block moved ${m.delta > 0 ? 'down' : 'up'} ${absD} position${absD !== 1 ? 's' : ''}`
@@ -640,6 +641,12 @@ export default function CompareTab({ negId, docs }) {
                           ? <HighlightedText oldText={row.left.text} newText={row.right.text} />
                           : row.right.text}
                       </p>
+                      {row.extraRight?.length > 0 && row.extraRight.map((er, erIdx) => (
+                        <div key={erIdx} className={styles.extraBlock}>
+                          <div className={styles.extraBlockLbl}>Also in this version (same heading)</div>
+                          <p>{er.text}</p>
+                        </div>
+                      ))}
                     </div>
                     <span className={styles.sdot} />
                   </div>
