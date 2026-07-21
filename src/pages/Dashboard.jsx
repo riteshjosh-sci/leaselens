@@ -8,18 +8,23 @@ import styles from './Dashboard.module.css'
 
 const TOUR_STEPS = [
   {
-    title: 'Your portfolio at a glance',
-    body: "This is Home — a quick read on what's active and what needs you today.",
+    title: 'Welcome to LeaseRoom',
+    body: "You're in. Here's a quick tour of what you're looking at — takes about 30 seconds.",
+  },
+  {
+    target: 'dash-analyse-btn',
+    title: 'Start here',
+    body: 'Upload a Heads of Agreement or Lease and get a full clause-by-clause risk analysis. First one is free, no card required.',
   },
   {
     target: 'stats-strip',
-    title: 'Headline numbers',
-    body: 'Properties, active negotiations, and reports generated.',
+    title: 'Your activity at a glance',
+    body: 'Properties, active negotiations, reports generated, and how many scans you have left this month.',
   },
   {
     target: 'attention-panel',
-    title: "Active negotiations",
-    body: 'Anything still sitting un-reviewed since its last upload is flagged with ! and bumped to the top. Open "Properties" in the sidebar for the full grouped view.',
+    title: 'Negotiations that need you',
+    body: "Anything that hasn't been reviewed since its last upload is flagged with ! and pinned to the top. Click any row to open it.",
   },
 ]
 
@@ -129,7 +134,7 @@ export default function Dashboard() {
 
   return (
     <AppSidebar>
-      <Tour steps={TOUR_STEPS} storageKey="ll_home_tour_seen" />
+      <Tour steps={TOUR_STEPS} storageKey="ll_home_tour_v2" />
       <div className={styles.page}>
 
         {/* HEAD */}
@@ -141,7 +146,7 @@ export default function Dashboard() {
               {needsReviewCount > 0 && ` · ${needsReviewCount} need your review today.`}
             </div>
           </div>
-          <button className="btn-ink btn-sm" onClick={() => navigate('/analyser')}>
+          <button className="btn-ink btn-sm" data-tour="dash-analyse-btn" onClick={() => navigate('/analyser')}>
             + Analyse new lease or HOA
           </button>
         </div>
