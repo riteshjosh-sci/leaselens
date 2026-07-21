@@ -175,7 +175,7 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
       <div className={`${dStyles.dropZone} ${compact ? dStyles.dropZoneCompact : ''}`}>
         <div
           className={`${dStyles.dropArea} ${dragOver ? dStyles.dropAreaOver : ''} ${file ? dStyles.dropAreaLoaded : ''}`}
-          onClick={() => !uploading && fileInputRef.current.click()}
+          onClick={() => !uploading && !file && fileInputRef.current.click()}
           onDragOver={e => { e.preventDefault(); setDragOver(true) }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
@@ -215,16 +215,25 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
     )
   }
 
-  const DocList = ({ list, type }) => (
+  const DocList = ({ list, type }) => {
+    const hasReport = list.some(d => d.reports?.[0]?.report_json)
+    return (
     <div className={dStyles.col}>
       <div className={dStyles.colHead}>
         <div className={dStyles.colTitleWrap}>
           <span className={dStyles.colBar} />
           <span className={dStyles.colTitle}>{type === 'hoa' ? 'Heads of Agreement' : 'Lease'}</span>
         </div>
-        <button className="btn-outline btn-sm" onClick={() => onAddVersion(type)}>
-          Open in Analyser →
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {hasReport && (
+            <button className="btn-ink btn-sm" onClick={() => navigate(`/negotiation/${negId}#review`)}>
+              Review clauses →
+            </button>
+          )}
+          <button className="btn-outline btn-sm" onClick={() => onAddVersion(type)}>
+            Open in Analyser →
+          </button>
+        </div>
       </div>
 
       <div className={dStyles.colBody}>
@@ -246,7 +255,7 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
                   <div className={dStyles.fic}>{doc.filename?.split('.').pop()?.toUpperCase() || 'DOC'}</div>
                   <div className={dStyles.dm}>
                     <div className={dStyles.docRole}>
-                      V{doc.version_number} · {i === 0 ? 'current' : 'superseded'}
+                      V{list.length - i} · {i === 0 ? 'current' : 'superseded'}
                     </div>
                     <div className={dStyles.docFn}>{stripTimestamp(doc.filename)}</div>
                     <div className={dStyles.docMeta}>{formatDate(doc.uploaded_at)}</div>
@@ -275,6 +284,7 @@ export default function DocumentsTab({ negId, docs, setDocs, onAddVersion }) {
       </div>
     </div>
   )
+  }
 
   return (
     <div className={dStyles.wrap}>
