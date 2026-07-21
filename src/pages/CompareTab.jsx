@@ -450,8 +450,17 @@ export default function CompareTab({ negId, docs }) {
   return (
     <div className={styles.wrap}>
 
-      {/* 1. COMPARISON SUMMARY — at the very top, filterable */}
-      {comparison && !sameDocument && (
+      {/* 1. DOC SELECTOR */}
+      <div className={styles.docSelect}>
+        <DocCard side="left"  doc={leftDoc}  label="Previous version" labelCls={styles.vtagOrig} active={picker === 'left'} />
+        <div className={styles.vsBadge}>VS</div>
+        <DocCard side="right" doc={rightDoc} label="Revised version"  labelCls={styles.vtagRev}  active={picker === 'right'} />
+      </div>
+
+      {/* 2. STATUS / SUMMARY SLOT — same position whether loading or loaded */}
+      {sameDocument ? (
+        <div className={styles.noReport}>Same document selected — upload a revised version to compare changes.</div>
+      ) : comparison ? (
         <div className={styles.summaryStrip}>
           <span className={styles.summaryLabel}>Comparison summary</span>
           <HelpTip>Source-text blocks compared between the two document versions. Modified blocks show word-level highlighting of what changed.</HelpTip>
@@ -485,14 +494,27 @@ export default function CompareTab({ negId, docs }) {
             ↻ Re-run
           </button>
         </div>
+      ) : compTimedOut ? (
+        <div className={styles.noReport}>
+          Comparison is taking longer than expected. Try refreshing the page — if this keeps happening, contact support.
+        </div>
+      ) : (
+        <div className={styles.compLoading}>
+          <span className={styles.compSpinner} />
+          <div className={styles.compLoadText}>
+            <span className={styles.compLoadTitle}>
+              {!hasLeftReport || !hasRightReport
+                ? 'Analysing revised document'
+                : 'Analysing revised comparison'}
+            </span>
+            <span className={styles.compLoadSub}>
+              {!hasLeftReport || !hasRightReport
+                ? 'Waiting for document analysis to complete before generating comparison'
+                : `Matching clauses between ${docLabel(leftDoc)} and ${docLabel(rightDoc)} · Usually 1–3 minutes`}
+            </span>
+          </div>
+        </div>
       )}
-
-      {/* 2. DOC SELECTOR — sits directly above clause columns */}
-      <div className={styles.docSelect}>
-        <DocCard side="left"  doc={leftDoc}  label="Previous version" labelCls={styles.vtagOrig} active={picker === 'left'} />
-        <div className={styles.vsBadge}>VS</div>
-        <DocCard side="right" doc={rightDoc} label="Revised version"  labelCls={styles.vtagRev}  active={picker === 'right'} />
-      </div>
 
       {/* 3. COMMERCIAL TERMS — block-extracted (v2), lease_data, or summary-text fallback */}
       {((ldA || ldB) || (summaryTermRows.length > 0 && !sameDocument)) && (
@@ -546,31 +568,6 @@ export default function CompareTab({ negId, docs }) {
             </tbody>
           </table>
         </div>
-      )}
-
-      {!hasLeftReport && (
-        <div className={styles.noReport}>{docLabel(leftDoc)} has no report yet — run an analysis first.</div>
-      )}
-      {!hasRightReport && (
-        <div className={styles.noReport}>{docLabel(rightDoc)} has no report yet — run an analysis first.</div>
-      )}
-      {sameDocument && (
-        <div className={styles.noReport}>Same document selected — upload a revised version to compare changes.</div>
-      )}
-      {!sameDocument && !comparison && hasLeftReport && hasRightReport && (
-        compTimedOut ? (
-          <div className={styles.noReport}>
-            Taking longer than expected. Try refreshing the page — if this keeps happening, contact support.
-          </div>
-        ) : (
-          <div className={styles.compLoading}>
-            <span className={styles.compSpinner} />
-            <div className={styles.compLoadText}>
-              <span className={styles.compLoadTitle}>Generating comparison</span>
-              <span className={styles.compLoadSub}>Matching clauses between {docLabel(leftDoc)} and {docLabel(rightDoc)} · Usually 1–3 minutes</span>
-            </div>
-          </div>
-        )
       )}
 
       {/* 4. BLOCK COMPARISON — source-text blocks */}
