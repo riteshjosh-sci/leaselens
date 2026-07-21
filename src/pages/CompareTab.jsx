@@ -142,6 +142,12 @@ function isTrivialBlock(text) {
   return false
 }
 
+const docLabel = (doc) => {
+  if (!doc) return ''
+  const type = doc.doc_type === 'lease' ? 'Lease' : 'HOA'
+  return `V${doc.version_number} ${type}`
+}
+
 export default function CompareTab({ negId, docs }) {
   const navigate = useNavigate()
   const sortedDocs = [...docs].sort((a, b) => new Date(a.uploaded_at) - new Date(b.uploaded_at))
@@ -495,8 +501,8 @@ export default function CompareTab({ negId, docs }) {
             <thead>
               <tr>
                 <th className={styles.thLabel}>Term</th>
-                <th className={styles.thVal}>v{leftDoc?.version_number} — Previous</th>
-                <th className={styles.thVal}>v{rightDoc?.version_number} — Revised</th>
+                <th className={styles.thVal}>{docLabel(leftDoc)}</th>
+                <th className={styles.thVal}>{docLabel(rightDoc)}</th>
                 <th className={styles.thDir}>Change</th>
               </tr>
             </thead>
@@ -542,10 +548,10 @@ export default function CompareTab({ negId, docs }) {
       )}
 
       {!hasLeftReport && (
-        <div className={styles.noReport}>Previous version (v{leftDoc?.version_number}) has no report yet — run an analysis first.</div>
+        <div className={styles.noReport}>{docLabel(leftDoc)} has no report yet — run an analysis first.</div>
       )}
       {!hasRightReport && (
-        <div className={styles.noReport}>Revised version (v{rightDoc?.version_number}) has no report yet — run an analysis first.</div>
+        <div className={styles.noReport}>{docLabel(rightDoc)} has no report yet — run an analysis first.</div>
       )}
       {sameDocument && (
         <div className={styles.noReport}>Same document selected — upload a revised version to compare changes.</div>
@@ -560,7 +566,7 @@ export default function CompareTab({ negId, docs }) {
             <span className={styles.compSpinner} />
             <div className={styles.compLoadText}>
               <span className={styles.compLoadTitle}>Generating comparison</span>
-              <span className={styles.compLoadSub}>Matching clauses between v{leftDoc?.version_number} and v{rightDoc?.version_number} · Usually 1–3 minutes</span>
+              <span className={styles.compLoadSub}>Matching clauses between {docLabel(leftDoc)} and {docLabel(rightDoc)} · Usually 1–3 minutes</span>
             </div>
           </div>
         )
@@ -571,10 +577,10 @@ export default function CompareTab({ negId, docs }) {
         <div className={styles.comparePanel}>
           <div className={styles.compareHead}>
             <div className={styles.chSide}>
-              <span className={styles.chT}>v{leftDoc?.version_number} — Previous</span>
+              <span className={styles.chT}>{docLabel(leftDoc)}</span>
             </div>
             <div className={styles.chSide}>
-              <span className={styles.chT}>v{rightDoc?.version_number} — Revised</span>
+              <span className={styles.chT}>{docLabel(rightDoc)}</span>
             </div>
             <div className={styles.chNote}>What changed</div>
           </div>
