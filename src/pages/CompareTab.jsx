@@ -329,15 +329,6 @@ export default function CompareTab({ negId, docs }) {
       : stripTimestamp(leftDoc.filename) === stripTimestamp(rightDoc.filename)
   ))
 
-  // DEBUG — remove once intermediate state confirmed or ruled out
-  console.log('[CompareTab]', {
-    ldB:             ldB != null,
-    comparison:      comparison != null,
-    hasRightReport,
-    rightDocComplete,
-    compPolling,
-  })
-
   // ── Version picker dropdown ───────────────────────────────────────
   const VersionPicker = ({ side }) => (
     <div className={styles.pickerDropdown} ref={pickerRef}>
