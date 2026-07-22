@@ -148,7 +148,7 @@ const docLabel = (doc) => {
   return `V${doc.version_number} ${type}`
 }
 
-export default function CompareTab({ negId, docs }) {
+export default function CompareTab({ negId, docs, awaitingNewVersion = false }) {
   const navigate = useNavigate()
   const sortedDocs = [...docs].sort((a, b) => new Date(a.uploaded_at) - new Date(b.uploaded_at))
   const docsKey = docs.map(d => d.id).join(',')
@@ -471,6 +471,14 @@ export default function CompareTab({ negId, docs }) {
       {/* 2. STATUS / SUMMARY SLOT — same position whether loading or loaded */}
       {sameDocument ? (
         <div className={styles.noReport}>Same document selected — upload a revised version to compare changes.</div>
+      ) : awaitingNewVersion ? (
+        <div className={styles.compLoading}>
+          <span className={styles.compSpinner} />
+          <div className={styles.compLoadText}>
+            <span className={styles.compLoadTitle}>Analysing revised comparison</span>
+            <span className={styles.compLoadSub}>Waiting for document analysis to complete</span>
+          </div>
+        </div>
       ) : showComparison ? (
         <div className={styles.summaryStrip}>
           <span className={styles.summaryLabel}>Comparison summary</span>
