@@ -321,6 +321,7 @@ export default function CompareTab({ negId, docs }) {
 
   const hasLeftReport  = !!leftDoc?.reports?.[0]?.report_json
   const hasRightReport = !!rightDoc?.reports?.[0]?.report_json
+  const showComparison = !!(comparison && hasLeftReport && hasRightReport)
   // For lease docs, also require lease_data to be present before switching labels —
   // reports and lease_data are saved separately; lease_data arriving = commercial table ready.
   const sameDocument   = !!(leftDoc && rightDoc && (
@@ -470,7 +471,7 @@ export default function CompareTab({ negId, docs }) {
       {/* 2. STATUS / SUMMARY SLOT — same position whether loading or loaded */}
       {sameDocument ? (
         <div className={styles.noReport}>Same document selected — upload a revised version to compare changes.</div>
-      ) : comparison ? (
+      ) : showComparison ? (
         <div className={styles.summaryStrip}>
           <span className={styles.summaryLabel}>Comparison summary</span>
           <HelpTip>Source-text blocks compared between the two document versions. Modified blocks show word-level highlighting of what changed.</HelpTip>
@@ -581,7 +582,7 @@ export default function CompareTab({ negId, docs }) {
       )}
 
       {/* 4. BLOCK COMPARISON — source-text blocks */}
-      {comparison?.result_json && !sameDocument && (
+      {showComparison && comparison?.result_json && !sameDocument && (
         <div className={styles.comparePanel}>
           <div className={styles.compareHead}>
             <div className={styles.chSide}>
