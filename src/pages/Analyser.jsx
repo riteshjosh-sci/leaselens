@@ -45,6 +45,7 @@ export default function Analyser() {
   const negIdRef = useRef(null)
   const wsIdRef  = useRef(null)
   const completedRef = useRef(false)
+  const leaseDataSetRef = useRef(false)
 
   useEffect(() => {
     if (user) {
@@ -96,9 +97,10 @@ export default function Analyser() {
 
   const handleJobUpdate = (jobData) => {
     if (completedRef.current) return
-    if (jobData.stage === 'extracted' && jobData.stage_data) {
+    if (jobData.stage_data && !leaseDataSetRef.current) {
       try {
         const ld = typeof jobData.stage_data === 'string' ? JSON.parse(jobData.stage_data) : jobData.stage_data
+        leaseDataSetRef.current = true
         setLeaseData(ld); setLoadingStage(2)
       } catch (e) {}
     }
@@ -169,7 +171,7 @@ export default function Analyser() {
     completedRef.current = false
     negIdRef.current = null
     wsIdRef.current  = null
-    setLoading(true); setError(''); setReport(null); setLeaseData(null)
+    setLoading(true); setError(''); setReport(null); setLeaseData(null); leaseDataSetRef.current = false
     startLoadingCycle()
 
     try {
