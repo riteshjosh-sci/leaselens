@@ -148,7 +148,7 @@ const docLabel = (doc) => {
   return `V${doc.version_number} ${type}`
 }
 
-export default function CompareTab({ negId, docs, docProcessing = false }) {
+export default function CompareTab({ negId, docs, awaitingNewVersion = false }) {
   const navigate = useNavigate()
   const sortedDocs = [...docs].sort((a, b) => new Date(a.uploaded_at) - new Date(b.uploaded_at))
   const docsKey = docs.map(d => d.id).join(',')
@@ -321,7 +321,7 @@ export default function CompareTab({ negId, docs, docProcessing = false }) {
 
   const hasLeftReport  = !!leftDoc?.reports?.[0]?.report_json
   const hasRightReport = !!rightDoc?.reports?.[0]?.report_json
-  const showComparison = !!(comparison && hasLeftReport && hasRightReport)
+  const showComparison = !!(comparison && hasLeftReport && hasRightReport && !awaitingNewVersion)
   // For lease docs, also require lease_data to be present before switching labels —
   // reports and lease_data are saved separately; lease_data arriving = commercial table ready.
   const sameDocument   = !!(leftDoc && rightDoc && (
@@ -471,8 +471,6 @@ export default function CompareTab({ negId, docs, docProcessing = false }) {
       {/* 2. STATUS / SUMMARY SLOT — same position whether loading or loaded */}
       {sameDocument ? (
         <div className={styles.noReport}>Same document selected — upload a revised version to compare changes.</div>
-      ) : docProcessing ? (
-        <div className={styles.noReport}>Comparison will appear automatically when analysis is complete.</div>
       ) : showComparison ? (
         <div className={styles.summaryStrip}>
           <span className={styles.summaryLabel}>Comparison summary</span>
