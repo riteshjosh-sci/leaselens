@@ -59,9 +59,7 @@ export default function NegotiationDetail() {
 
   const pollTimerRef       = useRef(null)
   const pollCountRef       = useRef(0)
-  const awaitingVersionRef  = useRef(location.state?.awaitingVersion === true)
-  const initialDocCountRef  = useRef(null)
-  const [awaitingNewVersion, setAwaitingNewVersion] = useState(location.state?.awaitingVersion === true)
+  const awaitingVersionRef = useRef(location.state?.awaitingVersion === true)
   const [docProcessing, setDocProcessing] = useState(false)
 
   // Lifted out of ReviewTab so this state survives switching to the Summary tab and
@@ -158,17 +156,6 @@ export default function NegotiationDetail() {
 
     setDocs(sortedDocs)
 
-    // Detect when the new doc lands after "+ Add version" flow
-    if (awaitingVersionRef.current) {
-      if (initialDocCountRef.current === null) {
-        initialDocCountRef.current = sortedDocs.length
-      } else if (sortedDocs.length > initialDocCountRef.current) {
-        setAwaitingNewVersion(false)
-        awaitingVersionRef.current = false
-        initialDocCountRef.current = null
-      }
-    }
-
     // Poll until every doc that exists has a report (worker saves asynchronously).
     // Also poll when no docs yet, or when returning from the analyser (any version upload).
     const allHaveReports = sortedDocs.length > 0 && sortedDocs.every(d => d.reports?.[0]?.report_json)
@@ -180,13 +167,6 @@ export default function NegotiationDetail() {
       pollTimerRef.current = setTimeout(fetchAll, 3000)
     } else {
       setDocProcessing(false)
-      // Polling stopped without finding the new doc — clear the awaiting state so the UI
-      // doesn't show "Analysing revised comparison" indefinitely.
-      if (awaitingVersionRef.current) {
-        setAwaitingNewVersion(false)
-        awaitingVersionRef.current = false
-        initialDocCountRef.current = null
-      }
     }
 
     if (negData.workspace_id) {
@@ -553,7 +533,7 @@ export default function NegotiationDetail() {
           <CompareTab
             negId={negId}
             docs={docs}
-            awaitingNewVersion={awaitingNewVersion}
+            docProcessing={docProcessing}
           />
         )}
         {activeTab === 'documents' && (
