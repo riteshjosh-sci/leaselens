@@ -375,6 +375,7 @@ export default function Analyser() {
       reportId = reportRow?.id || null
     }
 
+    await supabase.from('jobs').update({ negotiation_id: targetNegId }).eq('negotiation_id', throwawayNegId)
     await supabase.from('negotiations').delete().eq('id', throwawayNegId)
     if (throwawayWsId) await supabase.from('workspaces').delete().eq('id', throwawayWsId)
 
