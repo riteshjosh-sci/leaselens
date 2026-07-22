@@ -181,6 +181,7 @@ export default function CompareTab({ negId, docs }) {
   useEffect(() => {
     setLeftIdx(Math.max(0, sortedDocs.length - 2))
     setRightIdx(sortedDocs.length - 1)
+    setComparison(null)
   }, [docsKey])
 
   useEffect(() => {
