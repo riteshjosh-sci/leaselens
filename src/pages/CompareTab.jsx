@@ -225,6 +225,7 @@ export default function CompareTab({ negId, docs }) {
 
     const doFetch = async () => {
       if (stopped) return
+      console.log('[CompareTab] querying comparison', { leftId, rightId })
       const { data, error } = await supabase
         .from('comparisons')
         .select('id, result_json, matcher_version, created_at, document_id_v1, document_id_v2')
@@ -236,6 +237,7 @@ export default function CompareTab({ negId, docs }) {
       if (error) { console.error('comparisons fetch:', error.message); return }
       if (stopped) return
       if (data?.length) {
+        console.log('[CompareTab] comparison found', { returned_v1: data[0].document_id_v1, returned_v2: data[0].document_id_v2, id: data[0].id })
         setComparison(data[0])
         setCompPolling(false)
       } else if (pollCountRef.current < 120) {
