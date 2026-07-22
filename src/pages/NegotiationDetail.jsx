@@ -472,7 +472,7 @@ export default function NegotiationDetail() {
           ))}
         </div>
 
-        {docProcessing && (
+        {docProcessing && (docs.length < 2 || activeTab !== 'compare') && (
           <div className={styles.processingBanner}>
             <span className={styles.processingSpinner} />
             {docs.length >= 2
@@ -533,7 +533,6 @@ export default function NegotiationDetail() {
           <CompareTab
             negId={negId}
             docs={docs}
-            docProcessing={docProcessing}
           />
         )}
         {activeTab === 'documents' && (
