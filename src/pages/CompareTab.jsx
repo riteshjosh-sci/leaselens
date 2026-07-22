@@ -320,9 +320,6 @@ export default function CompareTab({ negId, docs }) {
   const hasRightReport = !!rightDoc?.reports?.[0]?.report_json
   // For lease docs, also require lease_data to be present before switching labels —
   // reports and lease_data are saved separately; lease_data arriving = commercial table ready.
-  const rightDocComplete = hasRightReport && (
-    rightDoc?.doc_type !== 'lease' || ldB != null
-  )
   const sameDocument   = !!(leftDoc && rightDoc && (
     (leftDoc.content_hash && rightDoc.content_hash)
       ? leftDoc.content_hash === rightDoc.content_hash
@@ -513,12 +510,12 @@ export default function CompareTab({ negId, docs }) {
           <span className={styles.compSpinner} />
           <div className={styles.compLoadText}>
             <span className={styles.compLoadTitle}>
-              {hasLeftReport && rightDocComplete
+              {hasLeftReport && hasRightReport
                 ? 'Generating comparison'
                 : 'Analysing revised comparison'}
             </span>
             <span className={styles.compLoadSub}>
-              {hasLeftReport && rightDocComplete
+              {hasLeftReport && hasRightReport
                 ? `Matching clauses between ${docLabel(leftDoc)} and ${docLabel(rightDoc)} · Usually 1–3 minutes`
                 : 'Waiting for document analysis to complete'}
             </span>
