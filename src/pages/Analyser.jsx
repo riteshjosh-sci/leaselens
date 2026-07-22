@@ -310,6 +310,15 @@ export default function Analyser() {
     .replace(/[.,]/g, '')
     .replace(/\s+/g, ' ')
     .trim()
+    .replace(/(\b\d{4}\b).*$/, '$1')
+    .replace(/\bnsw\b/g, 'new south wales')
+    .replace(/\bvic\b/g, 'victoria')
+    .replace(/\bqld\b/g, 'queensland')
+    .replace(/\bsa\b/g,  'south australia')
+    .replace(/\bwa\b/g,  'western australia')
+    .replace(/\btas\b/g, 'tasmania')
+    .replace(/\bact\b/g, 'australian capital territory')
+    .replace(/\bnt\b/g,  'northern territory')
 
   const checkForExistingMatch = async (reportJson) => {
     const tenant  = normalizeForMatch(reportJson?.tenant_name)
