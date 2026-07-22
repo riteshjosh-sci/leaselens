@@ -472,13 +472,7 @@ export default function CompareTab({ negId, docs, awaitingNewVersion = false }) 
       {sameDocument ? (
         <div className={styles.noReport}>Same document selected — upload a revised version to compare changes.</div>
       ) : awaitingNewVersion ? (
-        <div className={styles.compLoading}>
-          <span className={styles.compSpinner} />
-          <div className={styles.compLoadText}>
-            <span className={styles.compLoadTitle}>Analysing revised comparison</span>
-            <span className={styles.compLoadSub}>Waiting for document analysis to complete</span>
-          </div>
-        </div>
+        <div className={styles.noReport}>Comparison will update automatically when the new version is ready.</div>
       ) : showComparison ? (
         <div className={styles.summaryStrip}>
           <span className={styles.summaryLabel}>Comparison summary</span>
