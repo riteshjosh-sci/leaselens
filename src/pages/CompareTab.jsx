@@ -395,16 +395,16 @@ export default function CompareTab({ negId, docs, awaitingNewVersion = false }) 
     // already rendered in the Commercial Terms table above — skip them in the clause diff.
     const isScheduleLine = t => !!t && t.trim().length < 120 && t.includes(' | ') && !/^[\d"]/.test(t.trim())
 
-    // Matched blocks sorted by V2 position, commercial-term duplicates removed
+    // Fulltext-AI output is already in document order; block-matcher output sorted by V2 position.
     const sorted = [...(rj.matches || [])]
       .filter(m => !(isScheduleLine(m.v1_text) && isScheduleLine(m.v2_text)))
-      .sort((a, b) => a.v2_idx - b.v2_idx)
+      .sort((a, b) => (a.v2_idx ?? 0) - (b.v2_idx ?? 0))
     for (const m of sorted) {
       const isModified = ['modified', 'topic'].includes(m.kind)
           && m.change_type !== 'formatting_only'
           && m.change_summary?.significance !== 'trivial'
-      const isMeaningful = isModified && MEANINGFUL.includes(m.change_type)
-      const absD = Math.abs(m.delta)
+      const isMeaningful = isModified && m.change_type != null && MEANINGFUL.includes(m.change_type)
+      const absD = Math.abs(m.delta ?? 0)
       const maxLen = Math.max((m.v1_text || '').length, (m.v2_text || '').length)
       const isLabelledTerm = t => !!t && (t.includes(' | ') || /^\w[\w\s]+:\s/.test(t))
       const isShortClause = isModified && maxLen > 0 && maxLen < 120
