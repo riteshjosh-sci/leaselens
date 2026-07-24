@@ -24,15 +24,15 @@ function CommercialCard({ leaseData, docType }) {
   ].filter(r => r.value)
   if (!rows.length) return null
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '16px 20px', marginBottom: 20 }}>
-      <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: 12 }}>
+    <div style={{ background: 'var(--card)', border: '1px solid var(--hair)', borderRadius: 'var(--radius)', padding: '20px 24px', marginBottom: 20 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 16 }}>
         {isHoa ? 'Heads of Agreement' : 'Lease'} · Commercial terms
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px 20px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '16px 20px' }}>
         {rows.map(r => (
           <div key={r.label}>
-            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', marginBottom: 2 }}>{r.label}</div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--ink)' }}>{r.value}</div>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', marginBottom: 4 }}>{r.label}</div>
+            <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--ink)', wordBreak: 'break-word', lineHeight: 1.4 }}>{r.value}</div>
           </div>
         ))}
       </div>
