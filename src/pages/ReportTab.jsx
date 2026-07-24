@@ -12,27 +12,32 @@ const ChevRight = () => (
 function CommercialCard({ leaseData, docType }) {
   if (!leaseData) return null
   const isHoa = docType === 'hoa'
-  const fmt = n => n ? `$${Number(n).toLocaleString()}` : null
-  const rows = [
-    { label: 'Term',             value: leaseData.term_years ? `${leaseData.term_years} years${leaseData.option_terms ? ` + ${leaseData.option_terms} option` : ''}` : null },
-    { label: 'Base rent (p.a.)', value: fmt(leaseData.base_rent_annual) },
-    { label: 'Outgoings (p.a.)', value: fmt(leaseData.outgoings_annual) },
+  const pa = n => n ? `$${Number(n).toLocaleString()} pa` : null
+  const items = [
+    { label: 'Lease term',       value: leaseData.term_years ? `${leaseData.term_years} years${leaseData.option_terms ? ` + ${leaseData.option_terms}` : ''}` : null },
+    { label: 'Base rent',        value: pa(leaseData.base_rent_annual) },
+    { label: 'Outgoings',        value: pa(leaseData.outgoings_annual) },
+    { label: 'Total deal value', value: (leaseData.total_annual_deal_value && leaseData.base_rent_annual) ? pa(leaseData.total_annual_deal_value) : null },
     { label: 'Bank guarantee',   value: leaseData.bank_guarantee_months ? `${leaseData.bank_guarantee_months} months` : null },
     { label: 'Rent review',      value: leaseData.rent_review_type ? `${leaseData.rent_review_type.toUpperCase()}${leaseData.rent_review_rate ? ` ${leaseData.rent_review_rate}%` : ''}` : null },
-    { label: 'Fitout contrib.',  value: fmt(leaseData.fitout_contribution) },
-    { label: 'Permitted use',    value: leaseData.permitted_use },
+    { label: 'State',            value: leaseData.state },
   ].filter(r => r.value)
-  if (!rows.length) return null
+  if (!items.length) return null
   return (
-    <div style={{ background: 'var(--card)', border: '1px solid var(--hair)', borderRadius: 'var(--radius)', padding: '20px 24px', marginBottom: 20 }}>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent)', marginBottom: 16 }}>
-        {isHoa ? 'Heads of Agreement' : 'Lease'} · Commercial terms
+    <div style={{ background: 'var(--card)', border: '1px solid var(--hair)', borderLeft: '3px solid var(--accent)', borderRadius: '0 var(--radius-sm) var(--radius-sm) 0', padding: '20px 24px', marginBottom: 20 }}>
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--risk-l)', marginBottom: 4 }}>
+          ✓ Commercial terms identified
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 400, color: 'var(--ink)', fontFamily: 'var(--font)' }}>
+          {isHoa ? 'HOA' : 'Lease'} — Commercial Terms
+        </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '16px 20px' }}>
-        {rows.map(r => (
-          <div key={r.label}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--muted)', marginBottom: 4 }}>{r.label}</div>
-            <div style={{ fontSize: 15, fontWeight: 600, letterSpacing: '-0.01em', color: 'var(--ink)', wordBreak: 'break-word', lineHeight: 1.4 }}>{r.value}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+        {items.map(r => (
+          <div key={r.label} style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <div style={{ fontSize: 10, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted)' }}>{r.label}</div>
+            <div style={{ fontSize: 14, fontWeight: 500, color: 'var(--ink)' }}>{r.value}</div>
           </div>
         ))}
       </div>

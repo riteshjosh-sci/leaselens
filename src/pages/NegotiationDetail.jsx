@@ -147,7 +147,7 @@ export default function NegotiationDetail() {
       const docIds = sortedDocs.map(d => d.id)
       const { data: ldRows } = await supabase
         .from('lease_data')
-        .select('document_id, base_rent_annual, term_years, option_terms, bank_guarantee_months, make_good, marketing_levy_annual, fitout_contribution, rent_free_months, personal_guarantee, permitted_use, exclusivity, outgoings_annual, rent_review_rate, rent_review_type')
+        .select('document_id, base_rent_annual, term_years, option_terms, bank_guarantee_months, make_good, marketing_levy_annual, fitout_contribution, rent_free_months, personal_guarantee, permitted_use, exclusivity, outgoings_annual, rent_review_rate, rent_review_type, total_annual_deal_value, state')
         .in('document_id', docIds)
       if (ldRows) {
         const ldByDoc = {}
