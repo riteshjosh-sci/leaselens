@@ -504,6 +504,8 @@ export default function NegotiationDetail() {
           <ReportTab
             allClauses={allClauses}
             onNext={advanceToReview}
+            leaseData={reviewDoc?.lease_data?.[0] || null}
+            docType={reviewDoc?.doc_type || null}
           />
         )}
         {activeTab === 'review' && (
