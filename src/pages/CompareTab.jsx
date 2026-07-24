@@ -302,7 +302,7 @@ export default function CompareTab({ negId, docs, awaitingNewVersion = false }) 
     return out.filter(r => {
       if (activeFilter === 'added')    return r.kind === 'added' || r.kind === 'added-group'
       if (activeFilter === 'removed')  return r.kind === 'removed'
-      if (activeFilter === 'modified') return r.isMeaningful
+      if (activeFilter === 'modified') return r.isMeaningful || r.textChanged
       return true
     })
   }
@@ -437,7 +437,7 @@ export default function CompareTab({ negId, docs, awaitingNewVersion = false }) 
     // clauses don't flood the comparison view.
     const addedBulkTexts = []
     for (const a of (rj.added || [])) {
-      if (a.significance === 'high') {
+      if (a.significance === 'high' || a.significance === 'medium') {
         const cs = a.summary ? { label: a.label, summary: a.summary, significance: a.significance, tenant_impact: a.tenant_impact } : null
         rows.push({ kind: 'added', change_type: null, change_summary: cs, change: 'watch', left: null, right: { text: a.text, tag: 'new' }, textChanged: false, note: null, isMeaningful: true })
       } else {
