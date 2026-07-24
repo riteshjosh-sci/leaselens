@@ -366,7 +366,7 @@ export default function ReportView() {
           {/* CLAUSE LIST */}
           <div className={styles.briefingHead}>
             <h2 className={styles.briefingTitle}>
-              Clause briefing <span>· {clauses.length} reviewed</span>
+              Clause briefing <span>· {clauses.length} issues identified</span>
             </h2>
             <div className={styles.filterTabs}>
               {[
